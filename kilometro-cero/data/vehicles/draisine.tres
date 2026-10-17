@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="VehicleData" format=3 uid="uid://do8bi6bcibaey"]
+
+[ext_resource type="Script" uid="uid://nmlvl15xbw3n" path="res://scripts/vehicles/vehicle_data.gd" id="1_pqito"]
+
+[resource]
+script = ExtResource("1_pqito")
+id = &"draisine"
+display_name = "zorra manual"
+metadata/_custom_type_script = "uid://nmlvl15xbw3n"

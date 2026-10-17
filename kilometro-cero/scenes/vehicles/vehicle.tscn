@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://3r25voo7eptq"]
+
+[ext_resource type="Script" uid="uid://byjb8g6ids7rr" path="res://scripts/vehicles/vehicle.gd" id="1_scpqm"]
+[ext_resource type="Resource" uid="uid://do8bi6bcibaey" path="res://data/vehicles/draisine.tres" id="2_0eap3"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mvn1x"]
+albedo_color = Color(1, 1, 0, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_k6d34"]
+size = Vector3(1.4, 0.6, 2.4)
+
+[node name="Vehicle" type="PathFollow3D" unique_id=767872902]
+script = ExtResource("1_scpqm")
+data = ExtResource("2_0eap3")
+
+[node name="Body" type="MeshInstance3D" parent="." unique_id=600386124]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+material_override = SubResource("StandardMaterial3D_mvn1x")
+mesh = SubResource("BoxMesh_k6d34")
