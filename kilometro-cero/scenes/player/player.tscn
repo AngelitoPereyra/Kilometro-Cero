@@ -1,0 +1,47 @@
+[gd_scene format=3 uid="uid://dwcrgtb107qxo"]
+
+[ext_resource type="Script" uid="uid://dhd4swm8v2mfs" path="res://scripts/player/player.gd" id="1_dovo2"]
+[ext_resource type="Script" uid="uid://d2i61ukw5aot7" path="res://scripts/player/third_person_camera.gd" id="2_gmlin"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_k6d34"]
+radius = 0.35
+height = 1.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_k6d34"]
+radius = 0.35
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mvn1x"]
+albedo_color = Color(0, 0.8862745, 0.94509804, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_k6d34"]
+size = Vector3(0.2, 0.2, 0.4)
+
+[node name="Player" type="CharacterBody3D" unique_id=1709582427]
+collision_layer = 2
+script = ExtResource("1_dovo2")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1421013401]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_k6d34")
+
+[node name="Visual" type="Node3D" parent="." unique_id=118476092]
+
+[node name="Body" type="MeshInstance3D" parent="Visual" unique_id=366048044]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_k6d34")
+
+[node name="Nose" type="MeshInstance3D" parent="Visual" unique_id=715738655]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -0.4)
+material_override = SubResource("StandardMaterial3D_mvn1x")
+mesh = SubResource("BoxMesh_k6d34")
+
+[node name="CameraRig" type="Node3D" parent="." unique_id=281530085]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+script = ExtResource("2_gmlin")
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraRig" unique_id=696291611]
+spring_length = 4.0
+margin = 0.1
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig/SpringArm3D" unique_id=1388333830]

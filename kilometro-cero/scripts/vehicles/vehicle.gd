@@ -5,12 +5,20 @@ extends PathFollow3D
 ## condición del tramo. No lee teclas: quien lo maneja (el jugador, rutas automáticas)
 ## escribe `throttle`. Así el mismo vehículo sirve para todos.
 
+## Grupo de todos los vehículos: el jugador lo consulta al apretar "interactuar".
+const GROUP: StringName = &"vehicles"
+## Distancia hacia la derecha del vehículo donde aparece el jugador al bajarse.
+const DISMOUNT_DISTANCE: float = 1.6
+
 @export var data: VehicleData
 ## Tramo que recorre. Si queda vacío, se usa el TrackSegment que cuelga del mismo Path3D:
 ## desde el inspector no se puede apuntar a nodos de la escena que contiene al vehículo
-## (limitación del editor para escenas instanciadas).
+## (limitación del editor para escenas instanciadas, D42).
 ## En la tarea 20, RailNetwork lo reemplaza por una consulta por tramo.
 @export var segment: TrackSegment
+## Dónde se sienta el jugador. Es un Marker3D dentro de la escena del vehículo, así que
+## sí se puede asignar desde el inspector.
+@export var seat: Marker3D
 
 ## Acelerador pedido: 1.0 adelante a fondo, -1.0 marcha atrás, 0.0 soltar.
 var throttle: float = 0.0
@@ -19,11 +27,12 @@ var speed: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group(GROUP)
 	# Al llegar al final de la vía se detiene, en vez de dar la vuelta.
 	loop = false
-		# En PathFollow3D, `use_model_front = true` orienta el eje +Z hacia adelante. Nuestro
+	# En PathFollow3D, `use_model_front = true` orienta el eje +Z hacia adelante. Nuestro
 	# frente es -Z (Vector3.FORWARD, la convención de Godot para cámaras y modelos), que es
-	# el valor por defecto: lo dejamos explícito para que nadie lo cambie por error.
+	# el valor por defecto: lo dejamos explícito para que nadie lo cambie por error (D43).
 	use_model_front = false
 	if segment == null:
 		segment = _find_segment()
@@ -34,6 +43,7 @@ func _ready() -> void:
 	if data == null:
 		push_error("Vehicle necesita un VehicleData asignado.")
 		set_physics_process(false)
+
 
 func _physics_process(delta: float) -> void:
 	simulate(delta)
@@ -53,6 +63,21 @@ func get_track_condition() -> float:
 ## Velocidad máxima permitida ahora mismo, según el vehículo y la vía que pisa.
 func get_max_speed() -> float:
 	return data.get_max_speed(get_track_condition())
+
+
+## Posición del asiento en el mundo (si no hay asiento, el centro del vehículo).
+func get_seat_position() -> Vector3:
+	return seat.global_position if seat != null else global_position
+
+
+## Dónde queda el jugador al bajarse: al costado derecho, a la altura de la vía.
+func get_dismount_position() -> Vector3:
+	return global_position + global_basis.x * DISMOUNT_DISTANCE
+
+
+## Si bajarse ahora, con la velocidad actual, no causa un accidente.
+func is_dismount_safe() -> bool:
+	return data.is_dismount_safe(speed)
 
 
 ## Nueva velocidad tras un paso. Lógica pura: no toca ningún nodo.

@@ -9,11 +9,15 @@ albedo_color = Color(1, 1, 0, 1)
 [sub_resource type="BoxMesh" id="BoxMesh_k6d34"]
 size = Vector3(1.4, 0.6, 2.4)
 
-[node name="Vehicle" type="PathFollow3D" unique_id=767872902]
+[node name="Vehicle" type="PathFollow3D" unique_id=767872902 node_paths=PackedStringArray("seat")]
 script = ExtResource("1_scpqm")
 data = ExtResource("2_0eap3")
+seat = NodePath("Seat")
 
 [node name="Body" type="MeshInstance3D" parent="." unique_id=600386124]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
 material_override = SubResource("StandardMaterial3D_mvn1x")
 mesh = SubResource("BoxMesh_k6d34")
+
+[node name="Seat" type="Marker3D" parent="." unique_id=124078980]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7, 0.4)
