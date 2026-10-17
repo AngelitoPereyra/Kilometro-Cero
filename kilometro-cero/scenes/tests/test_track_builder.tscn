@@ -1,0 +1,59 @@
+[gd_scene format=3 uid="uid://8ixiaxh3jeur"]
+
+[ext_resource type="Script" uid="uid://lgbbx8dmt8vl" path="res://scenes/tests/test_track.gd" id="1_i5t7b"]
+[ext_resource type="Script" uid="uid://vjyhstl4bvxp" path="res://scripts/world/manual_track.gd" id="2_6rm6m"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_17npe"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_o3frj"]
+sky_material = SubResource("ProceduralSkyMaterial_17npe")
+
+[sub_resource type="Environment" id="Environment_1f8fw"]
+background_mode = 2
+sky = SubResource("Sky_o3frj")
+glow_enabled = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_mvn1x"]
+albedo_color = Color(0, 1, 0, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_k6d34"]
+size = Vector3(1000, 1, 1000)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_k6d34"]
+size = Vector3(1000, 1, 1000)
+
+[sub_resource type="Curve3D" id="Curve3D_1f8fw"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -200),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[node name="TestTrack" type="Node3D" unique_id=337679211]
+script = ExtResource("1_i5t7b")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=96694695]
+environment = SubResource("Environment_1f8fw")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=2123022356]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=1946081653]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=1085252333]
+material_override = SubResource("StandardMaterial3D_mvn1x")
+mesh = SubResource("BoxMesh_k6d34")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=133534721]
+shape = SubResource("BoxShape3D_k6d34")
+
+[node name="Track" type="Path3D" parent="." unique_id=1399154815]
+curve = SubResource("Curve3D_1f8fw")
+script = ExtResource("2_6rm6m")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=377220590]
+transform = Transform3D(1, 0, 0, 0, 0.9702957, 0.2419219, 0, -0.2419219, 0.9702957, 0, 30, 60)

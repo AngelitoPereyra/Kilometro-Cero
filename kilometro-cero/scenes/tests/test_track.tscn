@@ -1,7 +1,9 @@
 [gd_scene format=3 uid="uid://byvmpjb7ln1fn"]
 
-[ext_resource type="Script" uid="uid://lgbbx8dmt8vl" path="res://scenes/tests/test_track.gd" id="1_1f8fw"]
+[ext_resource type="Script" uid="uid://b08oemc1piyt6" path="res://scenes/tests/test_track_builder.gd" id="1_1f8fw"]
 [ext_resource type="Script" uid="uid://vjyhstl4bvxp" path="res://scripts/world/manual_track.gd" id="1_o3frj"]
+[ext_resource type="Script" uid="uid://cr8u1ddxfxvhv" path="res://scripts/world/track_segment.gd" id="3_slu4h"]
+[ext_resource type="Script" uid="uid://63tp0rc2s27h" path="res://scripts/world/track_builder.gd" id="4_3k2wj"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_17npe"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -31,6 +33,9 @@ _data = {
 }
 point_count = 2
 
+[sub_resource type="BoxMesh" id="BoxMesh_whfil"]
+size = Vector3(1.6, 0.2, 4.8)
+
 [node name="TestTrack" type="Node3D" unique_id=337679211]
 script = ExtResource("1_1f8fw")
 
@@ -54,6 +59,17 @@ shape = SubResource("BoxShape3D_k6d34")
 [node name="Track" type="Path3D" parent="." unique_id=1399154815]
 curve = SubResource("Curve3D_1f8fw")
 script = ExtResource("1_o3frj")
+
+[node name="TrackSegment" type="Node" parent="Track" unique_id=1649464222]
+script = ExtResource("3_slu4h")
+condition = 0.0
+metadata/_custom_type_script = "uid://cr8u1ddxfxvhv"
+
+[node name="TrackBuilder" type="Node3D" parent="Track" unique_id=1839922167 node_paths=PackedStringArray("segment")]
+script = ExtResource("4_3k2wj")
+module_mesh = SubResource("BoxMesh_whfil")
+segment = NodePath("../TrackSegment")
+metadata/_custom_type_script = "uid://63tp0rc2s27h"
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=377220590]
 transform = Transform3D(1, 0, 0, 0, 0.9702957, 0.2419219, 0, -0.2419219, 0.9702957, 0, 30, 60)
