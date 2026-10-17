@@ -5,8 +5,10 @@ extends CharacterBody3D
 ## hereda el giro del cuerpo (D44).
 ## Sobre un vehículo, el jugador no cambia de padre: copia la posición del asiento en cada
 ## paso de física, y por eso se procesa DESPUÉS del vehículo (ver _ready).
+## Tiene un nodo Needs hijo. Cuando una necesidad llega al límite, o cuando se baja de un
+## vehículo a demasiada velocidad, se desmaya (faint) y al rato despierta (wake_up).
 
-enum State { WALKING, RIDING }
+enum State { WALKING, RIDING, FAINTED }
 
 @export_range(0.5, 10.0, 0.1, "suffix:m/s") var walk_speed: float = 4.0
 @export_range(1.0, 100.0, 0.5) var acceleration: float = 25.0
@@ -19,6 +21,8 @@ var state: State = State.WALKING
 
 var _vehicle: Vehicle
 var _camera: ThirdPersonCamera
+var _needs: Needs
+var _faint_time_left: float = 0.0
 
 @onready var _visual: Node3D = $Visual
 @onready var _collision: CollisionShape3D = $CollisionShape3D
@@ -66,14 +70,24 @@ func _ready() -> void:
 	if _camera.get_parent() != self:
 		push_error("La cámara ('%s') debe ser hija directa de Player, no de '%s': si no, gira con el cuerpo y los controles se desordenan." % [_camera.name, _camera.get_parent().name])
 		set_physics_process(false)
+		return
+	_needs = _find_needs()
+	if _needs == null:
+		push_error("Player necesita un nodo Needs como hijo directo.")
+		set_physics_process(false)
+		return
+	_needs.fainted.connect(faint)
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed(&"interact"):
 		return
-	if state == State.WALKING:
-		try_mount()
-	else:
-		dismount()
+	match state:
+		State.WALKING:
+			try_mount()
+		State.RIDING:
+			dismount()
+		# Desmayado no puede hacer nada.
 
 
 func _physics_process(delta: float) -> void:
@@ -82,6 +96,16 @@ func _physics_process(delta: float) -> void:
 			_walk(delta)
 		State.RIDING:
 			_ride()
+		State.FAINTED:
+			_lie_down(delta)
+
+
+func get_camera() -> ThirdPersonCamera:
+	return _camera
+
+
+func get_needs() -> Needs:
+	return _needs
 
 
 ## Sube al vehículo más cercano al alcance. Devuelve false si no hay ninguno.
@@ -101,20 +125,55 @@ func try_mount() -> bool:
 	# Sentado no choca con nada. Se hace diferido por si se llama dentro de un paso de física.
 	_collision.set_deferred("disabled", true)
 	return true
-	
-func get_camera() -> ThirdPersonCamera:
-	return _camera
 
-## Baja del vehículo, al costado. Si va rápido, emite el accidente (sin efecto hasta la tarea 10).
+
+## Baja del vehículo, al costado. Si va demasiado rápido, es un accidente y se desmaya.
 func dismount() -> void:
 	if state != State.RIDING:
 		return
+	var safe: bool = _vehicle.is_dismount_safe()
+	_leave_vehicle()
+	if not safe:
+		faint(&"accident")
+
+
+## Desmayo: por una necesidad en el límite (lo avisa Needs) o por un accidente.
+## Pierde el conocimiento unos segundos y, al despertar, ha pasado tiempo (ver wake_up).
+func faint(cause: StringName) -> void:
+	if state == State.FAINTED:
+		return
+	if state == State.RIDING:
+		_leave_vehicle()
+	state = State.FAINTED
+	velocity = Vector3.ZERO
+	_faint_time_left = _needs.config.faint_duration_seconds
+	# En pausa: mientras está inconsciente las necesidades no siguen cayendo, y así no hay
+	# un segundo desmayo en cadena.
+	_needs.paused = true
+	# Cae hacia adelante, relativo a hacia dónde miraba (señal visual provisoria).
+	_visual.rotation.x = deg_to_rad(-90.0)
+	EventBus.player_fainted.emit(cause)
+
+
+## Despierta: pasó el tiempo perdido y las necesidades se recuperan un poco.
+## Se llama sola al terminar el desmayo; es pública para poder probarla.
+## Que despierte en la estación más cercana y con menos carga llega con las tareas 21 y 12.
+func wake_up() -> void:
+	if state != State.FAINTED:
+		return
+	_visual.rotation.x = 0.0
+	# Needs sigue en pausa: el tiempo perdido no gasta necesidades además de la recuperación.
+	GameState.clock.advance(_needs.config.faint_hours_lost)
+	_needs.recover_from_faint()
+	_needs.paused = false
+	state = State.WALKING
+
+
+func _leave_vehicle() -> void:
 	var vehicle: Vehicle = _vehicle
 	_vehicle = null
 	state = State.WALKING
 	vehicle.throttle = 0.0
-	if not vehicle.is_dismount_safe():
-		EventBus.player_fainted.emit(&"accident")
 	global_position = vehicle.get_dismount_position()
 	velocity = Vector3.ZERO
 	_collision.set_deferred("disabled", false)
@@ -140,6 +199,17 @@ func _ride() -> void:
 	_visual.rotation.y = _vehicle.global_rotation.y
 
 
+func _lie_down(delta: float) -> void:
+	velocity.x = 0.0
+	velocity.z = 0.0
+	if not is_on_floor():
+		velocity += get_gravity() * delta
+	move_and_slide()
+	_faint_time_left -= delta
+	if _faint_time_left <= 0.0:
+		wake_up()
+
+
 func _get_vehicles() -> Array[Vehicle]:
 	var result: Array[Vehicle] = []
 	for node: Node in get_tree().get_nodes_in_group(Vehicle.GROUP):
@@ -148,10 +218,19 @@ func _get_vehicles() -> Array[Vehicle]:
 			result.append(vehicle)
 	return result
 
+
 # Busca por tipo, no por nombre: da igual cómo se llame el nodo o en qué nivel esté.
 func _find_camera() -> ThirdPersonCamera:
 	for node: Node in find_children("*", "Node3D", true, false):
 		var camera := node as ThirdPersonCamera
 		if camera != null:
 			return camera
+	return null
+
+
+func _find_needs() -> Needs:
+	for child: Node in get_children():
+		var needs := child as Needs
+		if needs != null:
+			return needs
 	return null

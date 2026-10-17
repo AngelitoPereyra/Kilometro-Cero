@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" uid="uid://dhd4swm8v2mfs" path="res://scripts/player/player.gd" id="1_dovo2"]
 [ext_resource type="Script" uid="uid://d2i61ukw5aot7" path="res://scripts/player/third_person_camera.gd" id="2_gmlin"]
+[ext_resource type="Script" uid="uid://cel5qx73ysrhc" path="res://scripts/survival/needs.gd" id="3_lvxji"]
+[ext_resource type="Resource" uid="uid://28sw310mh5pm" path="res://data/config/needs_config.tres" id="4_p47bc"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_k6d34"]
 radius = 0.35
@@ -45,3 +47,8 @@ spring_length = 4.0
 margin = 0.1
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig/SpringArm3D" unique_id=1388333830]
+
+[node name="Needs" type="Node" parent="." unique_id=397868310]
+script = ExtResource("3_lvxji")
+config = ExtResource("4_p47bc")
+metadata/_custom_type_script = "uid://cel5qx73ysrhc"

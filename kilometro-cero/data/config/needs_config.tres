@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="NeedsConfig" format=3 uid="uid://28sw310mh5pm"]
+
+[ext_resource type="Script" uid="uid://b004vl3khpuu" path="res://scripts/survival/needs_config.gd" id="1_v0pxh"]
+
+[resource]
+script = ExtResource("1_v0pxh")
+metadata/_custom_type_script = "uid://b004vl3khpuu"

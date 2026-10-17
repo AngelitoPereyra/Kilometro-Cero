@@ -33,6 +33,7 @@ func _ready() -> void:
 	_vehicle.speed = 0.0
 	_vehicle.throttle = 0.0
 	_vehicle.progress = 0.0
+	_player.wake_up()
 	_player.global_position = Vector3(2.0, 0.0, 0.0)
 	_hud.text = CONTROLES
 
@@ -68,7 +69,8 @@ func _probar_subir_y_bajar() -> void:
 	# Lejos del vehículo no se puede subir.
 	_player.global_position = Vector3(50.0, 0.0, 0.0)
 	_comprobar(not _player.try_mount(), "Lejos del vehículo no se puede subir")
-	_comprobar(_player.state == Player.State.WALKING, "Y sigue caminando")
+	_comprobar(_player.state == Player.State.FAINTED, "Tras el accidente el jugador queda desmayado (tarea 10)")
+	_player.wake_up()
 
 	# Cerca sí, y queda sentado en el asiento.
 	_player.global_position = Vector3(2.0, 0.0, 0.0)
@@ -99,7 +101,7 @@ func _probar_subir_y_bajar() -> void:
 
 func _al_desmayar(cause: StringName) -> void:
 	_accidentes += 1
-	_hud.text = "¡Accidente (%s)! Sin efecto por ahora: el desmayo llega con Needs (tarea 10).\n%s" % [cause, CONTROLES]
+	_hud.text = "¡Desmayo (%s)!\n%s" % [cause, CONTROLES]
 
 
 func _comprobar(condicion: bool, descripcion: String) -> void:
