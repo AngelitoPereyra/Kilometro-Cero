@@ -14,6 +14,12 @@ config/name="Kilometro-Cero"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+EventBus="*uid://d3ldkkpw8kvj7"
+GameState="*uid://dxkcglp0gid2h"
+SaveSystem="*uid://b6ss78xona81u"
+
 [display]
 
 window/stretch/mode="canvas_items"
