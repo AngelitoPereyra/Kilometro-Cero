@@ -19,6 +19,13 @@ const MAX_VALUE: float = 100.0
 ## En pausa, el paso del tiempo no gasta necesidades (por ejemplo, mientras está desmayado).
 var paused: bool = false
 
+## Multiplica la fatiga que se acumula con el paso del tiempo. Lo escribe quien conoce la
+## carga (Player, a partir de Encumbrance): 1.0 = normal, 2.0 = se cansa el doble.
+## No afecta a `change()`: el esfuerzo puntual (empujar la zorra) lo calcula quien lo causa.
+var fatigue_multiplier: float = 1.0:
+	set(value):
+		fatigue_multiplier = maxf(value, 0.0)
+
 var _values: Dictionary[StringName, float] = {}
 # Sin este "cerrojo" emitiríamos `fainted` en cada cambio mientras la necesidad siga en el límite.
 var _faint_latched: bool = false
@@ -75,7 +82,7 @@ func tick(hours: float) -> void:
 		return
 	change(WATER, -config.water_loss_per_hour * hours)
 	change(FOOD, -config.food_loss_per_hour * hours)
-	change(FATIGUE, config.fatigue_gain_per_hour * hours)
+	change(FATIGUE, config.fatigue_gain_per_hour * fatigue_multiplier * hours)
 
 
 ## Al dormir en un refugio.

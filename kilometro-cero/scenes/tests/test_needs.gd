@@ -108,7 +108,13 @@ func _probar_necesidades() -> void:
 	needs.tick(5.0)
 	needs.paused = false
 	_comprobar(is_equal_approx(needs.get_value(Needs.WATER), 90.0), "En pausa, el tiempo no gasta necesidades")
-
+	needs.fatigue_multiplier = 2.0
+	var fatiga_antes: float = needs.get_value(Needs.FATIGUE)
+	needs.tick(1.0)
+	_comprobar(is_equal_approx(needs.get_value(Needs.FATIGUE), fatiga_antes + 10.0), "Con multiplicador 2.0, la fatiga por hora se duplica (+10)")
+	needs.fatigue_multiplier = -3.0
+	_comprobar(is_zero_approx(needs.fatigue_multiplier), "El multiplicador de fatiga no puede ser negativo")
+	needs.fatigue_multiplier = 1.0
 	needs.change(Needs.WATER, 500.0)
 	_comprobar(is_equal_approx(needs.get_value(Needs.WATER), 100.0), "El valor no pasa de 100")
 	needs.change(Needs.FATIGUE, -500.0)
