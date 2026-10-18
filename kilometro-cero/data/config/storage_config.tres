@@ -15,11 +15,7 @@ tag_a = &"chemical"
 tag_b = &"passenger"
 metadata/_custom_type_script = "uid://cmoecbmb1yk6b"
 
-[sub_resource type="Resource" id="Resource_so1k7"]
-script = ExtResource("2_l6gs4")
-metadata/_custom_type_script = "uid://cmoecbmb1yk6b"
-
 [resource]
 script = ExtResource("1_uhft4")
-tag_conflicts = Array[ExtResource("2_l6gs4")]([SubResource("Resource_eat46"), SubResource("Resource_4jag1"), SubResource("Resource_so1k7")])
+tag_conflicts = Array[ExtResource("2_l6gs4")]([SubResource("Resource_eat46"), SubResource("Resource_4jag1")])
 metadata/_custom_type_script = "uid://cbuis21ggtex3"

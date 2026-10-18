@@ -54,7 +54,9 @@ func _probar_config() -> void:
 	config.tag_conflicts.append(TagConflict.new(&"chemical", &"food"))
 	_comprobar(config.tags_conflict([&"chemical"], [&"food"]) and config.tags_conflict([&"food"], [&"chemical"]), "Un conflicto de etiquetas vale en ambos sentidos")
 	_comprobar(not config.tags_conflict([&"chemical"], [&"metal"]) and not config.tags_conflict([], [&"food"]), "Etiquetas sin conflicto no molestan")
-
+	var con_vacio := StorageConfig.new()
+	con_vacio.tag_conflicts.append(TagConflict.new())
+	_comprobar(not con_vacio.tags_conflict([&""], [&""]), "Un TagConflict sin completar no choca con etiquetas en blanco")
 
 func _probar_almacenar() -> void:
 	var mochila := _contenedor(4, 1, 0)
