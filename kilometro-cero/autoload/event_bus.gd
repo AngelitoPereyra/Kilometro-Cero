@@ -44,5 +44,11 @@ signal irr_changed(region_id: StringName, value: float)
 signal mate_started(destination_id: StringName)
 ## Termina el salto de viaje.
 signal mate_ended()
+## Entra algo a un contenedor con identificador (mochila, vagón, depósito).
+signal item_stored(container_id: StringName, stack: ItemStack)
+## Sale algo de un contenedor con identificador.
+signal item_taken(container_id: StringName, stack: ItemStack)
 
+@warning_ignore_restore("unused_signal")
+@warning_ignore_start("unused_signal")
 @warning_ignore_restore("unused_signal")
