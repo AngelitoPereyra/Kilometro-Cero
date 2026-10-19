@@ -25,9 +25,9 @@ func _ready() -> void:
 	_probar_entradas_invalidas()
 
 	if _fallos == 0:
-		print("Tarea 11: todas las comprobaciones pasaron.")
+		print("Almacenamiento: todas las comprobaciones pasaron.")
 	else:
-		push_error("Tarea 11: fallaron %d comprobaciones." % _fallos)
+		push_error("Almacenamiento: fallaron %d comprobaciones." % _fallos)
 
 
 func _probar_stack() -> void:

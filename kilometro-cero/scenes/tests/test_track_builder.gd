@@ -19,9 +19,9 @@ func _ready() -> void:
 	_probar_constructor()
 
 	if _fallos == 0:
-		print("Tarea 7: todas las comprobaciones pasaron.")
+		print("Constructor de Vias: todas las comprobaciones pasaron.")
 	else:
-		push_error("Tarea 7: fallaron %d comprobaciones." % _fallos)
+		push_error("Constructor de Vias: fallaron %d comprobaciones." % _fallos)
 
 
 func _probar_calculo_de_modulos() -> void:

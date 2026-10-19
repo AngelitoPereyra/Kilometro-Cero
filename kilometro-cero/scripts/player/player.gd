@@ -132,6 +132,14 @@ func _physics_process(delta: float) -> void:
 func get_camera() -> ThirdPersonCamera:
 	return _camera
 
+## Hacia dónde mira el cuerpo, en radianes (0 mira hacia -Z). Las manos (Grabber)
+## se anclan a esto y no a la cámara: giran con el personaje, no cuando mirás
+## alrededor, como dos brazos de verdad (D61).
+## La raíz nunca rota (D44), así que el giro local del pivote Visual es el del cuerpo.
+## Se usa `rotation.y` y no `global_rotation.y` porque desmayado `Visual` se inclina
+## en X, y con esa inclinación el ángulo global se vuelve inestable.
+func get_facing_yaw() -> float:
+	return _visual.rotation.y
 
 func get_needs() -> Needs:
 	return _needs

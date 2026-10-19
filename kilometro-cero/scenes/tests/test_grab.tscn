@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://cr8u1ddxfxvhv" path="res://scripts/world/track_segment.gd" id="4_rtfpj"]
 [ext_resource type="PackedScene" uid="uid://3r25voo7eptq" path="res://scenes/vehicles/vehicle.tscn" id="5_2yr7i"]
 [ext_resource type="PackedScene" uid="uid://dwcrgtb107qxo" path="res://scenes/player/player.tscn" id="6_13vbo"]
+[ext_resource type="Script" uid="uid://bs8kige1qn68m" path="res://scripts/vehicles/vehicle_collider_installer.gd" id="8_ku7by"]
 [ext_resource type="Script" uid="uid://cu16pwl8mxrux" path="res://scenes/tests/test_grab.gd" id="9_fo58r"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_17npe"]
@@ -71,7 +72,7 @@ metadata/_custom_type_script = "uid://63tp0rc2s27h"
 
 [node name="TrackSegment" type="Node" parent="Track" unique_id=1368644274]
 script = ExtResource("4_rtfpj")
-condition = 0.49
+condition = 0.31
 metadata/_custom_type_script = "uid://cr8u1ddxfxvhv"
 
 [node name="Vehicle" parent="Track" unique_id=767872902 instance=ExtResource("5_2yr7i")]
@@ -89,3 +90,6 @@ offset_bottom = 23.0
 
 [node name="TestGrab" type="Node3D" parent="." unique_id=1021263958]
 script = ExtResource("9_fo58r")
+
+[node name="InstaladorColision" type="Node" parent="." unique_id=1765615331]
+script = ExtResource("8_ku7by")

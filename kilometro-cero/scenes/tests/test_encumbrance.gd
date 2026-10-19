@@ -17,9 +17,9 @@ func _ready() -> void:
 	_probar_balance_inicial()
 
 	if _fallos == 0:
-		print("Tarea 12 (parte 1): todas las comprobaciones pasaron.")
+		print("Carga (parte 1): todas las comprobaciones pasaron.")
 	else:
-		push_error("Tarea 12 (parte 1): fallaron %d comprobaciones." % _fallos)
+		push_error("Carga (parte 1): fallaron %d comprobaciones." % _fallos)
 
 
 func _probar_config_de_carga() -> void:

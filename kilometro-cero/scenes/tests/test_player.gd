@@ -25,9 +25,9 @@ func _ready() -> void:
 	await _probar_subir_y_bajar()
 
 	if _fallos == 0:
-		print("Tarea 9: todas las comprobaciones pasaron.")
+		print("Jugador: todas las comprobaciones pasaron.")
 	else:
-		push_error("Tarea 9: fallaron %d comprobaciones." % _fallos)
+		push_error("Jugador: fallaron %d comprobaciones." % _fallos)
 
 	# Dejamos todo como al principio para poder jugar.
 	_vehicle.speed = 0.0

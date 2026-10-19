@@ -16,10 +16,15 @@ const CAPAS_FISICAS_3D: Array[String] = [
 	"zonas_almacenamiento",
 ]
 
+# Acciones que existieron antes y ya no se usan. Se borran para que el Input Map
+# no acumule teclas muertas (por ejemplo, `drop` se partió en una por mano).
+const ACCIONES_OBSOLETAS: Array[StringName] = [&"drop"]
+
 
 func _run() -> void:
 	var acciones: Dictionary = _definir_acciones()
 	_registrar_acciones(acciones)
+	_borrar_obsoletas()
 	_nombrar_capas()
 
 	var error: Error = ProjectSettings.save()
@@ -43,7 +48,12 @@ func _definir_acciones() -> Dictionary:
 		&"interact": [_tecla(KEY_E)],        # subir/bajar del vehículo, usar
 		&"push": [_tecla(KEY_SPACE)],        # mantener para empujar la zorra
 		&"grab": [_boton_mouse(MOUSE_BUTTON_LEFT)],
-		&"drop": [_tecla(KEY_Q)],
+		# Una acción de soltar por mano (tarea 14). La mano 0 es la derecha.
+		&"drop_left": [_tecla(KEY_Q)],
+		&"drop_right": [_tecla(KEY_R)],
+		# La mochila no tiene volumen físico: se maneja con estas dos acciones.
+		&"backpack_store": [_tecla(KEY_F)],  # guarda lo que hay en la mano
+		&"backpack_take": [_tecla(KEY_G)],   # saca una unidad a la mano
 		&"place": [_boton_mouse(MOUSE_BUTTON_RIGHT)],  # confirma el fantasma
 		# Dos acciones porque una sola no sabe en qué dirección giró la rueda.
 		&"rotate_cw": [_boton_mouse(MOUSE_BUTTON_WHEEL_UP)],
@@ -75,6 +85,15 @@ func _registrar_acciones(acciones: Dictionary) -> void:
 		)
 
 
+func _borrar_obsoletas() -> void:
+	for nombre: StringName in ACCIONES_OBSOLETAS:
+		var clave: String = "input/" + String(nombre)
+		if ProjectSettings.has_setting(clave):
+			# Poner un ajuste en null lo elimina de ProjectSettings.
+			ProjectSettings.set_setting(clave, null)
+			print("Acción obsoleta eliminada: %s" % nombre)
+
+
 func _nombrar_capas() -> void:
 	for i: int in CAPAS_FISICAS_3D.size():
 		# Con nombre, el inspector muestra "mundo" en vez de "Layer 1".
@@ -87,6 +106,9 @@ func _verificar_acciones(acciones: Dictionary) -> void:
 	for nombre: StringName in acciones:
 		if not InputMap.has_action(nombre) or InputMap.action_get_events(nombre).is_empty():
 			push_warning("Falta la acción: %s" % nombre)
+	for nombre: StringName in ACCIONES_OBSOLETAS:
+		if InputMap.has_action(nombre):
+			push_warning("Sigue existiendo la acción obsoleta: %s" % nombre)
 
 
 # Git no guarda carpetas vacías: dejamos un .gitkeep en las que no tengan nada.

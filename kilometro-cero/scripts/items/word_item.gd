@@ -14,7 +14,27 @@ const LAYER_ITEMS: int = 1 << 2
 # Piso de masa para que un objeto liviano no se comporte de forma rara.
 const MIN_MASS: float = 0.05
 
+# Escena genérica para stacks cuyo ItemData no trae una propia. Se carga con
+# load() y no con preload(): esta escena referencia este script, y un preload
+# en el sentido contrario formaría un ciclo.
+const DEFAULT_SCENE_PATH: String = "res://scenes/items/world_item.tscn"
+
 var stack: ItemStack
+
+
+## Crea el objeto físico de un stack (todavía fuera del árbol: quien lo llama
+## decide dónde agregarlo). Usa la escena del ItemData o la genérica.
+## Devuelve null si la escena no tiene un WorldItem como raíz.
+static func create(new_stack: ItemStack) -> WorldItem:
+	var scene: PackedScene = new_stack.item.scene
+	if scene == null:
+		scene = load(DEFAULT_SCENE_PATH) as PackedScene
+	var item := scene.instantiate() as WorldItem
+	if item == null:
+		push_error("La escena de '%s' no tiene un WorldItem como raíz." % new_stack.item.id)
+		return null
+	item.setup(new_stack)
+	return item
 
 
 func _ready() -> void:

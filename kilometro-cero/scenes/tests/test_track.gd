@@ -18,9 +18,9 @@ func _ready() -> void:
 	_comprobar_terreno()
 
 	if _fallos == 0:
-		print("Tarea 6: todas las comprobaciones pasaron.")
+		print("Via Manual: todas las comprobaciones pasaron.")
 	else:
-		push_error("Tarea 6: fallaron %d comprobaciones." % _fallos)
+		push_error("Via Manual: fallaron %d comprobaciones." % _fallos)
 
 
 func _comprobar_via() -> void:

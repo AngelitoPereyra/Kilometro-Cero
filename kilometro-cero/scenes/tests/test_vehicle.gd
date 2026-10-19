@@ -1,5 +1,5 @@
 extends Node3D
-## Prueba de la tarea 8: VehicleData, aceleración y vehículo sobre la vía.
+## Prueba de la Vehiculo: VehicleData, aceleración y vehículo sobre la vía.
 ## Las comprobaciones corren con simulate() en pasos fijos, sin esperar cuadros reales.
 ## Supone la vía de 200 m de las tareas 6 y 7, y un VehicleData con
 ## min_track_condition > 0 y max_speed mayor que la velocidad en la condición mínima.
@@ -29,7 +29,7 @@ func _ready() -> void:
 	_probar_orientacion()
 
 	if _fallos == 0:
-		print("Tarea 8: todas las comprobaciones pasaron.")
+		print("Vehiculo: todas las comprobaciones pasaron.")
 	else:
 		push_error("Tarea 8: fallaron %d comprobaciones." % _fallos)
 

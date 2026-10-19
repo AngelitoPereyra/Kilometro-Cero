@@ -33,9 +33,9 @@ func _ready() -> void:
 	_probar_jugador()
 
 	if _fallos == 0:
-		print("Tarea 10: todas las comprobaciones pasaron.")
+		print("Necesidades: todas las comprobaciones pasaron.")
 	else:
-		push_error("Tarea 10: fallaron %d comprobaciones." % _fallos)
+		push_error("Necesidades: fallaron %d comprobaciones." % _fallos)
 	_dejar_listo_para_jugar()
 
 

@@ -40,9 +40,9 @@ func _ready() -> void:
 		_probar_fatiga()
 
 	if _fallos == 0:
-		print("Tarea 12 (parte 2): todas las comprobaciones pasaron.")
+		print("Carga (parte 2): todas las comprobaciones pasaron.")
 	else:
-		push_error("Tarea 12 (parte 2): fallaron %d comprobaciones." % _fallos)
+		push_error("Carga (parte 2): fallaron %d comprobaciones." % _fallos)
 	_dejar_listo_para_jugar()
 
 
