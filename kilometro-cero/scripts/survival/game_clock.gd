@@ -20,11 +20,12 @@ static func hours_per_real_second(day_length_minutes: float) -> float:
 
 
 ## "08:30". Se trunca el minuto para que 23.999 sea 23:59 y nunca "24:00".
-@warning_ignore("integer_division")
 static func format_time(time_of_day_hours: float) -> String:
 	var total_minutes: int = clampi(floori(time_of_day_hours * 60.0), 0, 1439)
-	return "%02d:%02d" % [total_minutes / 60, total_minutes % 60]
-
+	# Dividir por 60.0 (decimal) y redondear hacia abajo da las horas enteras sin usar
+	# división entera, que es la que dispara la advertencia.
+	var hours: int = floori(total_minutes / 60.0)
+	return "%02d:%02d" % [hours, total_minutes % 60]
 
 ## Avanza el reloj. Un salto largo (mate, desmayo) puede cruzar varias medianoches.
 func advance(hours: float) -> void:

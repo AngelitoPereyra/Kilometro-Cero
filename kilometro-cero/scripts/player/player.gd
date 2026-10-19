@@ -7,8 +7,14 @@ extends CharacterBody3D
 ## paso de física, y por eso se procesa DESPUÉS del vehículo (ver _ready).
 ## Tiene un nodo Needs hijo. Cuando una necesidad llega al límite, o cuando se baja de un
 ## vehículo a demasiada velocidad, se desmaya (faint) y al rato despierta (wake_up).
+## Carga: tiene una mochila (el nodo Backpack, un StorageContainer armado con `backpack_data`)
+## y un nodo Encumbrance que suma el peso. Cuando cambia el cociente peso/capacidad, el
+## jugador camina más lento y se cansa más (D20, D50).
 
 enum State { WALKING, RIDING, FAINTED }
+
+## Nombre de la fuente con la que la mochila informa su peso a Encumbrance.
+const BACKPACK_SOURCE: StringName = &"backpack"
 
 @export_range(0.5, 10.0, 0.1, "suffix:m/s") var walk_speed: float = 4.0
 @export_range(1.0, 100.0, 0.5) var acceleration: float = 25.0
@@ -17,11 +23,17 @@ enum State { WALKING, RIDING, FAINTED }
 ## Distancia máxima al asiento para poder subir.
 @export_range(0.5, 10.0, 0.1, "suffix:m") var interaction_range: float = 3.0
 
+@export_group("Carga")
+## Mochila equipada: define las zonas del nodo Backpack y su aporte de capacidad.
+@export var backpack_data: BackpackData
+
 var state: State = State.WALKING
 
 var _vehicle: Vehicle
 var _camera: ThirdPersonCamera
 var _needs: Needs
+var _encumbrance: Encumbrance
+var _backpack: StorageContainer
 var _faint_time_left: float = 0.0
 
 @onready var _visual: Node3D = $Visual
@@ -76,6 +88,14 @@ func _ready() -> void:
 		push_error("Player necesita un nodo Needs como hijo directo.")
 		set_physics_process(false)
 		return
+	_encumbrance = _find_encumbrance()
+	_backpack = _find_backpack()
+	if _encumbrance == null or _backpack == null:
+		push_error("Player necesita como hijos directos un nodo Encumbrance y un StorageContainer (la mochila, llamado Backpack).")
+		set_physics_process(false)
+		return
+	_setup_backpack()
+	_encumbrance.ratio_changed.connect(_on_encumbrance_changed)
 	_needs.fainted.connect(faint)
 
 
@@ -106,6 +126,19 @@ func get_camera() -> ThirdPersonCamera:
 
 func get_needs() -> Needs:
 	return _needs
+
+
+func get_encumbrance() -> Encumbrance:
+	return _encumbrance
+
+
+func get_backpack() -> StorageContainer:
+	return _backpack
+
+
+## Velocidad de caminata actual: la base por la penalización de la carga.
+func get_walk_speed() -> float:
+	return walk_speed * _encumbrance.get_speed_multiplier()
 
 
 ## Sube al vehículo más cercano al alcance. Devuelve false si no hay ninguno.
@@ -169,6 +202,27 @@ func wake_up() -> void:
 	state = State.WALKING
 
 
+# Arma la mochila con los datos de `backpack_data` y la engancha al peso total.
+# Va en este orden: primero se arma el contenedor y recién después se lo registra.
+func _setup_backpack() -> void:
+	if backpack_data == null or backpack_data.layout == null:
+		push_warning("Player no tiene una BackpackData con layout asignada: no podrá guardar objetos.")
+		return
+	if _backpack.config == null:
+		push_error("El nodo Backpack del jugador necesita un StorageConfig asignado.")
+		return
+	_backpack.setup(backpack_data.layout, _backpack.config)
+	_encumbrance.set_capacity_bonus(BACKPACK_SOURCE, backpack_data.weight_capacity_bonus)
+	_encumbrance.track_container(BACKPACK_SOURCE, _backpack)
+
+
+# Encumbrance no conoce a Needs ni al movimiento: el jugador, que sí, aplica los
+# multiplicadores y es el único que avisa por el bus (mismo criterio que el desmayo, D46).
+func _on_encumbrance_changed(ratio: float) -> void:
+	_needs.fatigue_multiplier = _encumbrance.get_fatigue_multiplier()
+	EventBus.encumbrance_changed.emit(ratio)
+
+
 func _leave_vehicle() -> void:
 	var vehicle: Vehicle = _vehicle
 	_vehicle = null
@@ -182,7 +236,7 @@ func _leave_vehicle() -> void:
 func _walk(delta: float) -> void:
 	var input_vector: Vector2 = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 	var direction: Vector3 = world_direction(input_vector, _camera.yaw)
-	var target: Vector3 = direction * walk_speed
+	var target: Vector3 = direction * get_walk_speed()
 	velocity.x = move_toward(velocity.x, target.x, acceleration * delta)
 	velocity.z = move_toward(velocity.z, target.z, acceleration * delta)
 	if not is_on_floor():
@@ -233,4 +287,22 @@ func _find_needs() -> Needs:
 		var needs := child as Needs
 		if needs != null:
 			return needs
+	return null
+
+
+func _find_encumbrance() -> Encumbrance:
+	for child: Node in get_children():
+		var encumbrance := child as Encumbrance
+		if encumbrance != null:
+			return encumbrance
+	return null
+
+
+# Por ahora el único StorageContainer hijo directo es la mochila. Cuando haya más de uno
+# (cinturón de herramientas, por ejemplo), se distinguirán por `container_id`.
+func _find_backpack() -> StorageContainer:
+	for child: Node in get_children():
+		var container := child as StorageContainer
+		if container != null:
+			return container
 	return null

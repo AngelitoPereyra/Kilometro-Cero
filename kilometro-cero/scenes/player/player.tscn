@@ -1,9 +1,14 @@
 [gd_scene format=3 uid="uid://dwcrgtb107qxo"]
 
 [ext_resource type="Script" uid="uid://dhd4swm8v2mfs" path="res://scripts/player/player.gd" id="1_dovo2"]
+[ext_resource type="Resource" uid="uid://bhhwoe8mqkvp3" path="res://data/items/backpack_basic.tres" id="2_5gtgg"]
 [ext_resource type="Script" uid="uid://d2i61ukw5aot7" path="res://scripts/player/third_person_camera.gd" id="2_gmlin"]
 [ext_resource type="Script" uid="uid://cel5qx73ysrhc" path="res://scripts/survival/needs.gd" id="3_lvxji"]
 [ext_resource type="Resource" uid="uid://28sw310mh5pm" path="res://data/config/needs_config.tres" id="4_p47bc"]
+[ext_resource type="Script" uid="uid://bc7cjrnukb21m" path="res://scripts/storage/storage_container.gd" id="6_h17s1"]
+[ext_resource type="Resource" uid="uid://ddc7ut7gnxd7g" path="res://data/config/storage_config.tres" id="7_je7p5"]
+[ext_resource type="Script" uid="uid://c7mylju0tmrll" path="res://scripts/storage/encumbrance.gd" id="8_fm80t"]
+[ext_resource type="Resource" uid="uid://0m4flpmv7u3c" path="res://data/config/carry_config.tres" id="9_gx1jg"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_k6d34"]
 radius = 0.35
@@ -22,6 +27,7 @@ size = Vector3(0.2, 0.2, 0.4)
 [node name="Player" type="CharacterBody3D" unique_id=1709582427]
 collision_layer = 2
 script = ExtResource("1_dovo2")
+backpack_data = ExtResource("2_5gtgg")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1421013401]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
@@ -52,3 +58,14 @@ margin = 0.1
 script = ExtResource("3_lvxji")
 config = ExtResource("4_p47bc")
 metadata/_custom_type_script = "uid://cel5qx73ysrhc"
+
+[node name="Backpack" type="Node" parent="." unique_id=1406604076]
+script = ExtResource("6_h17s1")
+container_id = &"backpack"
+config = ExtResource("7_je7p5")
+metadata/_custom_type_script = "uid://bc7cjrnukb21m"
+
+[node name="Encumbrance" type="Node" parent="." unique_id=357038498]
+script = ExtResource("8_fm80t")
+config = ExtResource("9_gx1jg")
+metadata/_custom_type_script = "uid://c7mylju0tmrll"

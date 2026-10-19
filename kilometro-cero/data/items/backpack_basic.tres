@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="BackpackData" format=3 uid="uid://bhhwoe8mqkvp3"]
+
+[ext_resource type="Script" uid="uid://064m50k6a4pr" path="res://scripts/storage/backpack_data.gd" id="1_bf2od"]
+[ext_resource type="Script" uid="uid://36n3lb0yd50r" path="res://scripts/storage/storage_layout.gd" id="1_bkus2"]
+[ext_resource type="Script" uid="uid://yq6dcjmyxnlv" path="res://scripts/storage/zone_spec.gd" id="2_106vq"]
+
+[sub_resource type="Resource" id="Resource_bkus2"]
+script = ExtResource("2_106vq")
+count = 4
+metadata/_custom_type_script = "uid://yq6dcjmyxnlv"
+
+[sub_resource type="Resource" id="Resource_106vq"]
+script = ExtResource("2_106vq")
+size_class = 1
+metadata/_custom_type_script = "uid://yq6dcjmyxnlv"
+
+[sub_resource type="Resource" id="Resource_itxvh"]
+script = ExtResource("1_bkus2")
+zones = Array[ExtResource("2_106vq")]([SubResource("Resource_bkus2"), SubResource("Resource_106vq")])
+metadata/_custom_type_script = "uid://36n3lb0yd50r"
+
+[resource]
+script = ExtResource("1_bf2od")
+layout = SubResource("Resource_itxvh")
+weight_capacity_bonus = 10.0
+id = &"backpack_basic"
+display_name = "Mochila de tela"
+size_class = 1
+unit_weight = 1.5
+metadata/_custom_type_script = "uid://064m50k6a4pr"
