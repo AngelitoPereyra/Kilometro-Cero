@@ -48,7 +48,9 @@ signal mate_ended()
 signal item_stored(container_id: StringName, stack: ItemStack)
 ## Sale algo de un contenedor con identificador.
 signal item_taken(container_id: StringName, stack: ItemStack)
+## El jugador toma con las manos un objeto del mundo.
+signal item_held(stack: ItemStack)
+## El jugador suelta un objeto que tenía en las manos.
+signal item_released(stack: ItemStack)
 
-@warning_ignore_restore("unused_signal")
-@warning_ignore_start("unused_signal")
 @warning_ignore_restore("unused_signal")

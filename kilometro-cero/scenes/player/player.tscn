@@ -9,6 +9,8 @@
 [ext_resource type="Resource" uid="uid://ddc7ut7gnxd7g" path="res://data/config/storage_config.tres" id="7_je7p5"]
 [ext_resource type="Script" uid="uid://c7mylju0tmrll" path="res://scripts/storage/encumbrance.gd" id="8_fm80t"]
 [ext_resource type="Resource" uid="uid://0m4flpmv7u3c" path="res://data/config/carry_config.tres" id="9_gx1jg"]
+[ext_resource type="Script" uid="uid://1i47mudf3e7g" path="res://scripts/player/hands.gd" id="10_je7p5"]
+[ext_resource type="Script" uid="uid://dr2ao2iu16krs" path="res://scripts/player/grabber.gd" id="11_fm80t"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_k6d34"]
 radius = 0.35
@@ -69,3 +71,11 @@ metadata/_custom_type_script = "uid://bc7cjrnukb21m"
 script = ExtResource("8_fm80t")
 config = ExtResource("9_gx1jg")
 metadata/_custom_type_script = "uid://c7mylju0tmrll"
+
+[node name="Hands" type="Node" parent="." unique_id=1801620457]
+script = ExtResource("10_je7p5")
+metadata/_custom_type_script = "uid://1i47mudf3e7g"
+
+[node name="Grabber" type="Node" parent="." unique_id=1196803290]
+script = ExtResource("11_fm80t")
+metadata/_custom_type_script = "uid://dr2ao2iu16krs"

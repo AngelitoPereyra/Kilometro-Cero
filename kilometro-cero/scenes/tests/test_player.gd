@@ -69,8 +69,7 @@ func _probar_subir_y_bajar() -> void:
 	# Lejos del vehículo no se puede subir.
 	_player.global_position = Vector3(50.0, 0.0, 0.0)
 	_comprobar(not _player.try_mount(), "Lejos del vehículo no se puede subir")
-	_comprobar(_player.state == Player.State.FAINTED, "Tras el accidente el jugador queda desmayado (tarea 10)")
-	_player.wake_up()
+
 
 	# Cerca sí, y queda sentado en el asiento.
 	_player.global_position = Vector3(2.0, 0.0, 0.0)
@@ -96,7 +95,9 @@ func _probar_subir_y_bajar() -> void:
 	_vehicle.speed = 5.0
 	_player.dismount()
 	_comprobar(_accidentes == 1, "Bajar a 5 m/s emite player_fainted (accidente)")
-	_comprobar(_player.state == Player.State.WALKING, "Tras el accidente el jugador queda caminando")
+	_comprobar(_player.state == Player.State.FAINTED, "Tras el accidente el jugador queda desmayado (tarea 10)")
+	_player.wake_up()
+	_comprobar(_player.state == Player.State.WALKING, "Al despertar el jugador vuelve a caminar")
 
 
 func _al_desmayar(cause: StringName) -> void:

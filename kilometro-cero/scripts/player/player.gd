@@ -15,6 +15,8 @@ enum State { WALKING, RIDING, FAINTED }
 
 ## Nombre de la fuente con la que la mochila informa su peso a Encumbrance.
 const BACKPACK_SOURCE: StringName = &"backpack"
+## Nombre de la fuente con la que las manos informan su peso a Encumbrance.
+const HANDS_SOURCE: StringName = &"hands"
 
 @export_range(0.5, 10.0, 0.1, "suffix:m/s") var walk_speed: float = 4.0
 @export_range(1.0, 100.0, 0.5) var acceleration: float = 25.0
@@ -34,6 +36,7 @@ var _camera: ThirdPersonCamera
 var _needs: Needs
 var _encumbrance: Encumbrance
 var _backpack: StorageContainer
+var _hands: Hands
 var _faint_time_left: float = 0.0
 
 @onready var _visual: Node3D = $Visual
@@ -94,8 +97,14 @@ func _ready() -> void:
 		push_error("Player necesita como hijos directos un nodo Encumbrance y un StorageContainer (la mochila, llamado Backpack).")
 		set_physics_process(false)
 		return
+	_hands = _find_hands()
+	if _hands == null:
+		push_error("Player necesita un nodo Hands como hijo directo.")
+		set_physics_process(false)
+		return
 	_setup_backpack()
 	_encumbrance.ratio_changed.connect(_on_encumbrance_changed)
+	_hands.hands_changed.connect(_on_hands_changed)
 	_needs.fainted.connect(faint)
 
 
@@ -135,7 +144,9 @@ func get_encumbrance() -> Encumbrance:
 func get_backpack() -> StorageContainer:
 	return _backpack
 
-
+func get_hands() -> Hands:
+	return _hands
+	
 ## Velocidad de caminata actual: la base por la penalización de la carga.
 func get_walk_speed() -> float:
 	return walk_speed * _encumbrance.get_speed_multiplier()
@@ -222,6 +233,12 @@ func _on_encumbrance_changed(ratio: float) -> void:
 	_needs.fatigue_multiplier = _encumbrance.get_fatigue_multiplier()
 	EventBus.encumbrance_changed.emit(ratio)
 
+# Mismo patrón que la carga (D50): las manos informan su peso y el jugador lo
+# suma; Hands no conoce a Encumbrance. Solo el jugador avisa por el bus.
+func _on_hands_changed() -> void:
+	_encumbrance.set_load(HANDS_SOURCE, _hands.get_total_weight())
+	EventBus.hands_changed.emit()
+	
 
 func _leave_vehicle() -> void:
 	var vehicle: Vehicle = _vehicle
@@ -297,6 +314,12 @@ func _find_encumbrance() -> Encumbrance:
 			return encumbrance
 	return null
 
+func _find_hands() -> Hands:
+	for child: Node in get_children():
+		var hands := child as Hands
+		if hands != null:
+			return hands
+	return null
 
 # Por ahora el único StorageContainer hijo directo es la mochila. Cuando haya más de uno
 # (cinturón de herramientas, por ejemplo), se distinguirán por `container_id`.

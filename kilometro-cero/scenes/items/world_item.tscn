@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://b6qcdac6ukbep"]
 
 [ext_resource type="Script" uid="uid://wk7iu6gmoxm0" path="res://scripts/items/word_item.gd" id="1_lecgq"]
+[ext_resource type="Script" uid="uid://bgoflfer2rmd0" path="res://scripts/components/holdable.gd" id="2_yelp0"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_k6d34"]
 size = Vector3(0.3, 0.3, 0.3)
@@ -16,3 +17,6 @@ mesh = SubResource("BoxMesh_k6d34")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=658054562]
 shape = SubResource("BoxShape3D_k6d34")
+
+[node name="Holdeable" type="Node" parent="." unique_id=1089264502]
+script = ExtResource("2_yelp0")
