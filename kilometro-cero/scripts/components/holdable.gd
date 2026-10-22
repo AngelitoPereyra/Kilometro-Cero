@@ -1,12 +1,20 @@
 class_name Holdable extends Node
 ## Capacidad de "se puede tomar con las manos". Va como hijo directo de un
-## WorldItem. Maneja el estado de "en la mano" y la previsualización de
-## dónde caería. No sabe quién lo sostiene: eso lo decide el Grabber.
+## WorldItem. Maneja el estado de "en la mano" y el fantasma que muestra dónde
+## quedaría el objeto. No sabe quién lo sostiene: eso lo decide el Grabber.
+## La validación de si un lugar sirve la hace Placeable; acá solo se dibuja.
+
+# Colores del fantasma. Blanco azulado = dónde caería si lo soltás (sin validar).
+# Verde = se puede colocar ahí, rojo = no se puede (modo apuntar, tarea 15).
+const GHOST_DROP: Color = Color(0.85, 0.9, 1.0, 0.25)
+const GHOST_VALID: Color = Color(0.3, 1.0, 0.3, 0.4)
+const GHOST_INVALID: Color = Color(1.0, 0.3, 0.3, 0.4)
 
 var is_held: bool = false
 
 var _body: WorldItem
 var _preview: MeshInstance3D
+var _preview_material: StandardMaterial3D
 var _preview_failed: bool = false
 # Posición del mesh respecto del cuerpo, para ubicar el fantasma igual.
 var _preview_local: Transform3D = Transform3D.IDENTITY
@@ -51,20 +59,36 @@ func end_hold(inherited_velocity: Vector3 = Vector3.ZERO) -> void:
 	_body.angular_velocity = Vector3.ZERO
 
 
-## Muestra el fantasma apoyado en `ground_point`, girado `yaw`.
-func show_preview(ground_point: Vector3, yaw: float) -> void:
+## Transform que tendría el cuerpo con su base apoyada en `ground_point` y
+## girado `yaw`. Lo usa Placeable para consultar si ese lugar está libre.
+func body_transform_at(ground_point: Vector3, yaw: float) -> Transform3D:
 	if _preview == null and not _preview_failed:
 		_build_preview()
-	if _preview == null:
-		return
-	var body_transform := Transform3D(Basis(Vector3.UP, yaw), ground_point + Vector3.UP * _foot_offset)
-	_preview.global_transform = body_transform * _preview_local
-	_preview.visible = true
+	return Transform3D(Basis(Vector3.UP, yaw), ground_point + Vector3.UP * _foot_offset)
+
+
+## Fantasma del modo apuntar: verde si se puede dejar ahí, rojo si no.
+func show_preview(ground_point: Vector3, yaw: float, valid: bool = true) -> void:
+	_show(ground_point, yaw, GHOST_VALID if valid else GHOST_INVALID)
+
+
+## Fantasma neutro que muestra dónde caería el objeto si lo soltás (sin validar).
+func show_drop_hint(ground_point: Vector3, yaw: float) -> void:
+	_show(ground_point, yaw, GHOST_DROP)
 
 
 func hide_preview() -> void:
 	if _preview != null:
 		_preview.visible = false
+
+
+func _show(ground_point: Vector3, yaw: float, color: Color) -> void:
+	var body_transform: Transform3D = body_transform_at(ground_point, yaw)
+	if _preview == null:
+		return
+	_preview_material.albedo_color = color
+	_preview.global_transform = body_transform * _preview_local
+	_preview.visible = true
 
 
 # El fantasma se arma recién cuando hace falta, copiando el primer mesh del objeto.
@@ -80,9 +104,10 @@ func _build_preview() -> void:
 	_preview_local = _body.global_transform.affine_inverse() * source.global_transform
 	# Transform3D * AABB devuelve el AABB transformado; su position.y es lo más bajo.
 	_foot_offset = -(_preview_local * source.mesh.get_aabb()).position.y
+	_preview_material = _make_ghost_material()
 	_preview = MeshInstance3D.new()
 	_preview.mesh = source.mesh
-	_preview.material_override = _make_ghost_material()
+	_preview.material_override = _preview_material
 	_preview.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_preview.visible = false
 	# top_level: no hereda el movimiento del cuerpo; queda donde lo ponemos en el mundo.
@@ -92,7 +117,7 @@ func _build_preview() -> void:
 
 func _make_ghost_material() -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
-	material.albedo_color = Color(0.3, 1.0, 0.3, 0.4)
+	material.albedo_color = GHOST_DROP
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	return material

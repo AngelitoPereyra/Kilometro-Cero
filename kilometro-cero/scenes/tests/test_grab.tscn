@@ -72,7 +72,7 @@ metadata/_custom_type_script = "uid://63tp0rc2s27h"
 
 [node name="TrackSegment" type="Node" parent="Track" unique_id=1368644274]
 script = ExtResource("4_rtfpj")
-condition = 0.31
+condition = 0.9
 metadata/_custom_type_script = "uid://cr8u1ddxfxvhv"
 
 [node name="Vehicle" parent="Track" unique_id=767872902 instance=ExtResource("5_2yr7i")]

@@ -21,6 +21,10 @@ const DEFAULT_SCENE_PATH: String = "res://scenes/items/world_item.tscn"
 
 var stack: ItemStack
 
+# Teletransporte pendiente: se aplica en _integrate_forces (ver teleport_to).
+var _pending_teleport: Transform3D = Transform3D.IDENTITY
+var _has_pending_teleport: bool = false
+
 
 ## Crea el objeto físico de un stack (todavía fuera del árbol: quien lo llama
 ## decide dónde agregarlo). Usa la escena del ItemData o la genérica.
@@ -64,3 +68,23 @@ func set_held(held: bool) -> void:
 		collision_layer = LAYER_ITEMS
 		# Choca con el mundo y con otros objetos; no con el jugador.
 		collision_mask = LAYER_WORLD | LAYER_ITEMS
+
+
+## Teletransporta el cuerpo a `target` (sin velocidad). Se aplica en el próximo paso
+## de física, dentro de _integrate_forces: es el camino que Godot documenta para
+## mover un RigidBody3D de forma segura. Cambiarle el transform a mano justo después
+## de liberarlo puede perderse según cómo trate el motor ese cambio de modo.
+func teleport_to(target: Transform3D) -> void:
+	_pending_teleport = target
+	_has_pending_teleport = true
+	# Un cuerpo dormido no ejecutaría _integrate_forces.
+	sleeping = false
+
+
+func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	if not _has_pending_teleport:
+		return
+	_has_pending_teleport = false
+	state.transform = _pending_teleport
+	state.linear_velocity = Vector3.ZERO
+	state.angular_velocity = Vector3.ZERO

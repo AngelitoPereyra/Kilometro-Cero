@@ -1,5 +1,5 @@
 extends Node
-## Prueba de Hands y WorldItem (tarea 13, parte 1).
+## Prueba de Hands (una sola mano, D68) y WorldItem.
 ## Se corre con F6 con esta escena abierta; el resultado sale en "Salida".
 
 var _passed: int = 0
@@ -12,7 +12,7 @@ var _signal_count: int = 0
 func _ready() -> void:
 	_test_hands()
 	_test_world_item()
-	print("--- Hands/WorldItem: %d OK, %d con error ---" % [_passed, _failed])
+	print("--- Manos: %d OK, %d con error ---" % [_passed, _failed])
 
 
 func _check(condition: bool, message: String) -> void:
@@ -40,50 +40,49 @@ func _test_hands() -> void:
 	var hands := Hands.new()
 	hands.hands_changed.connect(_on_hands_changed)
 
-	_check(hands.free_hands() == 2, "empieza con 2 manos libres")
-	_check(not hands.is_two_handed_occupied(), "empieza sin objeto de dos manos")
+	_check(Hands.hands_needed(ItemData.HandsRequired.ONE) == 1, "Una mano: se ve con 1")
+	_check(Hands.hands_needed(ItemData.HandsRequired.TWO) == 2, "Dos manos: se ve con 2")
+	_check(Hands.hands_needed(ItemData.HandsRequired.CRANE) == 0, "Grúa: no se toma a mano")
+
+	_check(hands.is_empty(), "Empieza con la mano libre")
+	_check(hands.get_held() == null, "Empieza sin nada")
+	_check(is_zero_approx(hands.get_total_weight()), "Sin nada, el peso es 0")
+	_check(not hands.is_two_handed_occupied(), "Empieza sin objeto de dos manos")
 
 	var chatarra := _make_stack(&"chatarra", ItemData.HandsRequired.ONE, 2.0)
 	var yerba := _make_stack(&"yerba", ItemData.HandsRequired.ONE, 1.0)
-	var comida := _make_stack(&"comida", ItemData.HandsRequired.ONE, 0.5)
 	var riel := _make_stack(&"riel", ItemData.HandsRequired.TWO, 40.0)
 	var motor := _make_stack(&"motor", ItemData.HandsRequired.CRANE, 500.0)
 
-	# Objetos de una mano
-	_check(hands.hold(chatarra), "toma un objeto de una mano")
-	_check(hands.free_hands() == 1, "queda 1 mano libre")
-	_check(hands.hold(yerba), "toma un segundo objeto de una mano")
-	_check(hands.free_hands() == 0, "no quedan manos libres")
-	_check(not hands.hold(comida), "no toma un tercer objeto")
-	_check(not hands.can_hold(chatarra), "no repite el mismo stack")
-	_check(is_equal_approx(hands.get_total_weight(), 3.0), "peso = 2 + 1 kg")
-	_check(_signal_count == 2, "2 señales por 2 tomas exitosas")
+	# Un objeto de una mano
+	_check(hands.hold(chatarra), "Toma un objeto de una mano")
+	_check(not hands.is_empty(), "Ya no está libre")
+	_check(hands.get_held() == chatarra, "Guarda la referencia real, no una copia")
+	_check(is_equal_approx(hands.get_total_weight(), 2.0), "Peso = 2 kg")
+	_check(not hands.is_two_handed_occupied(), "Una mano no impide empujar la zorra")
+	_check(_signal_count == 1, "Una señal por tomar")
+
+	# Una sola mano: no hay lugar para otro
+	_check(not hands.can_hold(yerba), "Con la mano ocupada no se puede tomar otro")
+	_check(not hands.hold(yerba), "hold falla con la mano ocupada")
+	_check(not hands.can_hold(chatarra), "Tampoco el mismo objeto de nuevo")
+	_check(_signal_count == 1, "Un intento fallido no emite señal")
 
 	# Soltar
-	_check(hands.release(0) == chatarra, "release(0) devuelve el stack de la mano 0")
-	_check(hands.free_hands() == 1, "después de soltar hay 1 mano libre")
-	_check(hands.release(0) == null, "soltar una mano vacía devuelve null")
-	_check(hands.release(-1) == null and hands.release(2) == null,
-			"índices fuera de rango devuelven null")
-	_check(_signal_count == 3, "soltar vacío o fuera de rango no emite señal")
-	hands.release(1)
+	_check(hands.release() == chatarra, "release devuelve lo que había")
+	_check(hands.is_empty(), "Después de soltar queda libre")
+	_check(hands.release() == null, "Soltar con la mano vacía devuelve null")
+	_check(_signal_count == 2, "Soltar vacío no emite señal")
 
-	# Dos manos
-	_check(hands.hold(chatarra), "vuelve a tomar una de una mano")
-	_check(not hands.can_hold(riel), "dos manos no entra con una mano ocupada")
-	hands.release(0)
-	_check(hands.hold(riel), "toma un objeto de dos manos con las manos vacías")
-	_check(hands.free_hands() == 0, "dos manos ocupa ambas")
-	_check(hands.is_two_handed_occupied(), "detecta objeto de dos manos")
-	_check(is_equal_approx(hands.get_total_weight(), 40.0),
-			"el peso de dos manos se cuenta una sola vez")
-	_check(hands.get_stack(0) == hands.get_stack(1), "ambas manos apuntan al mismo stack")
-	_check(hands.release(1) == riel, "soltar por la mano 1 devuelve el objeto de dos manos")
-	_check(hands.free_hands() == 2, "soltar dos manos libera las dos")
-	_check(not hands.is_two_handed_occupied(), "ya no hay objeto de dos manos")
+	# Dos manos: ocupa el mismo único lugar
+	_check(hands.hold(riel), "Toma un objeto de dos manos")
+	_check(hands.is_two_handed_occupied(), "Detecta el objeto de dos manos")
+	_check(is_equal_approx(hands.get_total_weight(), 40.0), "El peso se cuenta una sola vez")
+	_check(hands.release() == riel, "Suelta el objeto de dos manos")
+	_check(not hands.is_two_handed_occupied(), "Ya no hay objeto de dos manos")
 
 	# Casos inválidos
-	_check(not hands.can_hold(motor), "CRANE no se puede tomar a mano")
+	_check(not hands.can_hold(motor), "Grúa no se puede tomar a mano")
 	_check(not hands.hold(null), "null no se puede tomar")
 	hands.free()
 
@@ -94,7 +93,7 @@ func _test_world_item() -> void:
 	var stack := _make_stack(&"bulones", ItemData.HandsRequired.ONE, 10.0, 3)
 	item.setup(stack)
 	_check(item.stack == stack, "WorldItem guarda su stack")
-	_check(is_equal_approx(item.mass, 30.0), "masa = peso del lote (10 kg x3)")
-	_check(item.collision_layer == WorldItem.LAYER_ITEMS, "está en la capa 3 (objetos sueltos)")
-	_check(item.is_in_group(WorldItem.GROUP), "pertenece al grupo world_items")
+	_check(is_equal_approx(item.mass, 30.0), "Masa = peso del lote (10 kg x3)")
+	_check(item.collision_layer == WorldItem.LAYER_ITEMS, "Está en la capa 3 (objetos sueltos)")
+	_check(item.is_in_group(WorldItem.GROUP), "Pertenece al grupo world_items")
 	item.queue_free()

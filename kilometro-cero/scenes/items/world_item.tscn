@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://wk7iu6gmoxm0" path="res://scripts/items/word_item.gd" id="1_lecgq"]
 [ext_resource type="Script" uid="uid://bgoflfer2rmd0" path="res://scripts/components/holdable.gd" id="2_yelp0"]
+[ext_resource type="Script" uid="uid://dkg60vfsqe8vi" path="res://scripts/components/placeable.gd" id="3_rm7n5"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_k6d34"]
 size = Vector3(0.3, 0.3, 0.3)
@@ -20,3 +21,7 @@ shape = SubResource("BoxShape3D_k6d34")
 
 [node name="Holdeable" type="Node" parent="." unique_id=1089264502]
 script = ExtResource("2_yelp0")
+
+[node name="Placeable" type="Node" parent="." unique_id=277356371]
+script = ExtResource("3_rm7n5")
+metadata/_custom_type_script = "uid://dkg60vfsqe8vi"

@@ -1,79 +1,85 @@
 class_name Grabber extends Node
-## Componente del jugador: toma y suelta objetos del mundo con las manos, saca
-## unidades de los contenedores (StorageArea) cercanos y maneja la mochila.
-## Hijo directo de Player. Es el único que lee las acciones de manos y mochila.
+## Componente del jugador: recoge objetos del mundo según su tamaño, los suelta,
+## los coloca con precisión (fantasma) y saca unidades de los contenedores cercanos.
+## Hijo directo de Player. Es el único que lee las acciones de manos.
 ## No cachea las referencias del jugador: las pide cuando las usa, porque
 ## Player termina de armarse DESPUÉS de sus hijos (_ready va de abajo hacia arriba).
+##
+## Regla de recogida (D69): los pequeños van solos a la mochila; los medianos y
+## grandes quedan en la mano; si la mano está ocupada, lo que hay se guarda solo en
+## la mochila; si no entra, no se toma nada y avisa.
 
 ## Se emite cuando no se pudo hacer algo. `reason` es &"nothing_near",
-## &"hands_full", &"hands_empty", &"too_big" (solo grúa), &"too_heavy",
-## &"container_empty" o &"no_room" (no entra en la mochila). La UI lo usará después.
+## &"too_big" (solo grúa), &"too_heavy", &"no_room" (no entra en la mochila),
+## &"container_empty", &"hands_empty", &"place_invalid" (el lugar apuntado no es
+## válido) o &"not_placeable" (el objeto no tiene Placeable). La UI lo usará después.
 signal grab_failed(reason: StringName)
 
 ## Distancia máxima al objeto para poder tomarlo.
 @export_range(0.5, 5.0, 0.1, "suffix:m") var grab_range: float = 2.0
 ## Dónde se sostiene, en el marco del CUERPO del jugador (-Z = adelante, +X = derecha).
-## Si ves los objetos muy altos o bajos, ajustá la Y: depende de dónde esté el
-## origen de tu Player.
+## Si ves el objeto muy alto o bajo, ajustá la Y: depende de dónde esté el origen del Player.
 @export var hold_offset: Vector3 = Vector3(0.0, 1.0, -1.1)
-## Separación lateral de cada mano cuando son objetos de una mano.
+## Cuánto se corre a la derecha un objeto de una mano (solo estético: de dos manos va al centro).
 @export_range(0.0, 1.0, 0.05, "suffix:m") var hand_spread: float = 0.5
 ## Hasta dónde se busca el piso bajo el objeto para mostrar dónde caería.
 @export_range(0.5, 10.0, 0.5, "suffix:m") var preview_ray_length: float = 4.0
 
+@export_group("Colocación")
+## Un clic derecho más corto que esto suelta el objeto; más largo, apunta el fantasma.
+@export_range(0.1, 0.6, 0.05, "suffix:s") var tap_seconds: float = 0.25
+## Distancia horizontal máxima, desde el jugador, a la que se puede colocar.
+@export_range(1.0, 8.0, 0.5, "suffix:m") var place_range: float = 3.0
+## Cuánto gira el fantasma por cada paso de la rueda.
+@export_range(5.0, 90.0, 5.0, "suffix:°") var rotate_step_degrees: float = 15.0
+## Largo del rayo que sale de la cámara para apuntar.
+@export_range(5.0, 200.0, 5.0, "suffix:m") var aim_ray_length: float = 50.0
+## Altura de la mira en la pantalla, de 0 (arriba) a 1 (abajo). En tercera persona el
+## personaje queda en el centro, así que se apunta un poco más arriba para no caer a sus pies.
+@export_range(0.2, 0.5, 0.01) var aim_screen_y: float = 0.4
+
 var _player: Player
-# En el orden en que se tomaron.
-var _held: Array[WorldItem] = []
+# El objeto físico que está en la mano (null si no hay). Hands guarda su ItemStack.
+var _held: WorldItem
+
+# Estado del clic derecho y del modo "apuntar fantasma".
+var _place_pressed: bool = false
+var _place_press_ms: int = 0
+var _place_notified: bool = false
+var _placing: bool = false
+var _place_valid: bool = false
+var _place_ground: Vector3 = Vector3.ZERO
+var _place_yaw: float = 0.0
+var _yaw_offset: float = 0.0
 
 
-## Posición de un objeto sostenido, en el marco del cuerpo. Lógica pura.
-## Dos manos: al centro. Una mano: la 0 es la derecha y la 1 la izquierda.
-static func hold_offset_for(hands_used: int, hand_index: int, base: Vector3, spread: float) -> Vector3:
+## Posición del objeto en la mano, en el marco del cuerpo. Lógica pura.
+## De dos manos: al centro. De una mano: un poco a la derecha.
+static func hold_offset_for(hands_used: int, base: Vector3, spread: float) -> Vector3:
 	if hands_used >= 2:
 		return base
-	var side: float = 1.0 if hand_index == 0 else -1.0
-	return base + Vector3(side * spread, 0.0, 0.0)
+	return base + Vector3(spread, 0.0, 0.0)
 
 
-## Por qué no se puede sacar UNA unidad de `sample`: &"" si se puede, o
-## &"too_big" (solo grúa), &"hands_full" o &"too_heavy". Lógica pura.
-static func take_blocker(sample: ItemStack, free_hands: int, room_kg: float) -> StringName:
-	var needed: int = Hands.hands_needed(sample.item.hands)
-	if needed == 0:
+## Qué hacer al recoger un objeto. Lógica pura. Devuelve:
+##   &"to_backpack" → va directo a la mochila
+##   &"to_hand"     → queda en la mano (que estaba libre)
+##   &"swap"        → lo de la mano se guarda en la mochila y el nuevo queda en la mano
+## o el motivo de fallo: &"too_big" (solo grúa) o &"no_room" (no entra en la mochila).
+static func plan_pickup(size: ItemData.SizeClass, hands_required: ItemData.HandsRequired,
+		hand_busy: bool, fits_in_backpack: bool, hand_item_fits_in_backpack: bool) -> StringName:
+	if Hands.hands_needed(hands_required) == 0:
 		return &"too_big"
-	if free_hands < needed:
-		return &"hands_full"
-	if sample.item.unit_weight > room_kg:
-		return &"too_heavy"
-	return &""
+	if size == ItemData.SizeClass.SMALL:
+		return &"to_backpack" if fits_in_backpack else &"no_room"
+	if not hand_busy:
+		return &"to_hand"
+	return &"swap" if hand_item_fits_in_backpack else &"no_room"
 
 
-## Índice de la primera zona de la que se puede sacar una unidad, o -1.
-## `samples` tiene una entrada por zona (null si está vacía). Lógica pura.
-static func first_takeable_zone(samples: Array[ItemStack], free_hands: int, room_kg: float) -> int:
-	for i: int in samples.size():
-		if samples[i] != null and take_blocker(samples[i], free_hands, room_kg) == &"":
-			return i
-	return -1
-
-
-## Motivo del fallo cuando no hay ninguna zona de la que sacar: &"container_empty"
-## si están todas vacías; si no, el bloqueo de la primera zona con algo. Lógica pura.
-static func take_failure_reason(samples: Array[ItemStack], free_hands: int, room_kg: float) -> StringName:
-	for sample: ItemStack in samples:
-		if sample != null:
-			return take_blocker(sample, free_hands, room_kg)
-	return &"container_empty"
-
-
-## Qué mano se guarda en la mochila: la derecha (0) primero y, si está vacía, la
-## izquierda (1). Devuelve -1 si no hay nada en las manos. Lógica pura.
-static func first_filled_hand(hand0_filled: bool, hand1_filled: bool) -> int:
-	if hand0_filled:
-		return 0
-	if hand1_filled:
-		return 1
-	return -1
+## ¿Es un plan que se puede ejecutar (y no un motivo de fallo)? Lógica pura.
+static func is_ok_plan(plan: StringName) -> bool:
+	return plan == &"to_backpack" or plan == &"to_hand" or plan == &"swap"
 
 
 func _ready() -> void:
@@ -88,37 +94,77 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Desmayado no se hace nada; caminando o sentado sí (sentado también se
-	# puede tomar, soltar y usar la mochila).
+	# Desmayado no se hace nada; caminando o sentado sí.
 	if _player.state == Player.State.FAINTED:
 		return
 	if event.is_action_pressed(&"grab"):
 		try_grab()
-	elif event.is_action_pressed(&"drop_right"):
-		drop_hand(0)
-	elif event.is_action_pressed(&"drop_left"):
-		drop_hand(1)
-	elif event.is_action_pressed(&"backpack_store"):
-		store_in_backpack()
-	elif event.is_action_pressed(&"backpack_take"):
-		take_from_backpack()
+	elif event.is_action_pressed(&"drop"):
+		drop_held()
+	elif event.is_action_pressed(&"place"):
+		_place_pressed = true
+		_place_notified = false
+		_place_press_ms = Time.get_ticks_msec()
+	elif event.is_action_released(&"place"):
+		_finish_place_input()
+	elif _placing and event.is_action_pressed(&"rotate_cw"):
+		# Un giro positivo alrededor de Y es antihorario visto desde arriba: horario es negativo.
+		_yaw_offset = Placeable.rotate_offset(_yaw_offset, -1, rotate_step_degrees)
+		get_viewport().set_input_as_handled()
+	elif _placing and event.is_action_pressed(&"rotate_ccw"):
+		_yaw_offset = Placeable.rotate_offset(_yaw_offset, 1, rotate_step_degrees)
+		get_viewport().set_input_as_handled()
 
 
 func _physics_process(_delta: float) -> void:
-	if _held.is_empty():
+	# Si el objeto de la mano desapareció por otro lado, se limpia la mano.
+	if _held != null and not is_instance_valid(_held):
+		_held = null
+		_player.get_hands().release()
+		_cancel_place()
+
+	if _player.state == Player.State.FAINTED:
+		_place_pressed = false
+		_cancel_place()
+	elif _place_pressed and not _placing and _held_long_enough():
+		_try_enter_placing()
+
+	if _held == null:
 		return
-	# Las manos se anclan al frente del CUERPO, no al de la cámara: giran cuando
-	# gira el personaje y no cuando mirás alrededor (D61).
+	# La mano se ancla al frente del CUERPO, no al de la cámara: gira cuando gira
+	# el personaje y no cuando mirás alrededor (D61).
 	var yaw: float = _player.get_facing_yaw()
 	var body_basis := Basis(Vector3.UP, yaw)
-	for item: WorldItem in _held:
-		var offset: Vector3 = _offset_of(item)
-		var hold_position: Vector3 = _player.global_position + body_basis * offset
-		item.global_transform = Transform3D(body_basis, hold_position)
-		_update_preview(Holdable.of(item), hold_position, yaw)
+	var hold_position: Vector3 = _player.global_position + body_basis * _offset_of(_held)
+	_held.global_transform = Transform3D(body_basis, hold_position)
+	if _placing:
+		# El fantasma de apuntado reemplaza al que cae bajo la mano.
+		_update_placing()
+	else:
+		_update_preview(Holdable.of(_held), hold_position, yaw)
 
 
-## Toma el objeto suelto más cercano al alcance; si no hay, saca una unidad del
+## ¿Se está apuntando un fantasma de colocación? (para la interfaz y las pruebas)
+func is_placing() -> bool:
+	return _placing
+
+
+## ¿El lugar apuntado es válido? Solo tiene sentido mientras `is_placing()`.
+func is_place_valid() -> bool:
+	return _placing and _place_valid
+
+
+## Giro que sumó la rueda al fantasma, en radianes.
+func get_yaw_offset() -> float:
+	return _yaw_offset
+
+
+## El objeto físico que está en la mano, o null.
+func get_held_item() -> WorldItem:
+	return _held
+
+
+## Recoge el objeto suelto más cercano al alcance; si no hay, saca una unidad del
 ## contenedor más cercano. Devuelve false (y avisa por `grab_failed`) si no pudo.
 func try_grab() -> bool:
 	var target: WorldItem = _find_nearest_item()
@@ -126,72 +172,253 @@ func try_grab() -> bool:
 		return _grab_world_item(target)
 	var area: StorageArea = _find_nearest_storage_area()
 	if area != null:
-		return _take_from_container(
-				area.get_container(), area.global_position, _player.get_encumbrance().get_pickup_room())
+		return _take_from_container(area)
 	grab_failed.emit(&"nothing_near")
 	return false
 
 
-## Suelta lo que hay en una mano (0 = derecha, 1 = izquierda). Un objeto de dos
-## manos se suelta desde cualquiera de las dos. Si lo suelta sobre un StorageArea,
-## el área se encarga de guardarlo: acá no hace falta saberlo.
-func drop_hand(hand_index: int) -> bool:
-	var stack: ItemStack = _player.get_hands().get_stack(hand_index)
-	if stack == null:
+## Suelta lo que hay en la mano. Si lo suelta sobre un StorageArea, el área se
+## encarga de guardarlo: acá no hace falta saberlo. Devuelve false si no tenía nada.
+func drop_held() -> bool:
+	if _held == null:
 		return false
-	var item: WorldItem = _held_item_of(stack)
-	if item == null:
-		return false
-	_held.erase(item)
+	var item: WorldItem = _held
+	_held = null
 	_release_to_world(item)
 	return true
 
 
-## Suelta el último objeto tomado (sin tecla propia; queda para uso interno,
-## por ejemplo soltar todo al desmayarse). Devuelve false si no tenía nada.
-func drop_last() -> bool:
-	if _held.is_empty():
-		return false
-	var item: WorldItem = _held.pop_back()
-	_release_to_world(item)
-	return true
+func _held_long_enough() -> bool:
+	return float(Time.get_ticks_msec() - _place_press_ms) / 1000.0 >= tap_seconds
 
 
-## Guarda en la mochila lo que hay en la mano (la derecha primero). Es todo o nada:
-## si el lote entero no entra, queda en la mano y avisa &"no_room".
-func store_in_backpack() -> bool:
+# ¿Entra `stack` entero en la mochila? Es todo o nada: no se guardan lotes a medias.
+func _fits_in_backpack(stack: ItemStack) -> bool:
+	return _player.get_backpack().can_store_amount(stack) >= stack.quantity
+
+
+# Plan para recoger `stack` ahora mismo: uno de plan_pickup, o &"too_heavy" si pasa el
+# tope de carga. `room_kg` es el peso que todavía se puede sumar.
+func _plan_for(stack: ItemStack, room_kg: float) -> StringName:
 	var hands: Hands = _player.get_hands()
-	var hand_index: int = first_filled_hand(hands.get_stack(0) != null, hands.get_stack(1) != null)
-	if hand_index == -1:
-		grab_failed.emit(&"hands_empty")
+	var hand_busy: bool = not hands.is_empty()
+	var hand_fits: bool = (not hand_busy) or _fits_in_backpack(hands.get_held())
+	var plan: StringName = plan_pickup(
+			stack.item.size_class, stack.item.hands, hand_busy, _fits_in_backpack(stack), hand_fits)
+	if not is_ok_plan(plan):
+		return plan
+	if stack.get_weight() > room_kg:
+		return &"too_heavy"
+	return plan
+
+
+func _grab_world_item(target: WorldItem) -> bool:
+	var plan: StringName = _plan_for(target.stack, _player.get_encumbrance().get_pickup_room())
+	if not is_ok_plan(plan):
+		grab_failed.emit(plan)
 		return false
 
-	var stack: ItemStack = hands.get_stack(hand_index)
-	var backpack: StorageContainer = _player.get_backpack()
-	# La simulación y el guardado usan el mismo algoritmo (D48): si dice que entra, entra.
-	if backpack.can_store_amount(stack) < stack.quantity:
-		grab_failed.emit(&"no_room")
-		return false
-	var item: WorldItem = _held_item_of(stack)
-	if item == null:
-		push_error("Hay un objeto en la mano sin su WorldItem: no se puede guardar.")
+	# Ya se comprobó todo: desde acá, nada puede fallar a medias.
+	match plan:
+		&"to_backpack":
+			_player.get_backpack().try_store(target.stack)
+			# El cuerpo físico ya no hace falta: el objeto vive ahora como pila en la mochila.
+			target.queue_free()
+		&"to_hand":
+			_hold(target)
+		&"swap":
+			_stow_held_in_backpack()
+			_hold(target)
+	return true
+
+
+# Saca UNA unidad de la primera zona de la que se pueda y la recoge con las mismas
+# reglas que un objeto suelto. Se comprueba con copias (peek) antes de sacar nada.
+func _take_from_container(area: StorageArea) -> bool:
+	var container: StorageContainer = area.get_container()
+	var room: float = _player.get_encumbrance().get_pickup_room()
+
+	var zone_index: int = -1
+	var plan: StringName = &""
+	var first_failure: StringName = &"container_empty"
+	for zone: int in container.get_zone_count():
+		var sample: ItemStack = container.peek(zone)
+		if sample == null:
+			continue
+		var candidate_plan: StringName = _plan_for(sample.duplicate_stack(1), room)
+		if is_ok_plan(candidate_plan):
+			zone_index = zone
+			plan = candidate_plan
+			break
+		if first_failure == &"container_empty":
+			first_failure = candidate_plan
+	if zone_index == -1:
+		grab_failed.emit(first_failure)
 		return false
 
-	var leftover: ItemStack = backpack.try_store(stack)
+	var taken: ItemStack = container.take(zone_index, 1)
+	if taken == null:
+		grab_failed.emit(&"container_empty")
+		return false
+
+	if plan == &"to_backpack":
+		_player.get_backpack().try_store(taken)
+		return true
+
+	# Va a la mano: hace falta un cuerpo físico con Holdable.
+	var item: WorldItem = WorldItem.create(taken)
+	if item == null or Holdable.of(item) == null:
+		# La escena del objeto no se puede tomar a mano: se devuelve y se avisa.
+		push_error("'%s' no tiene un Holdable: no se puede sacar a mano." % taken.item.id)
+		container.try_store(taken)
+		if item != null:
+			item.free()  # todavía no está en el árbol, se libera directo
+		grab_failed.emit(&"too_big")
+		return false
+	if plan == &"swap":
+		_stow_held_in_backpack()
+	get_tree().current_scene.add_child(item)
+	item.global_position = area.global_position
+	_hold(item)
+	return true
+
+
+# Pone el objeto en la mano: la lógica (Hands) primero y después el cuerpo, así no
+# queda un objeto congelado sin dueño si algo falla antes.
+func _hold(item: WorldItem) -> void:
+	if not _player.get_hands().hold(item.stack):
+		push_error("No se pudo sostener '%s': la mano debería estar libre." % item.stack.item.id)
+		return
+	Holdable.of(item).begin_hold()
+	_held = item
+	EventBus.item_held.emit(item.stack)
+
+
+# Guarda en la mochila lo que hay en la mano. Quien llama ya comprobó que entra.
+func _stow_held_in_backpack() -> void:
+	var item: WorldItem = _held
+	var stack: ItemStack = item.stack
+	var leftover: ItemStack = _player.get_backpack().try_store(stack)
 	if leftover != null:
 		push_error("La mochila guardó solo una parte de un stack que había confirmado: revisar StorageContainer.")
-	hands.release(hand_index)
-	_held.erase(item)
+	_player.get_hands().release()
+	_held = null
 	EventBus.item_released.emit(stack)
-	# El cuerpo físico ya no hace falta: el objeto vive ahora como pila en la mochila.
 	item.queue_free()
-	return true
 
 
-## Saca una unidad de la mochila (de la primera zona que se pueda) y la pone en la mano.
-func take_from_backpack() -> bool:
-	# Pasa de la mochila a la mano: el peso total no cambia, por eso no hay tope (INF).
-	return _take_from_container(_player.get_backpack(), _player.global_position, INF)
+# Al mantener el clic derecho: si hay un objeto que se pueda colocar con precisión,
+# empieza el modo apuntar. Si no tiene Placeable, avisa una vez y al soltar el
+# botón se trata como un soltar rápido.
+func _try_enter_placing() -> void:
+	if _held == null or Holdable.of(_held) == null:
+		return
+	if Placeable.of(_held) == null:
+		if not _place_notified:
+			_place_notified = true
+			grab_failed.emit(&"not_placeable")
+		return
+	_placing = true
+	_yaw_offset = 0.0
+	_place_valid = false
+
+
+# Al soltar el clic derecho: confirma la colocación, la cancela o, si fue un toque, suelta.
+func _finish_place_input() -> void:
+	if not _place_pressed:
+		return
+	_place_pressed = false
+	if _placing:
+		var item: WorldItem = _held
+		var valid: bool = _place_valid
+		var ground: Vector3 = _place_ground
+		var yaw: float = _place_yaw
+		_cancel_place()
+		if valid and item != null:
+			_place_item(item, ground, yaw)
+		else:
+			grab_failed.emit(&"place_invalid")
+		return
+	# Toque corto (o mantenido sobre un objeto sin Placeable): soltar sin validar.
+	if not drop_held():
+		grab_failed.emit(&"hands_empty")
+
+
+func _cancel_place() -> void:
+	if _held != null and is_instance_valid(_held):
+		var holdable: Holdable = Holdable.of(_held)
+		if holdable != null:
+			holdable.hide_preview()
+	_placing = false
+	_place_valid = false
+
+
+# Cada cuadro mientras se apunta: rayo desde la cámara, recorte de alcance,
+# validación y color del fantasma.
+func _update_placing() -> void:
+	if _held == null:
+		_cancel_place()
+		return
+	var holdable: Holdable = Holdable.of(_held)
+	var placeable: Placeable = Placeable.of(_held)
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	var tp_camera: ThirdPersonCamera = _player.get_camera()
+	_place_valid = false
+	if camera == null or tp_camera == null:
+		holdable.hide_preview()
+		return
+
+	var space: PhysicsDirectSpaceState3D = _player.get_world_3d().direct_space_state
+	# La mira está un poco más arriba que el centro (aim_screen_y): en tercera persona el
+	# centro de la pantalla cae sobre el propio personaje.
+	var screen_size: Vector2 = get_viewport().get_visible_rect().size
+	var aim_point := Vector2(screen_size.x * 0.5, screen_size.y * aim_screen_y)
+	var from: Vector3 = camera.project_ray_origin(aim_point)
+	var to: Vector3 = from + camera.project_ray_normal(aim_point) * aim_ray_length
+	var hit: Dictionary = _cast_ray(space, from, to)
+	if hit.is_empty():
+		holdable.hide_preview()
+		return
+	var ground: Vector3 = hit["position"]
+	var normal: Vector3 = hit["normal"]
+
+	# Fuera de alcance: se recorta en horizontal y se busca el piso bajo ese punto.
+	var limited: Vector3 = Placeable.clamp_to_range(_player.global_position, ground, place_range)
+	if not limited.is_equal_approx(ground):
+		var top := Vector3(limited.x, _player.global_position.y + 2.0, limited.z)
+		var below: Dictionary = _cast_ray(space, top, top + Vector3.DOWN * 8.0)
+		if below.is_empty():
+			holdable.hide_preview()
+			return
+		ground = below["position"]
+		normal = below["normal"]
+
+	var yaw: float = Placeable.facing_yaw(tp_camera.yaw, _yaw_offset)
+	_place_ground = ground
+	_place_yaw = yaw
+	_place_valid = placeable.is_valid_at(space, holdable.body_transform_at(ground, yaw), normal)
+	holdable.show_preview(ground, yaw, _place_valid)
+
+
+# Deja el objeto en el lugar validado. Nace apenas levantado (el margen de Placeable)
+# y la física lo asienta.
+func _place_item(item: WorldItem, ground: Vector3, yaw: float) -> void:
+	var holdable: Holdable = Holdable.of(item)
+	var placeable: Placeable = Placeable.of(item)
+	var stack: ItemStack = item.stack
+	var spot: Transform3D = holdable.body_transform_at(ground, yaw)
+	spot.origin += Vector3.UP * placeable.lift
+
+	_player.get_hands().release()
+	_held = null
+	# Primero se libera y DESPUÉS se mueve (en la mano el cuerpo es cinemático y un
+	# cambio de posición pendiente se pierde al liberarlo). Se mueve de dos maneras:
+	# directo, por si el motor lo respeta, y con teleport_to, que es la forma oficial.
+	holdable.end_hold(Vector3.ZERO)
+	item.global_transform = spot
+	item.teleport_to(spot)
+	EventBus.item_released.emit(stack)
+	EventBus.item_placed.emit(stack, spot.origin)
 
 
 func _find_nearest_item() -> WorldItem:
@@ -227,90 +454,9 @@ func _find_nearest_storage_area() -> StorageArea:
 	return best
 
 
-func _grab_world_item(target: WorldItem) -> bool:
-	var hands: Hands = _player.get_hands()
-	if Hands.hands_needed(target.stack.item.hands) == 0:
-		grab_failed.emit(&"too_big")
-		return false
-	if not hands.can_hold(target.stack):
-		grab_failed.emit(&"hands_full")
-		return false
-	if not _player.get_encumbrance().can_pick_up(target.stack.get_weight()):
-		grab_failed.emit(&"too_heavy")
-		return false
-
-	# Primero la lógica (Hands) y después el cuerpo: si algo falla antes,
-	# no queda un objeto congelado sin dueño.
-	hands.hold(target.stack)
-	Holdable.of(target).begin_hold()
-	_register_held(target)
-	return true
-
-
-# Saca UNA unidad de la primera zona de la que se pueda. Se hace en este orden:
-# 1) comprobar con copias (peek), 2) sacar, 3) crear el cuerpo, 4) tomarlo. Si algo
-# falla después de sacar, se devuelve al contenedor y no se pierde nada.
-# `spawn_position` es dónde aparece el objeto (de ahí pasa a la mano en el próximo
-# cuadro) y `room_kg` el peso que todavía se puede sumar.
-func _take_from_container(container: StorageContainer, spawn_position: Vector3, room_kg: float) -> bool:
-	var hands: Hands = _player.get_hands()
-
-	var samples: Array[ItemStack] = []
-	for zone: int in container.get_zone_count():
-		samples.append(container.peek(zone))
-
-	var zone_index: int = first_takeable_zone(samples, hands.free_hands(), room_kg)
-	if zone_index == -1:
-		grab_failed.emit(take_failure_reason(samples, hands.free_hands(), room_kg))
-		return false
-
-	var taken: ItemStack = container.take(zone_index, 1)
-	if taken == null:
-		grab_failed.emit(&"container_empty")
-		return false
-
-	var item: WorldItem = WorldItem.create(taken)
-	if item == null or Holdable.of(item) == null:
-		# La escena del objeto no se puede tomar a mano: se devuelve y se avisa.
-		push_error("'%s' no tiene un Holdable: no se puede sacar a mano." % taken.item.id)
-		container.try_store(taken)
-		if item != null:
-			item.free()  # todavía no está en el árbol, se libera directo
-		grab_failed.emit(&"too_big")
-		return false
-	if not hands.hold(taken):
-		container.try_store(taken)
-		item.free()
-		grab_failed.emit(&"hands_full")
-		return false
-
-	get_tree().current_scene.add_child(item)
-	item.global_position = spawn_position
-	Holdable.of(item).begin_hold()
-	_register_held(item)
-	return true
-
-
-func _register_held(item: WorldItem) -> void:
-	_held.append(item)
-	EventBus.item_held.emit(item.stack)
-
-
-# El WorldItem que está en la mano con ese stack, o null.
-func _held_item_of(stack: ItemStack) -> WorldItem:
-	for item: WorldItem in _held:
-		if item.stack == stack:
-			return item
-	return null
-
-
-# Libera las manos y devuelve el cuerpo al mundo. Quien llama ya lo sacó de _held.
+# Libera la mano y devuelve el cuerpo al mundo. Quien llama ya lo sacó de _held.
 func _release_to_world(item: WorldItem) -> void:
-	var hands: Hands = _player.get_hands()
-	for i in Hands.HAND_COUNT:
-		if hands.get_stack(i) == item.stack:
-			hands.release(i)
-			break
+	_player.get_hands().release()
 	# Hereda solo la velocidad horizontal: no queremos que salga volando hacia arriba.
 	var velocity: Vector3 = Vector3(_player.velocity.x, 0.0, _player.velocity.z)
 	Holdable.of(item).end_hold(velocity)
@@ -318,24 +464,22 @@ func _release_to_world(item: WorldItem) -> void:
 
 
 func _offset_of(item: WorldItem) -> Vector3:
-	var hands: Hands = _player.get_hands()
 	var used: int = Hands.hands_needed(item.stack.item.hands)
-	var hand_index: int = 0
-	for i in Hands.HAND_COUNT:
-		if hands.get_stack(i) == item.stack:
-			hand_index = i
-			break
-	return hold_offset_for(used, hand_index, hold_offset, hand_spread)
+	return hold_offset_for(used, hold_offset, hand_spread)
 
 
-# Busca el piso bajo el objeto: ahí es donde caería al soltarlo.
+# Rayo contra el mundo (capa 1): piso, vehículos, plataformas.
+func _cast_ray(space: PhysicsDirectSpaceState3D, from: Vector3, to: Vector3) -> Dictionary:
+	var query := PhysicsRayQueryParameters3D.create(from, to, WorldItem.LAYER_WORLD)
+	return space.intersect_ray(query)
+
+
+# Busca el piso bajo el objeto: ahí es donde caería al soltarlo (fantasma neutro).
 func _update_preview(holdable: Holdable, from: Vector3, yaw: float) -> void:
 	var space: PhysicsDirectSpaceState3D = _player.get_world_3d().direct_space_state
-	var query := PhysicsRayQueryParameters3D.create(
-			from, from + Vector3.DOWN * preview_ray_length, WorldItem.LAYER_WORLD)
-	var hit: Dictionary = space.intersect_ray(query)
+	var hit: Dictionary = _cast_ray(space, from, from + Vector3.DOWN * preview_ray_length)
 	if hit.is_empty():
 		holdable.hide_preview()
 		return
 	var ground: Vector3 = hit["position"]
-	holdable.show_preview(ground, yaw)
+	holdable.show_drop_hint(ground, yaw)

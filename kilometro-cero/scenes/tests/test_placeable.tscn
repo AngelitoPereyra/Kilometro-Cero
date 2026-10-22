@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://c7ecj3yq43mcn"]
+
+[ext_resource type="Script" uid="uid://vq3agpttp0fl" path="res://scenes/tests/test_placeable.gd" id="1_n1p61"]
+
+[node name="TestPlaceable" type="Node3D" unique_id=584645406]
+script = ExtResource("1_n1p61")

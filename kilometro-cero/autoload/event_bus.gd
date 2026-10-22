@@ -52,5 +52,7 @@ signal item_taken(container_id: StringName, stack: ItemStack)
 signal item_held(stack: ItemStack)
 ## El jugador suelta un objeto que tenía en las manos.
 signal item_released(stack: ItemStack)
+## Se confirma una colocación precisa (clic derecho mantenido). `position` es dónde quedó.
+signal item_placed(stack: ItemStack, position: Vector3)
 
 @warning_ignore_restore("unused_signal")

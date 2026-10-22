@@ -1,13 +1,16 @@
 extends Node3D
-## Prueba de Hands + Holdable + Grabber + StorageArea + mochila (tareas 13 y 14).
-## Genera objetos y una caja de carga delante del jugador, y muestra en
-## pantalla lo que tenés en las manos, en la mochila, las necesidades y lo que pasa.
+## Prueba de la mano, el Grabber, la recogida por tamaño, StorageArea, la mochila
+## y la colocación (tareas 13 a 15b). Genera objetos y una caja de carga delante
+## del jugador, y muestra en pantalla lo que tenés en la mano, en la mochila,
+## las necesidades y lo que pasa.
 
 const WORLD_ITEM_SCENE: PackedScene = preload("res://scenes/items/world_item.tscn")
-const HELP: String = "Clic izq: tomar · R/Q: soltar mano der/izq · F: guardar en mochila · G: sacar de mochila"
+const HELP: String = "E: recolectar · Q: soltar · Clic der: soltar (mantener: apuntar, rueda: girar) · F: vehículo"
 
 var _player: Player
+var _grabber: Grabber
 var _hud: Label
+var _crosshair: Label
 var _message: String = HELP
 var _ratio: float = 0.0
 var _box_container: StorageContainer
@@ -30,39 +33,45 @@ func _ready() -> void:
 	_refresh_hud()
 
 
+# El HUD se refresca siempre: así la línea de diagnóstico muestra los giros en vivo.
+func _process(_delta: float) -> void:
+	if _player == null or _hud == null:
+		return
+	_place_crosshair()
+	_refresh_hud()
+
+
 func _check_pure_logic() -> void:
 	var base := Vector3(0.0, 0.3, -0.9)
-	var ok: bool = true
-	ok = ok and Grabber.hold_offset_for(2, 0, base, 0.35) == base
-	ok = ok and is_equal_approx(Grabber.hold_offset_for(1, 0, base, 0.35).x, 0.35)
-	ok = ok and is_equal_approx(Grabber.hold_offset_for(1, 1, base, 0.35).x, -0.35)
-	print("Manos (lógica pura): ", "OK" if ok else "FALLÓ")
+	var offsets_ok: bool = true
+	offsets_ok = offsets_ok and Grabber.hold_offset_for(2, base, 0.35) == base
+	offsets_ok = offsets_ok and is_equal_approx(Grabber.hold_offset_for(1, base, 0.35).x, 0.35)
+	print("Mano (posición): ", "OK" if offsets_ok else "FALLÓ")
 
-	var chatarra := ItemStack.new(_make_data(&"chatarra", ItemData.HandsRequired.ONE, 2.0, ItemData.SizeClass.SMALL))
-	var riel := ItemStack.new(_make_data(&"riel", ItemData.HandsRequired.TWO, 40.0, ItemData.SizeClass.LARGE))
-	var motor := ItemStack.new(_make_data(&"motor", ItemData.HandsRequired.CRANE, 500.0, ItemData.SizeClass.LARGE))
-	var no_samples: Array[ItemStack] = []
-	var empty: Array[ItemStack] = [null, null]
-	var mixed: Array[ItemStack] = [null, riel, chatarra]
-	var only_rail: Array[ItemStack] = [riel]
-
+	var small := ItemData.SizeClass.SMALL
+	var medium := ItemData.SizeClass.MEDIUM
+	var large := ItemData.SizeClass.LARGE
+	var one := ItemData.HandsRequired.ONE
+	var two := ItemData.HandsRequired.TWO
+	var crane := ItemData.HandsRequired.CRANE
+	# plan_pickup(tamaño, manos, mano ocupada, el nuevo entra en la mochila, lo de la mano entra)
 	var checks: Array[bool] = [
-		Grabber.take_blocker(chatarra, 2, 10.0) == &"",
-		Grabber.take_blocker(riel, 1, 100.0) == &"hands_full",
-		Grabber.take_blocker(motor, 2, 1000.0) == &"too_big",
-		Grabber.take_blocker(chatarra, 2, 1.0) == &"too_heavy",
-		Grabber.first_takeable_zone(mixed, 1, 10.0) == 2,   # el riel no entra con una mano libre
-		Grabber.first_takeable_zone(mixed, 2, 100.0) == 1,
-		Grabber.first_takeable_zone(no_samples, 2, 10.0) == -1,
-		Grabber.take_failure_reason(empty, 2, 10.0) == &"container_empty",
-		Grabber.take_failure_reason(only_rail, 1, 100.0) == &"hands_full",
-		Grabber.first_filled_hand(true, true) == 0,
-		Grabber.first_filled_hand(false, true) == 1,
-		Grabber.first_filled_hand(true, false) == 0,
-		Grabber.first_filled_hand(false, false) == -1,
+		Grabber.plan_pickup(small, one, false, true, true) == &"to_backpack",
+		Grabber.plan_pickup(small, one, false, false, true) == &"no_room",
+		Grabber.plan_pickup(small, one, true, true, false) == &"to_backpack",   # un pequeño no usa la mano
+		Grabber.plan_pickup(medium, one, false, true, true) == &"to_hand",
+		Grabber.plan_pickup(medium, one, true, true, true) == &"swap",
+		Grabber.plan_pickup(medium, one, true, true, false) == &"no_room",
+		Grabber.plan_pickup(large, two, false, false, true) == &"to_hand",
+		Grabber.plan_pickup(large, two, true, false, true) == &"swap",
+		Grabber.plan_pickup(large, two, true, false, false) == &"no_room",
+		Grabber.plan_pickup(large, crane, false, true, true) == &"too_big",
+		Grabber.plan_pickup(small, crane, false, true, true) == &"too_big",
+		Grabber.is_ok_plan(&"swap"),
+		not Grabber.is_ok_plan(&"no_room"),
 	]
 	var passed: int = checks.count(true)
-	print("Contenedores y mochila (lógica pura): %d de %d OK" % [passed, checks.size()])
+	print("Recogida por tamaño (lógica pura): %d de %d OK" % [passed, checks.size()])
 
 
 func _find_player() -> Player:
@@ -90,16 +99,33 @@ func _build_hud() -> void:
 	_hud = Label.new()
 	_hud.position = Vector2(16.0, 16.0)
 	layer.add_child(_hud)
+	# Mira: el fantasma de colocación apunta hacia acá (la altura la fija el Grabber).
+	_crosshair = Label.new()
+	_crosshair.text = "+"
+	layer.add_child(_crosshair)
 	add_child(layer)
 
 
+func _place_crosshair() -> void:
+	if _crosshair == null:
+		return
+	var aim_y: float = _grabber.aim_screen_y if _grabber != null else 0.4
+	var size: Vector2 = get_viewport().get_visible_rect().size
+	_crosshair.position = Vector2(size.x * 0.5, size.y * aim_y) - _crosshair.size * 0.5
+
+
 func _spawn_items() -> void:
-	# Una fila delante del jugador. El tamaño importa: decide en qué zona entra.
+	# Dos filas delante del jugador. El tamaño decide a dónde va cada uno:
+	# los 5 pequeños a la mochila (que tiene 4 zonas chicas: el quinto no entra),
+	# los medianos y grandes a la mano.
 	var defs: Array[Dictionary] = [
 		{"id": &"chatarra", "hands": ItemData.HandsRequired.ONE, "weight": 2.0, "size": ItemData.SizeClass.SMALL, "amount": 3},
 		{"id": &"yerba", "hands": ItemData.HandsRequired.ONE, "weight": 1.0, "size": ItemData.SizeClass.SMALL, "amount": 1},
 		{"id": &"comida", "hands": ItemData.HandsRequired.ONE, "weight": 0.5, "size": ItemData.SizeClass.SMALL, "amount": 1},
+		{"id": &"bulones", "hands": ItemData.HandsRequired.ONE, "weight": 0.2, "size": ItemData.SizeClass.SMALL, "amount": 20},
+		{"id": &"ramitas", "hands": ItemData.HandsRequired.ONE, "weight": 0.1, "size": ItemData.SizeClass.SMALL, "amount": 10},
 		{"id": &"durmiente", "hands": ItemData.HandsRequired.ONE, "weight": 8.0, "size": ItemData.SizeClass.MEDIUM, "amount": 2},
+		{"id": &"tabla", "hands": ItemData.HandsRequired.ONE, "weight": 3.0, "size": ItemData.SizeClass.MEDIUM, "amount": 1},
 		{"id": &"riel", "hands": ItemData.HandsRequired.TWO, "weight": 40.0, "size": ItemData.SizeClass.LARGE, "amount": 1},
 		{"id": &"yunque", "hands": ItemData.HandsRequired.ONE, "weight": 200.0, "size": ItemData.SizeClass.MEDIUM, "amount": 1},
 		{"id": &"motor", "hands": ItemData.HandsRequired.CRANE, "weight": 500.0, "size": ItemData.SizeClass.LARGE, "amount": 1},
@@ -109,7 +135,9 @@ func _spawn_items() -> void:
 		var stack := ItemStack.new(data, defs[i]["amount"])
 		var world_item := WORLD_ITEM_SCENE.instantiate() as WorldItem
 		add_child(world_item)
-		world_item.global_position = _player.global_position + Vector3(i * 0.9 - 2.7, 1.0, -3.0)
+		var column: float = float(i % 5) * 1.0 - 2.0
+		var row: float = floorf(float(i) / 5.0)
+		world_item.global_position = _player.global_position + Vector3(column, 1.0, -3.0 - 1.5 * row)
 		world_item.setup(stack)
 		world_item.name = String(data.id)
 		world_item.add_child(_make_label(stack))
@@ -239,17 +267,15 @@ func _refresh_box_label() -> void:
 
 
 func _connect_feedback() -> void:
-	var grabber := get_tree().current_scene.find_child("Grabber", true, false) as Grabber
-	if grabber == null:
+	_grabber = get_tree().current_scene.find_child("Grabber", true, false) as Grabber
+	if _grabber == null:
 		push_error("test_grab: no encontré un nodo llamado Grabber dentro del Player.")
 		return
-	grabber.grab_failed.connect(_on_grab_failed)
+	_grabber.grab_failed.connect(_on_grab_failed)
 	EventBus.item_held.connect(_on_item_held)
 	EventBus.item_released.connect(_on_item_released)
+	EventBus.item_placed.connect(_on_item_placed)
 	EventBus.encumbrance_changed.connect(_on_encumbrance_changed)
-	# Necesidades y reloj: se muestran en el HUD y se refrescan cuando cambian.
-	EventBus.need_changed.connect(_on_need_changed)
-	EventBus.time_advanced.connect(_on_time_advanced)
 	_box_container.item_stored.connect(_on_box_stored)
 	_box_container.item_taken.connect(_on_box_taken)
 	var backpack: StorageContainer = _player.get_backpack()
@@ -260,11 +286,26 @@ func _connect_feedback() -> void:
 
 
 func _on_item_held(stack: ItemStack) -> void:
-	_say("Tomó: %s" % stack.item.id)
+	_say("En la mano: %s" % stack.item.id)
 
 
 func _on_item_released(stack: ItemStack) -> void:
-	_say("Soltó: %s" % stack.item.id)
+	_say("Salió de la mano: %s" % stack.item.id)
+
+
+func _on_item_placed(stack: ItemStack, where: Vector3) -> void:
+	var me: Vector3 = _player.global_position
+	_say("Colocó: %s en (%.1f, %.1f, %.1f) · jugador en (%.1f, %.1f, %.1f)" % [
+		stack.item.id, where.x, where.y, where.z, me.x, me.y, me.z])
+	# Diagnóstico: medio segundo después, ¿dónde quedó realmente el objeto?
+	await get_tree().create_timer(0.5).timeout
+	for node: Node in get_tree().get_nodes_in_group(WorldItem.GROUP):
+		var placed := node as WorldItem
+		if placed != null and placed.stack == stack:
+			var final_position: Vector3 = placed.global_position
+			_say("Quedó en (%.1f, %.1f, %.1f): a %.1f m de lo pedido" % [
+				final_position.x, final_position.y, final_position.z, final_position.distance_to(where)])
+			return
 
 
 func _on_box_stored(stack: ItemStack) -> void:
@@ -291,25 +332,14 @@ func _on_box_rejected(leftover: ItemStack) -> void:
 
 func _on_encumbrance_changed(ratio: float) -> void:
 	_ratio = ratio
-	_refresh_hud()
-
-
-func _on_need_changed(_need: StringName, _value: float) -> void:
-	_refresh_hud()
-
-
-func _on_time_advanced(_hours: float) -> void:
-	_refresh_hud()
 
 
 func _on_grab_failed(reason: StringName) -> void:
 	match reason:
 		&"nothing_near":
 			_say("No hay nada al alcance.")
-		&"hands_full":
-			_say("Las manos están ocupadas.")
 		&"hands_empty":
-			_say("No tenés nada en las manos para guardar.")
+			_say("No tenés nada en la mano.")
 		&"too_big":
 			_say("Es demasiado grande: hace falta una grúa.")
 		&"too_heavy":
@@ -318,12 +348,15 @@ func _on_grab_failed(reason: StringName) -> void:
 			_say("El contenedor está vacío.")
 		&"no_room":
 			_say("No entra en la mochila.")
+		&"place_invalid":
+			_say("No se puede colocar ahí.")
+		&"not_placeable":
+			_say("Este objeto no tiene un nodo Placeable: agregalo a world_item.tscn.")
 
 
 func _say(text: String) -> void:
 	_message = text
 	print(text)
-	_refresh_hud()
 
 
 func _refresh_hud() -> void:
@@ -333,13 +366,28 @@ func _refresh_hud() -> void:
 	lines.append("Día %d · %s" % [GameState.clock.current_day, GameClock.format_time(GameState.clock.time_of_day)])
 	lines.append("Agua %.0f · Comida %.0f · Fatiga %.0f" % [
 		needs.get_value(Needs.WATER), needs.get_value(Needs.FOOD), needs.get_value(Needs.FATIGUE)])
-	for i in Hands.HAND_COUNT:
-		var stack: ItemStack = hands.get_stack(i)
-		var hand_name: String = "derecha" if i == 0 else "izquierda"
-		var contents: String = "—" if stack == null else "%s x%d" % [stack.item.id, stack.quantity]
-		lines.append("Mano %s: %s" % [hand_name, contents])
+	var held: ItemStack = hands.get_held()
+	var held_text: String = "—"
+	if held != null:
+		held_text = "%s x%d (%s)" % [held.item.id, held.quantity, _hands_text(held.item.hands)]
+	lines.append("Mano: %s" % held_text)
 	lines.append("Mochila:")
 	lines.append_array(_zone_lines(_player.get_backpack()))
 	lines.append("Carga: %.0f %%" % (_ratio * 100.0))
 	lines.append(_message)
+	lines.append(_diagnostic_line())
 	_hud.text = "\n".join(lines)
+
+
+# Diagnóstico: sirve para ver si la mano sigue al cuerpo o a la cámara, y en qué
+# estado está el modo apuntar.
+func _diagnostic_line() -> String:
+	var camera: ThirdPersonCamera = _player.get_camera()
+	var camera_deg: float = rad_to_deg(camera.yaw) if camera != null else 0.0
+	var line: String = "[diag] Cuerpo %.0f° · Cámara %.0f°" % [rad_to_deg(_player.get_facing_yaw()), camera_deg]
+	if _grabber != null:
+		line += " · Apuntando: %s · Válido: %s · Giro: %.0f°" % [
+			"sí" if _grabber.is_placing() else "no",
+			"sí" if _grabber.is_place_valid() else "no",
+			rad_to_deg(_grabber.get_yaw_offset())]
+	return line

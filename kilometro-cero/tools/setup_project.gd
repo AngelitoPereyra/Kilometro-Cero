@@ -17,8 +17,13 @@ const CAPAS_FISICAS_3D: Array[String] = [
 ]
 
 # Acciones que existieron antes y ya no se usan. Se borran para que el Input Map
-# no acumule teclas muertas (por ejemplo, `drop` se partió en una por mano).
-const ACCIONES_OBSOLETAS: Array[StringName] = [&"drop"]
+# no acumule teclas muertas (D68, D71: una sola mano, una sola acción de soltar).
+const ACCIONES_OBSOLETAS: Array[StringName] = [
+	&"drop_left",
+	&"drop_right",
+	&"backpack_store",
+	&"backpack_take",
+]
 
 
 func _run() -> void:
@@ -45,20 +50,16 @@ func _definir_acciones() -> Dictionary:
 		&"move_back": [_tecla(KEY_S)],
 		&"move_left": [_tecla(KEY_A)],
 		&"move_right": [_tecla(KEY_D)],
-		&"interact": [_tecla(KEY_E)],        # subir/bajar del vehículo, usar
-		&"push": [_tecla(KEY_SPACE)],        # mantener para empujar la zorra
-		&"grab": [_boton_mouse(MOUSE_BUTTON_LEFT)],
-		# Una acción de soltar por mano (tarea 14). La mano 0 es la derecha.
-		&"drop_left": [_tecla(KEY_Q)],
-		&"drop_right": [_tecla(KEY_R)],
-		# La mochila no tiene volumen físico: se maneja con estas dos acciones.
-		&"backpack_store": [_tecla(KEY_F)],  # guarda lo que hay en la mano
-		&"backpack_take": [_tecla(KEY_G)],   # saca una unidad a la mano
-		&"place": [_boton_mouse(MOUSE_BUTTON_RIGHT)],  # confirma el fantasma
+		&"interact": [_tecla(KEY_F)],        # subir/bajar del vehículo
+		&"push": [_tecla(KEY_SPACE)],        # empujar la zorra; pasa a W en la tarea 9b
+		&"grab": [_tecla(KEY_E)],            # recolectar (D69)
+		&"drop": [_tecla(KEY_Q)],            # soltar lo que hay en la mano
+		&"place": [_boton_mouse(MOUSE_BUTTON_RIGHT)],  # toque: soltar; mantener: apuntar el fantasma
 		# Dos acciones porque una sola no sabe en qué dirección giró la rueda.
 		&"rotate_cw": [_boton_mouse(MOUSE_BUTTON_WHEEL_UP)],
 		&"rotate_ccw": [_boton_mouse(MOUSE_BUTTON_WHEEL_DOWN)],
 		&"inventory": [_tecla(KEY_TAB)],
+		# El clic izquierdo queda reservado para usar herramientas (D71).
 	}
 
 
