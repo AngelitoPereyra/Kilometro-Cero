@@ -1,0 +1,59 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/tests/test_movement.gd" id="1_tmov"]
+[ext_resource type="PackedScene" uid="uid://dwcrgtb107qxo" path="res://scenes/player/player.tscn" id="2_tmov"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_piso"]
+albedo_color = Color(0.35, 0.6, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_piso"]
+size = Vector3(100, 1, 100)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_piso"]
+size = Vector3(100, 1, 100)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_techo"]
+albedo_color = Color(0.7, 0.45, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_techo"]
+size = Vector3(4, 0.4, 4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_techo"]
+size = Vector3(4, 0.4, 4)
+
+[node name="TestMovement" type="Node3D"]
+script = ExtResource("1_tmov")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Ground" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+material_override = SubResource("StandardMaterial3D_piso")
+mesh = SubResource("BoxMesh_piso")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("BoxShape3D_piso")
+
+[node name="LowCeiling" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="LowCeiling"]
+material_override = SubResource("StandardMaterial3D_techo")
+mesh = SubResource("BoxMesh_techo")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="LowCeiling"]
+shape = SubResource("BoxShape3D_techo")
+
+[node name="Player" parent="." instance=ExtResource("2_tmov")]
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="Label" type="Label" parent="Hud"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 56.0
+offset_bottom = 39.0

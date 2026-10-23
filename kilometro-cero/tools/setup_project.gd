@@ -60,6 +60,9 @@ func _definir_acciones() -> Dictionary:
 		&"rotate_cw": [_boton_mouse(MOUSE_BUTTON_WHEEL_UP)],
 		&"rotate_ccw": [_boton_mouse(MOUSE_BUTTON_WHEEL_DOWN)],
 		&"inventory": [_tecla(KEY_TAB), _tecla(KEY_G)],  # abrir y cerrar el inventario (D71, D72)
+		&"sprint": [_tecla(KEY_SHIFT)],      # correr mientras se mantiene, sin costo (D91)
+		&"jump": [_tecla(KEY_SPACE)],        # saltar (D91)
+		&"crouch": [_tecla(KEY_CTRL)],       # agacharse mientras se mantiene (D91)
 		# El clic izquierdo queda reservado para usar herramientas (D71).
 	}
 
