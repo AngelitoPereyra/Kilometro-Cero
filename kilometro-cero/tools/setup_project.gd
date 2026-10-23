@@ -59,7 +59,7 @@ func _definir_acciones() -> Dictionary:
 		# Dos acciones porque una sola no sabe en qué dirección giró la rueda.
 		&"rotate_cw": [_boton_mouse(MOUSE_BUTTON_WHEEL_UP)],
 		&"rotate_ccw": [_boton_mouse(MOUSE_BUTTON_WHEEL_DOWN)],
-		&"inventory": [_tecla(KEY_TAB)],
+		&"inventory": [_tecla(KEY_TAB), _tecla(KEY_G)],  # abrir y cerrar el inventario (D71, D72)
 		# El clic izquierdo queda reservado para usar herramientas (D71).
 	}
 

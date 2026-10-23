@@ -3,7 +3,7 @@ extends Node
 ## Mochila de ranuras (D70, D86), como la de Minecraft: N ranuras y cada una apila un
 ## solo tipo de objeto. Acepta pequeños y medianos, nunca grandes. Sin peso ni reglas
 ## de compatibilidad (eso queda para vagones y cajas, en StorageContainer).
-## Lógica pura: no dibuja nada; la interfaz (tarea 49) observa sus señales.
+## Lógica pura: no dibuja nada; la interfaz (InventoryUI, tarea 49) observa sus señales.
 ## Misma regla de propiedad que StorageContainer: NUNCA modifica el ItemStack que
 ## recibe; devuelve stacks nuevos (el sobrante en try_store, lo extraído en take).
 
@@ -75,6 +75,29 @@ func try_store(stack: ItemStack) -> ItemStack:
 ## Cuántas unidades de `stack` entrarían ahora, sin guardar nada.
 func can_store_amount(stack: ItemStack) -> int:
 	return _store(stack, false) if _is_storable(stack) else 0
+
+
+## Cuántas unidades de `stack` entrarían si antes se sacaran `amount` unidades de la
+## ranura `slot`, sin modificar nada. Lo usa el Grabber para cambiar lo de la mano por
+## una unidad de la ranura (tarea 49): si la ranura queda vacía, ese lugar cuenta.
+func can_store_amount_after_take(stack: ItemStack, slot: int, amount: int) -> int:
+	if not _is_storable(stack) or not _is_valid_slot(slot):
+		return 0
+	var current: ItemStack = _slots[slot]
+	if current == null or amount <= 0:
+		return can_store_amount(stack)
+	# Se saca de verdad, se simula con el mismo algoritmo y se deja todo como estaba.
+	# No se emite ninguna señal: para afuera, nada cambió.
+	var removed: int = mini(amount, current.quantity)
+	current.quantity -= removed
+	var cleared: bool = current.quantity <= 0
+	if cleared:
+		_slots[slot] = null
+	var room: int = _store(stack, false)
+	current.quantity += removed
+	if cleared:
+		_slots[slot] = current
+	return room
 
 
 ## Saca hasta `amount` unidades de una ranura. Devuelve lo extraído (nuevo) o null.

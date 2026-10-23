@@ -2,11 +2,12 @@ extends Node3D
 ## Prueba de la mochila de ranuras (tarea 48, D70, D86, D59). Las comprobaciones de
 ## lógica usan una mochila chica armada acá (4 ranuras), así no dependen de cómo
 ## balancees backpack_basic.tres; las del jugador leen los números de sus datos.
-## Corren sincrónicas dentro de _ready(). Después se puede jugar: Tab llena la mochila
+## Corren sincrónicas dentro de _ready(). Después se puede jugar: C llena la mochila
 ## del jugador al 0 %, 50 %, 75 % y 100 % de las ranuras y el HUD muestra la alerta.
+## (TAB ya no sirve para esto: desde la tarea 49 abre el inventario.)
 
-const CONTROLES: String = "WASD: caminar · Mouse: cámara · F: subir/bajar · Tab: cambiar la carga de la mochila"
-## Fracciones de ranuras que se ocupan al apretar Tab.
+const CONTROLES: String = "WASD: caminar · Mouse: cámara · F: subir/bajar · C: cambiar la carga de la mochila · TAB: inventario"
+## Fracciones de ranuras que se ocupan al apretar C.
 const NIVELES_DE_CARGA: Array[float] = [0.0, 0.5, 0.75, 1.0]
 const NOMBRES_DE_ALERTA: Array[String] = ["normal", "casi llena", "llena"]
 
@@ -53,7 +54,8 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed(&"inventory") and _mochila != null:
+	var tecla := event as InputEventKey
+	if tecla != null and tecla.pressed and not tecla.echo and tecla.physical_keycode == KEY_C and _mochila != null:
 		_nivel_de_carga = (_nivel_de_carga + 1) % NIVELES_DE_CARGA.size()
 		_ocupar_fraccion(NIVELES_DE_CARGA[_nivel_de_carga])
 

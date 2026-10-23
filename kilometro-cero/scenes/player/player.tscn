@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://scripts/storage/inventory.gd" id="6_h17s1"]
 [ext_resource type="Script" uid="uid://1i47mudf3e7g" path="res://scripts/player/hands.gd" id="10_je7p5"]
 [ext_resource type="Script" uid="uid://dr2ao2iu16krs" path="res://scripts/player/grabber.gd" id="11_fm80t"]
+[ext_resource type="Script" path="res://scripts/ui/inventory_ui.gd" id="12_invui"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_k6d34"]
 radius = 0.35
@@ -62,3 +63,8 @@ metadata/_custom_type_script = "uid://1i47mudf3e7g"
 [node name="Grabber" type="Node" parent="." unique_id=1196803290]
 script = ExtResource("11_fm80t")
 metadata/_custom_type_script = "uid://dr2ao2iu16krs"
+
+[node name="InventoryUI" type="CanvasLayer" parent="."]
+layer = 10
+visible = false
+script = ExtResource("12_invui")

@@ -23,6 +23,10 @@ enum State { WALKING, RIDING }
 @export var backpack_data: BackpackData
 
 var state: State = State.WALKING
+## Si es false, el jugador no camina, no maneja ni actúa (por ejemplo, con el
+## inventario abierto, D72). La física sigue: si estaba en el aire, cae igual.
+## Lo cambia quien abre un menú, con set_controls_enabled.
+var controls_enabled: bool = true
 
 var _vehicle: Vehicle
 var _camera: ThirdPersonCamera
@@ -92,7 +96,7 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not event.is_action_pressed(&"interact"):
+	if not controls_enabled or not event.is_action_pressed(&"interact"):
 		return
 	match state:
 		State.WALKING:
@@ -122,6 +126,18 @@ func get_facing_yaw() -> float:
 
 func get_backpack() -> Inventory:
 	return _backpack
+
+
+## Activa o desactiva los controles del jugador (ver `controls_enabled`). Al
+## desactivarlos se frena: no sigue caminando ni acelerando el vehículo.
+func set_controls_enabled(enabled: bool) -> void:
+	controls_enabled = enabled
+	if enabled:
+		return
+	velocity.x = 0.0
+	velocity.z = 0.0
+	if _vehicle != null:
+		_vehicle.throttle = 0.0
 
 func get_hands() -> Hands:
 	return _hands
@@ -186,7 +202,9 @@ func _leave_vehicle() -> void:
 
 
 func _walk(delta: float) -> void:
-	var input_vector: Vector2 = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
+	var input_vector: Vector2 = Vector2.ZERO
+	if controls_enabled:
+		input_vector = Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 	var direction: Vector3 = world_direction(input_vector, _camera.yaw)
 	var target: Vector3 = direction * get_walk_speed()
 	velocity.x = move_toward(velocity.x, target.x, acceleration * delta)
@@ -200,7 +218,7 @@ func _walk(delta: float) -> void:
 
 func _ride() -> void:
 	# Solo este script lee la entrada; el vehículo recibe un número entre -1 y 1.
-	_vehicle.throttle = Input.get_axis(&"move_back", &"move_forward")
+	_vehicle.throttle = Input.get_axis(&"move_back", &"move_forward") if controls_enabled else 0.0
 	global_position = _vehicle.get_seat_position()
 	_visual.rotation.y = _vehicle.global_rotation.y
 

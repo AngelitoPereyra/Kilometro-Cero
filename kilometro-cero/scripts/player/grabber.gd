@@ -10,11 +10,15 @@ class_name Grabber extends Node
 ## la mochila; si no entra, no se toma nada y avisa.
 ## La mochila es un Inventory de ranuras (tarea 48, D86): acepta pequeños y medianos;
 ## un grande en la mano nunca entra, así que no se puede cambiar por otro (no_room).
+## Desde la interfaz del inventario (tarea 49) se pasa una unidad de una ranura a la
+## mano (take_from_backpack) y lo de la mano a la mochila (stow_held).
+## Con los controles del jugador apagados (inventario abierto) no lee las teclas.
 
 ## Se emite cuando no se pudo hacer algo. `reason` es &"nothing_near",
 ## &"too_big" (solo grúa), &"no_room" (no entra en la mochila),
-## &"container_empty", &"hands_empty", &"place_invalid" (el lugar apuntado no es
-## válido) o &"not_placeable" (el objeto no tiene Placeable). La UI lo usará después.
+## &"container_empty" (también: ranura vacía), &"hands_empty", &"place_invalid" (el
+## lugar apuntado no es válido) o &"not_placeable" (el objeto no tiene Placeable).
+## InventoryUI.failure_text lo traduce para mostrarlo.
 signal grab_failed(reason: StringName)
 
 ## Distancia máxima al objeto para poder tomarlo.
@@ -96,6 +100,8 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not _player.controls_enabled:
+		return
 	if event.is_action_pressed(&"grab"):
 		try_grab()
 	elif event.is_action_pressed(&"drop"):
@@ -120,6 +126,11 @@ func _physics_process(_delta: float) -> void:
 	if _held != null and not is_instance_valid(_held):
 		_held = null
 		_player.get_hands().release()
+		_cancel_place()
+
+	# Con un menú abierto no se apunta: se olvida el clic derecho a medio camino.
+	if not _player.controls_enabled and (_place_pressed or _placing):
+		_place_pressed = false
 		_cancel_place()
 
 	if _place_pressed and not _placing and _held_long_enough():
@@ -181,6 +192,63 @@ func drop_held() -> bool:
 	var item: WorldItem = _held
 	_held = null
 	_release_to_world(item)
+	return true
+
+
+## Pasa a la mano UNA unidad de la ranura `slot` de la mochila (tarea 49). Si la mano
+## está ocupada, lo que tiene vuelve a la mochila (contando el lugar que deja la
+## unidad sacada); si no entra, no cambia nada y avisa &"no_room".
+func take_from_backpack(slot: int) -> bool:
+	var backpack: Inventory = _player.get_backpack()
+	if slot < 0 or slot >= backpack.get_slot_count():
+		push_error("Grabber.take_from_backpack: no existe la ranura %d" % slot)
+		return false
+	var sample: ItemStack = backpack.peek(slot)
+	if sample == null:
+		grab_failed.emit(&"container_empty")
+		return false
+	if Hands.hands_needed(sample.item.hands) == 0:
+		grab_failed.emit(&"too_big")
+		return false
+	var hands: Hands = _player.get_hands()
+	var hand_busy: bool = not hands.is_empty()
+	if hand_busy:
+		var held: ItemStack = hands.get_held()
+		if backpack.can_store_amount_after_take(held, slot, 1) < held.quantity:
+			grab_failed.emit(&"no_room")
+			return false
+
+	var taken: ItemStack = backpack.take(slot, 1)
+	var item: WorldItem = WorldItem.create(taken)
+	if item == null or Holdable.of(item) == null:
+		# Mismo caso que al sacar de un contenedor: se devuelve y se avisa.
+		push_error("'%s' no tiene un Holdable: no se puede pasar a la mano." % taken.item.id)
+		backpack.try_store(taken)
+		if item != null:
+			item.free()  # todavía no está en el árbol, se libera directo
+		grab_failed.emit(&"too_big")
+		return false
+	# Recién ahora, con la unidad afuera, lo de la mano entra seguro (se comprobó arriba).
+	if hand_busy:
+		_stow_held_in_backpack()
+	get_tree().current_scene.add_child(item)
+	# Nace sobre el jugador; desde el próximo paso de física lo ubica la mano.
+	item.global_position = _player.global_position + Vector3.UP * hold_offset.y
+	_hold(item)
+	return true
+
+
+## Guarda en la mochila lo que hay en la mano (tarea 49). Es todo o nada: si no entra
+## entero, no cambia nada y avisa &"no_room" (o &"hands_empty" si no había nada).
+func stow_held() -> bool:
+	if _held == null:
+		grab_failed.emit(&"hands_empty")
+		return false
+	if not _fits_in_backpack(_held.stack):
+		grab_failed.emit(&"no_room")
+		return false
+	_cancel_place()
+	_stow_held_in_backpack()
 	return true
 
 
