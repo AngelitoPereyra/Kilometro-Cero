@@ -38,6 +38,9 @@ signal irr_changed(region_id: StringName, value: float)
 signal item_stored(container_id: StringName, stack: ItemStack)
 ## Sale algo de un contenedor con identificador.
 signal item_taken(container_id: StringName, stack: ItemStack)
+## Cambia el nivel de alerta de la mochila (D59): 0 normal, 1 casi llena, 2 llena
+## (los valores de Inventory.Alert). La interfaz avisa solo cuando sube.
+signal backpack_alert_changed(alert: int)
 ## El jugador toma con las manos un objeto del mundo.
 signal item_held(stack: ItemStack)
 ## El jugador suelta un objeto que tenía en las manos.

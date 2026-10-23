@@ -1,10 +1,14 @@
 extends Node3D
 ## Prueba de la mano, el Grabber, la recogida por tamaño, StorageArea, la mochila
-## y la colocación (tareas 13 a 15b). Genera objetos y una caja de carga delante
+## de ranuras y la colocación (tareas 13 a 15b y 48). Genera objetos y una caja de carga delante
 ## del jugador, y muestra en pantalla lo que tenés en la mano, en la mochila
 ## y lo que pasa. Sin peso ni necesidades desde la tarea 47 (D75, D86).
 
 const WORLD_ITEM_SCENE: PackedScene = preload("res://scenes/items/world_item.tscn")
+const BOX_CONFIG: StorageConfig = preload("res://data/config/storage_config.tres")
+## Ranuras de la mochila de prueba: con 4, el quinto tipo de objeto pequeño ya no entra.
+const TEST_BACKPACK_SLOTS: int = 4
+const ALERT_NAMES: Array[String] = ["normal", "casi llena", "llena"]
 const HELP: String = "E: recolectar · Q: soltar · Clic der: soltar (mantener: apuntar, rueda: girar) · F: vehículo"
 
 var _player: Player
@@ -25,6 +29,7 @@ func _ready() -> void:
 	if _player == null:
 		push_error("test_grab: no encontré el Player en la escena.")
 		return
+	_use_test_backpack()
 	_build_hud()
 	_spawn_items()
 	_build_storage_box()
@@ -115,7 +120,7 @@ func _place_crosshair() -> void:
 
 func _spawn_items() -> void:
 	# Dos filas delante del jugador. El tamaño decide a dónde va cada uno:
-	# los 5 pequeños a la mochila (que tiene 4 zonas chicas: el quinto no entra),
+	# los 5 pequeños a la mochila (que acá tiene 4 ranuras: el quinto no entra),
 	# los medianos y grandes a la mano.
 	var defs: Array[Dictionary] = [
 		{"id": &"chatarra", "hands": ItemData.HandsRequired.ONE, "weight": 2.0, "size": ItemData.SizeClass.SMALL, "amount": 3},
@@ -203,8 +208,8 @@ func _build_storage_box() -> void:
 	_box_container = StorageContainer.new()
 	_box_container.container_id = &"caja_test"
 	_box_container.layout = layout
-	# Reutilizamos el StorageConfig que ya usa la mochila del jugador.
-	_box_container.config = _player.get_backpack().config
+	# La mochila ya no usa StorageConfig (tarea 48): la caja carga el de siempre.
+	_box_container.config = BOX_CONFIG
 	box.add_child(_box_container)
 
 	# Área: el volumen donde se guarda lo que se suelta. Va después del contenedor
@@ -259,6 +264,26 @@ func _zone_lines(container: StorageContainer) -> PackedStringArray:
 	return lines
 
 
+# Una línea por ranura de la mochila: "Ranura 0: chatarra x3".
+func _slot_lines(inventory: Inventory) -> PackedStringArray:
+	var lines: PackedStringArray = []
+	for i in inventory.get_slot_count():
+		var stack: ItemStack = inventory.peek(i)
+		var contents: String = "vacía" if stack == null else "%s x%d" % [stack.item.id, stack.quantity]
+		lines.append("  Ranura %d: %s" % [i, contents])
+	return lines
+
+
+# Mochila chica para ver en vivo el "no entra" y las alertas (D59) sin juntar 20 tipos.
+func _use_test_backpack() -> void:
+	var data := BackpackData.new()
+	data.slot_count = TEST_BACKPACK_SLOTS
+	if _player.backpack_data != null:
+		data.small_stack_limit = _player.backpack_data.small_stack_limit
+		data.medium_stack_limit = _player.backpack_data.medium_stack_limit
+	_player.get_backpack().setup(data)
+
+
 func _refresh_box_label() -> void:
 	var lines: PackedStringArray = ["Caja de prueba"]
 	lines.append_array(_zone_lines(_box_container))
@@ -276,9 +301,10 @@ func _connect_feedback() -> void:
 	EventBus.item_placed.connect(_on_item_placed)
 	_box_container.item_stored.connect(_on_box_stored)
 	_box_container.item_taken.connect(_on_box_taken)
-	var backpack: StorageContainer = _player.get_backpack()
+	var backpack: Inventory = _player.get_backpack()
 	backpack.item_stored.connect(_on_backpack_stored)
 	backpack.item_taken.connect(_on_backpack_taken)
+	EventBus.backpack_alert_changed.connect(_on_backpack_alert_changed)
 	print("test_grab: Grabber conectado.")
 
 
@@ -323,6 +349,10 @@ func _on_backpack_taken(stack: ItemStack) -> void:
 	_say("Sacó de la mochila: %s x%d" % [stack.item.id, stack.quantity])
 
 
+func _on_backpack_alert_changed(alert: int) -> void:
+	_say("Alerta de la mochila: %s" % ALERT_NAMES[alert])
+
+
 func _on_box_rejected(leftover: ItemStack) -> void:
 	_say("No entra en la caja: sobran %d de %s." % [leftover.quantity, leftover.item.id])
 
@@ -359,8 +389,9 @@ func _refresh_hud() -> void:
 	if held != null:
 		held_text = "%s x%d (%s)" % [held.item.id, held.quantity, _hands_text(held.item.hands)]
 	lines.append("Mano: %s" % held_text)
-	lines.append("Mochila:")
-	lines.append_array(_zone_lines(_player.get_backpack()))
+	var backpack: Inventory = _player.get_backpack()
+	lines.append("Mochila (%d/%d ranuras, %s):" % [backpack.get_used_slot_count(), backpack.get_slot_count(), ALERT_NAMES[backpack.get_alert()]])
+	lines.append_array(_slot_lines(backpack))
 	lines.append(_message)
 	lines.append(_diagnostic_line())
 	_hud.text = "\n".join(lines)

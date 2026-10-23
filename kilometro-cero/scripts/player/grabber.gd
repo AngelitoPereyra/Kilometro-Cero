@@ -8,6 +8,8 @@ class_name Grabber extends Node
 ## Regla de recogida (D69): los pequeños van solos a la mochila; los medianos y
 ## grandes quedan en la mano; si la mano está ocupada, lo que hay se guarda solo en
 ## la mochila; si no entra, no se toma nada y avisa.
+## La mochila es un Inventory de ranuras (tarea 48, D86): acepta pequeños y medianos;
+## un grande en la mano nunca entra, así que no se puede cambiar por otro (no_room).
 
 ## Se emite cuando no se pudo hacer algo. `reason` es &"nothing_near",
 ## &"too_big" (solo grúa), &"no_room" (no entra en la mochila),
@@ -186,7 +188,8 @@ func _held_long_enough() -> bool:
 	return float(Time.get_ticks_msec() - _place_press_ms) / 1000.0 >= tap_seconds
 
 
-# ¿Entra `stack` entero en la mochila? Es todo o nada: no se guardan lotes a medias.
+# ¿Entra `stack` entero en las ranuras de la mochila? Es todo o nada: no se guardan
+# lotes a medias. Un objeto grande nunca entra (D86).
 func _fits_in_backpack(stack: ItemStack) -> bool:
 	return _player.get_backpack().can_store_amount(stack) >= stack.quantity
 

@@ -3,8 +3,7 @@
 [ext_resource type="Script" uid="uid://dhd4swm8v2mfs" path="res://scripts/player/player.gd" id="1_dovo2"]
 [ext_resource type="Resource" uid="uid://bhhwoe8mqkvp3" path="res://data/items/backpack_basic.tres" id="2_5gtgg"]
 [ext_resource type="Script" uid="uid://d2i61ukw5aot7" path="res://scripts/player/third_person_camera.gd" id="2_gmlin"]
-[ext_resource type="Script" uid="uid://bc7cjrnukb21m" path="res://scripts/storage/storage_container.gd" id="6_h17s1"]
-[ext_resource type="Resource" uid="uid://ddc7ut7gnxd7g" path="res://data/config/storage_config.tres" id="7_je7p5"]
+[ext_resource type="Script" path="res://scripts/storage/inventory.gd" id="6_h17s1"]
 [ext_resource type="Script" uid="uid://1i47mudf3e7g" path="res://scripts/player/hands.gd" id="10_je7p5"]
 [ext_resource type="Script" uid="uid://dr2ao2iu16krs" path="res://scripts/player/grabber.gd" id="11_fm80t"]
 
@@ -55,8 +54,6 @@ margin = 0.1
 [node name="Backpack" type="Node" parent="." unique_id=1406604076]
 script = ExtResource("6_h17s1")
 container_id = &"backpack"
-config = ExtResource("7_je7p5")
-metadata/_custom_type_script = "uid://bc7cjrnukb21m"
 
 [node name="Hands" type="Node" parent="." unique_id=1801620457]
 script = ExtResource("10_je7p5")

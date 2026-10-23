@@ -5,7 +5,7 @@ extends CharacterBody3D
 ## hereda el giro del cuerpo (D44).
 ## Sobre un vehículo, el jugador no cambia de padre: copia la posición del asiento en cada
 ## paso de física, y por eso se procesa DESPUÉS del vehículo (ver _ready).
-## Tiene una mochila (el nodo Backpack, un StorageContainer armado con `backpack_data`).
+## Tiene una mochila (el nodo Backpack, un Inventory de ranuras armado con `backpack_data`).
 ## Sin supervivencia ni peso (D75, D86): no hay desmayo, ni accidente al bajarse, y la
 ## carga no cambia la velocidad.
 
@@ -19,14 +19,14 @@ enum State { WALKING, RIDING }
 @export_range(0.5, 10.0, 0.1, "suffix:m") var interaction_range: float = 3.0
 
 @export_group("Carga")
-## Mochila equipada: define las zonas del nodo Backpack.
+## Mochila equipada: define las ranuras del nodo Backpack.
 @export var backpack_data: BackpackData
 
 var state: State = State.WALKING
 
 var _vehicle: Vehicle
 var _camera: ThirdPersonCamera
-var _backpack: StorageContainer
+var _backpack: Inventory
 var _hands: Hands
 
 @onready var _visual: Node3D = $Visual
@@ -78,7 +78,7 @@ func _ready() -> void:
 		return
 	_backpack = _find_backpack()
 	if _backpack == null:
-		push_error("Player necesita como hijo directo un StorageContainer (la mochila, llamado Backpack).")
+		push_error("Player necesita como hijo directo un Inventory (la mochila, llamado Backpack).")
 		set_physics_process(false)
 		return
 	_hands = _find_hands()
@@ -88,6 +88,7 @@ func _ready() -> void:
 		return
 	_setup_backpack()
 	_hands.hands_changed.connect(_on_hands_changed)
+	_backpack.alert_changed.connect(_on_backpack_alert_changed)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -119,7 +120,7 @@ func get_facing_yaw() -> float:
 	return _visual.rotation.y
 
 
-func get_backpack() -> StorageContainer:
+func get_backpack() -> Inventory:
 	return _backpack
 
 func get_hands() -> Hands:
@@ -158,18 +159,20 @@ func dismount() -> void:
 
 # Arma la mochila con los datos de `backpack_data`.
 func _setup_backpack() -> void:
-	if backpack_data == null or backpack_data.layout == null:
-		push_warning("Player no tiene una BackpackData con layout asignada: no podrá guardar objetos.")
+	if backpack_data == null:
+		push_warning("Player no tiene una BackpackData asignada: no podrá guardar objetos.")
 		return
-	if _backpack.config == null:
-		push_error("El nodo Backpack del jugador necesita un StorageConfig asignado.")
-		return
-	_backpack.setup(backpack_data.layout, _backpack.config)
+	_backpack.setup(backpack_data)
 
 
 # Hands no conoce al bus: el jugador es el único que avisa (D52).
 func _on_hands_changed() -> void:
 	EventBus.hands_changed.emit()
+
+
+# Lo mismo con las alertas de la mochila (D59, patrón D50).
+func _on_backpack_alert_changed(alert: Inventory.Alert) -> void:
+	EventBus.backpack_alert_changed.emit(alert)
 
 
 func _leave_vehicle() -> void:
@@ -227,11 +230,11 @@ func _find_hands() -> Hands:
 			return hands
 	return null
 
-# Por ahora el único StorageContainer hijo directo es la mochila. Cuando haya más de uno
+# Por ahora el único Inventory hijo directo es la mochila. Cuando haya más de uno
 # (cinturón de herramientas, por ejemplo), se distinguirán por `container_id`.
-func _find_backpack() -> StorageContainer:
+func _find_backpack() -> Inventory:
 	for child: Node in get_children():
-		var container := child as StorageContainer
-		if container != null:
-			return container
+		var inventory := child as Inventory
+		if inventory != null:
+			return inventory
 	return null
