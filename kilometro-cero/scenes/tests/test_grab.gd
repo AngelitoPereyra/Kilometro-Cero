@@ -9,7 +9,7 @@ const BOX_CONFIG: StorageConfig = preload("res://data/config/storage_config.tres
 ## Ranuras de la mochila de prueba: con 4, el quinto tipo de objeto pequeño ya no entra.
 const TEST_BACKPACK_SLOTS: int = 4
 const ALERT_NAMES: Array[String] = ["normal", "casi llena", "llena"]
-const HELP: String = "E: recolectar · Q: soltar · Clic der: soltar (mantener: apuntar, rueda: girar) · F: vehículo"
+const HELP: String = "E: recolectar · Q: soltar · Clic der: soltar (mantener: apuntar, rueda: girar)"
 
 var _player: Player
 var _grabber: Grabber

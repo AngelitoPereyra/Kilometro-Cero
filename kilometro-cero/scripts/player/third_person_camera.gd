@@ -42,6 +42,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		_apply()
 
 
+## Suma un giro horizontal sin pasar por el mouse. Lo usa el jugador para que la cámara
+## gire junto con el tren en las curvas (tarea 51).
+func add_yaw(amount: float) -> void:
+	yaw = wrapf(yaw + amount, -PI, PI)
+	_apply()
+
+
 func _apply() -> void:
 	rotation.y = yaw
 	_spring_arm.rotation.x = pitch

@@ -4,7 +4,7 @@ extends Node3D
 ## el inventario pause el reloj y apague los controles. Las comprobaciones corren
 ## solas al empezar; después queda la mochila cargada para probar a mano con TAB o G.
 
-const CONTROLES: String = "TAB o G: inventario · WASD: caminar · E: recolectar · Q: soltar · F: vehículo"
+const CONTROLES: String = "TAB o G: inventario · WASD: caminar · E: recolectar · Q: soltar"
 ## Ranuras de la mochila de prueba: chica, para llegar fácil a "llena".
 const RANURAS_DE_PRUEBA: int = 4
 

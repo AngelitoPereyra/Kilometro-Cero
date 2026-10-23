@@ -1,0 +1,87 @@
+[gd_scene format=3 uid="uid://betn51wwsdfrj"]
+
+[ext_resource type="Script" uid="uid://dhwll06u0pvxj" path="res://scenes/tests/test_walkable_train.gd" id="1_twt"]
+[ext_resource type="Script" uid="uid://vjyhstl4bvxp" path="res://scripts/world/manual_track.gd" id="2_twt"]
+[ext_resource type="Script" uid="uid://63tp0rc2s27h" path="res://scripts/world/track_builder.gd" id="3_twt"]
+[ext_resource type="Script" uid="uid://cr8u1ddxfxvhv" path="res://scripts/world/track_segment.gd" id="4_twt"]
+[ext_resource type="PackedScene" path="res://scenes/vehicles/locomotive.tscn" id="5_twt"]
+[ext_resource type="PackedScene" path="res://scenes/vehicles/flatcar.tscn" id="6_twt"]
+[ext_resource type="PackedScene" uid="uid://dwcrgtb107qxo" path="res://scenes/player/player.tscn" id="7_twt"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_twt"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_twt"]
+sky_material = SubResource("ProceduralSkyMaterial_twt")
+
+[sub_resource type="Environment" id="Environment_twt"]
+background_mode = 2
+sky = SubResource("Sky_twt")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_piso"]
+albedo_color = Color(0.35, 0.6, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_piso"]
+size = Vector3(1000, 1, 1000)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_piso"]
+size = Vector3(1000, 1, 1000)
+
+[sub_resource type="Curve3D" id="Curve3D_twt"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, -40, 0, 0, 0, 0, 0, 40, 0, 0, -44, 0, 0, -120, -44, 0, 0, 44, 0, 0, 80, 0, -200, -40, 0, 0, 0, 0, 0, 300, 0, -200),
+"tilts": PackedFloat32Array(0, 0, 0, 0)
+}
+point_count = 4
+
+[sub_resource type="BoxMesh" id="BoxMesh_modulo"]
+size = Vector3(1.6, 0.2, 4.8)
+
+[node name="TestWalkableTrain" type="Node3D" unique_id=920743649]
+script = ExtResource("1_twt")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1732263081]
+environment = SubResource("Environment_twt")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=45059691]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Ground" type="StaticBody3D" parent="." unique_id=73980356]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=1172751113]
+material_override = SubResource("StandardMaterial3D_piso")
+mesh = SubResource("BoxMesh_piso")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=774684516]
+shape = SubResource("BoxShape3D_piso")
+
+[node name="Track" type="Path3D" parent="." unique_id=1756661227]
+curve = SubResource("Curve3D_twt")
+script = ExtResource("2_twt")
+
+[node name="TrackBuilder" type="Node3D" parent="Track" unique_id=899597348 node_paths=PackedStringArray("segment")]
+script = ExtResource("3_twt")
+module_mesh = SubResource("BoxMesh_modulo")
+segment = NodePath("../TrackSegment")
+
+[node name="TrackSegment" type="Node" parent="Track" unique_id=1001170231]
+script = ExtResource("4_twt")
+condition = 1.0
+
+[node name="Locomotive" parent="Track" unique_id=1397720023 instance=ExtResource("5_twt")]
+
+[node name="Flatcar" parent="Track" unique_id=512924792 instance=ExtResource("6_twt")]
+
+[node name="Player" parent="." unique_id=991431950 instance=ExtResource("7_twt")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
+
+[node name="Hud" type="CanvasLayer" parent="." unique_id=119176103]
+
+[node name="Label" type="Label" parent="Hud" unique_id=1419025118]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 56.0
+offset_bottom = 39.0

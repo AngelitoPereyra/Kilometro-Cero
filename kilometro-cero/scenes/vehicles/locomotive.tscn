@@ -1,0 +1,398 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicles/vehicle.gd" id="1_veh"]
+[ext_resource type="Resource" path="res://data/vehicles/locomotive.tres" id="2_data"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_piso"]
+albedo_color = Color(0.3, 0.3, 0.32, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_chasis"]
+albedo_color = Color(0.08, 0.08, 0.08, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_caldera"]
+albedo_color = Color(0.55, 0.1, 0.08, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_cabina"]
+albedo_color = Color(0.15, 0.4, 0.25, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_techo"]
+albedo_color = Color(0.12, 0.12, 0.12, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_baranda"]
+albedo_color = Color(0.95, 0.75, 0.1, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_rampa"]
+albedo_color = Color(0.45, 0.3, 0.15, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_mando"]
+albedo_color = Color(0.6, 0.6, 0.65, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_Chasis"]
+size = Vector3(2, 0.5, 9.4)
+
+[sub_resource type="BoxShape3D" id="Shape_Chasis"]
+size = Vector3(2, 0.5, 9.4)
+
+[sub_resource type="BoxMesh" id="Mesh_Piso"]
+size = Vector3(3, 0.3, 10)
+
+[sub_resource type="BoxShape3D" id="Shape_Piso"]
+size = Vector3(3, 0.3, 10)
+
+[sub_resource type="BoxMesh" id="Mesh_Caldera"]
+size = Vector3(1, 1.6, 5)
+
+[sub_resource type="BoxShape3D" id="Shape_Caldera"]
+size = Vector3(1, 1.6, 5)
+
+[sub_resource type="BoxMesh" id="Mesh_Chimenea"]
+size = Vector3(0.4, 0.6, 0.4)
+
+[sub_resource type="BoxShape3D" id="Shape_Chimenea"]
+size = Vector3(0.4, 0.6, 0.4)
+
+[sub_resource type="BoxMesh" id="Mesh_BarandaFrente"]
+size = Vector3(3, 1, 0.08)
+
+[sub_resource type="BoxShape3D" id="Shape_BarandaFrente"]
+size = Vector3(3, 1, 0.08)
+
+[sub_resource type="BoxMesh" id="Mesh_BarandaDerecha"]
+size = Vector3(0.08, 1, 5.5)
+
+[sub_resource type="BoxShape3D" id="Shape_BarandaDerecha"]
+size = Vector3(0.08, 1, 5.5)
+
+[sub_resource type="BoxMesh" id="Mesh_BarandaIzquierda"]
+size = Vector3(0.08, 1, 5.5)
+
+[sub_resource type="BoxShape3D" id="Shape_BarandaIzquierda"]
+size = Vector3(0.08, 1, 5.5)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaFrenteCentro"]
+size = Vector3(1.1, 2.1, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaFrenteCentro"]
+size = Vector3(1.1, 2.1, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaFrenteDerecha"]
+size = Vector3(0.1, 2.1, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaFrenteDerecha"]
+size = Vector3(0.1, 2.1, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaFrenteIzquierda"]
+size = Vector3(0.1, 2.1, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaFrenteIzquierda"]
+size = Vector3(0.1, 2.1, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaFrenteDintel"]
+size = Vector3(3, 0.3, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaFrenteDintel"]
+size = Vector3(3, 0.3, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaDerechaA"]
+size = Vector3(0.1, 2.4, 1.5)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaDerechaA"]
+size = Vector3(0.1, 2.4, 1.5)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaDerechaB"]
+size = Vector3(0.1, 2.4, 1.5)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaDerechaB"]
+size = Vector3(0.1, 2.4, 1.5)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaDerechaDintel"]
+size = Vector3(0.1, 0.3, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaDerechaDintel"]
+size = Vector3(0.1, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaIzquierdaA"]
+size = Vector3(0.1, 2.4, 1.5)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaIzquierdaA"]
+size = Vector3(0.1, 2.4, 1.5)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaIzquierdaB"]
+size = Vector3(0.1, 2.4, 1.5)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaIzquierdaB"]
+size = Vector3(0.1, 2.4, 1.5)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaIzquierdaDintel"]
+size = Vector3(0.1, 0.3, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaIzquierdaDintel"]
+size = Vector3(0.1, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaAtrasDerecha"]
+size = Vector3(1, 2.1, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaAtrasDerecha"]
+size = Vector3(1, 2.1, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaAtrasIzquierda"]
+size = Vector3(1, 2.1, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaAtrasIzquierda"]
+size = Vector3(1, 2.1, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_CabinaAtrasDintel"]
+size = Vector3(3, 0.3, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_CabinaAtrasDintel"]
+size = Vector3(3, 0.3, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_Techo"]
+size = Vector3(3.2, 0.1, 4.2)
+
+[sub_resource type="BoxShape3D" id="Shape_Techo"]
+size = Vector3(3.2, 0.1, 4.2)
+
+[sub_resource type="BoxMesh" id="Mesh_Mando"]
+size = Vector3(0.6, 1, 0.4)
+
+[sub_resource type="BoxShape3D" id="Shape_Mando"]
+size = Vector3(0.6, 1, 0.4)
+
+[sub_resource type="BoxMesh" id="Mesh_RampaDerecha"]
+size = Vector3(1.6, 0.1, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_RampaDerecha"]
+size = Vector3(1.6, 0.1, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_RampaIzquierda"]
+size = Vector3(1.6, 0.1, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_RampaIzquierda"]
+size = Vector3(1.6, 0.1, 1)
+
+[node name="Locomotive" type="PathFollow3D"]
+script = ExtResource("1_veh")
+data = ExtResource("2_data")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="CuerpoFisico" type="AnimatableBody3D" parent="."]
+sync_to_physics = false
+collision_mask = 0
+
+[node name="Chasis" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = SubResource("Mat_chasis")
+mesh = SubResource("Mesh_Chasis")
+
+[node name="Piso" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+material_override = SubResource("Mat_piso")
+mesh = SubResource("Mesh_Piso")
+
+[node name="Caldera" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -2.3)
+material_override = SubResource("Mat_caldera")
+mesh = SubResource("Mesh_Caldera")
+
+[node name="Chimenea" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, -4)
+material_override = SubResource("Mat_techo")
+mesh = SubResource("Mesh_Chimenea")
+
+[node name="BarandaFrente" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, -4.96)
+material_override = SubResource("Mat_baranda")
+mesh = SubResource("Mesh_BarandaFrente")
+
+[node name="BarandaDerecha" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.46, 1.3, -2.25)
+material_override = SubResource("Mat_baranda")
+mesh = SubResource("Mesh_BarandaDerecha")
+
+[node name="BarandaIzquierda" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.46, 1.3, -2.25)
+material_override = SubResource("Mat_baranda")
+mesh = SubResource("Mesh_BarandaIzquierda")
+
+[node name="CabinaFrenteCentro" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.85, 0.55)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaFrenteCentro")
+
+[node name="CabinaFrenteDerecha" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 1.85, 0.55)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaFrenteDerecha")
+
+[node name="CabinaFrenteIzquierda" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 1.85, 0.55)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaFrenteIzquierda")
+
+[node name="CabinaFrenteDintel" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.05, 0.55)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaFrenteDintel")
+
+[node name="CabinaDerechaA" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2, 1.25)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaDerechaA")
+
+[node name="CabinaDerechaB" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2, 3.75)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaDerechaB")
+
+[node name="CabinaDerechaDintel" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 3.05, 2.5)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaDerechaDintel")
+
+[node name="CabinaIzquierdaA" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2, 1.25)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaIzquierdaA")
+
+[node name="CabinaIzquierdaB" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2, 3.75)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaIzquierdaB")
+
+[node name="CabinaIzquierdaDintel" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 3.05, 2.5)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaIzquierdaDintel")
+
+[node name="CabinaAtrasDerecha" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1.85, 4.45)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaAtrasDerecha")
+
+[node name="CabinaAtrasIzquierda" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 1.85, 4.45)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaAtrasIzquierda")
+
+[node name="CabinaAtrasDintel" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.05, 4.45)
+material_override = SubResource("Mat_cabina")
+mesh = SubResource("Mesh_CabinaAtrasDintel")
+
+[node name="Techo" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.25, 2.5)
+material_override = SubResource("Mat_techo")
+mesh = SubResource("Mesh_Techo")
+
+[node name="Mando" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 1)
+material_override = SubResource("Mat_mando")
+mesh = SubResource("Mesh_Mando")
+
+[node name="RampaDerecha" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(0.866025, 0.5, 0, -0.5, 0.866025, 0, 0, 0, 1, 2.16782, 0.356699, 2.5)
+material_override = SubResource("Mat_rampa")
+mesh = SubResource("Mesh_RampaDerecha")
+
+[node name="RampaIzquierda" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, -2.16782, 0.356699, 2.5)
+material_override = SubResource("Mat_rampa")
+mesh = SubResource("Mesh_RampaIzquierda")
+
+[node name="Chasis" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+shape = SubResource("Shape_Chasis")
+
+[node name="Piso" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+shape = SubResource("Shape_Piso")
+
+[node name="Caldera" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -2.3)
+shape = SubResource("Shape_Caldera")
+
+[node name="Chimenea" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, -4)
+shape = SubResource("Shape_Chimenea")
+
+[node name="BarandaFrente" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, -4.96)
+shape = SubResource("Shape_BarandaFrente")
+
+[node name="BarandaDerecha" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.46, 1.3, -2.25)
+shape = SubResource("Shape_BarandaDerecha")
+
+[node name="BarandaIzquierda" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.46, 1.3, -2.25)
+shape = SubResource("Shape_BarandaIzquierda")
+
+[node name="CabinaFrenteCentro" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.85, 0.55)
+shape = SubResource("Shape_CabinaFrenteCentro")
+
+[node name="CabinaFrenteDerecha" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 1.85, 0.55)
+shape = SubResource("Shape_CabinaFrenteDerecha")
+
+[node name="CabinaFrenteIzquierda" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 1.85, 0.55)
+shape = SubResource("Shape_CabinaFrenteIzquierda")
+
+[node name="CabinaFrenteDintel" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.05, 0.55)
+shape = SubResource("Shape_CabinaFrenteDintel")
+
+[node name="CabinaDerechaA" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2, 1.25)
+shape = SubResource("Shape_CabinaDerechaA")
+
+[node name="CabinaDerechaB" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2, 3.75)
+shape = SubResource("Shape_CabinaDerechaB")
+
+[node name="CabinaDerechaDintel" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 3.05, 2.5)
+shape = SubResource("Shape_CabinaDerechaDintel")
+
+[node name="CabinaIzquierdaA" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2, 1.25)
+shape = SubResource("Shape_CabinaIzquierdaA")
+
+[node name="CabinaIzquierdaB" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2, 3.75)
+shape = SubResource("Shape_CabinaIzquierdaB")
+
+[node name="CabinaIzquierdaDintel" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 3.05, 2.5)
+shape = SubResource("Shape_CabinaIzquierdaDintel")
+
+[node name="CabinaAtrasDerecha" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1.85, 4.45)
+shape = SubResource("Shape_CabinaAtrasDerecha")
+
+[node name="CabinaAtrasIzquierda" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 1.85, 4.45)
+shape = SubResource("Shape_CabinaAtrasIzquierda")
+
+[node name="CabinaAtrasDintel" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.05, 4.45)
+shape = SubResource("Shape_CabinaAtrasDintel")
+
+[node name="Techo" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.25, 2.5)
+shape = SubResource("Shape_Techo")
+
+[node name="Mando" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 1)
+shape = SubResource("Shape_Mando")
+
+[node name="RampaDerecha" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(0.866025, 0.5, 0, -0.5, 0.866025, 0, 0, 0, 1, 2.16782, 0.356699, 2.5)
+shape = SubResource("Shape_RampaDerecha")
+
+[node name="RampaIzquierda" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, -2.16782, 0.356699, 2.5)
+shape = SubResource("Shape_RampaIzquierda")

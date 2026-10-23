@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="VehicleData" format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicles/vehicle_data.gd" id="1_vdata"]
+
+[resource]
+script = ExtResource("1_vdata")
+id = &"locomotive"
+display_name = "locomotora"
+max_speed = 12.0
+acceleration = 1.5
+braking = 3.0

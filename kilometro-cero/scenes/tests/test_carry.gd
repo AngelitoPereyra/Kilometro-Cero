@@ -6,7 +6,7 @@ extends Node3D
 ## del jugador al 0 %, 50 %, 75 % y 100 % de las ranuras y el HUD muestra la alerta.
 ## (TAB ya no sirve para esto: desde la tarea 49 abre el inventario.)
 
-const CONTROLES: String = "WASD: caminar · Mouse: cámara · F: subir/bajar · C: cambiar la carga de la mochila · TAB: inventario"
+const CONTROLES: String = "WASD: caminar · Mouse: cámara · C: cambiar la carga de la mochila · TAB: inventario"
 ## Fracciones de ranuras que se ocupan al apretar C.
 const NIVELES_DE_CARGA: Array[float] = [0.0, 0.5, 0.75, 1.0]
 const NOMBRES_DE_ALERTA: Array[String] = ["normal", "casi llena", "llena"]

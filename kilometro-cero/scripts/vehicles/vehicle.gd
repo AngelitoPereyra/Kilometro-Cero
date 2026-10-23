@@ -4,11 +4,11 @@ extends PathFollow3D
 ## `progress` metros sobre el Path3D padre. Su velocidad máxima sale de `data` y de la
 ## condición del tramo. No lee teclas: quien lo maneja (el jugador, rutas automáticas)
 ## escribe `throttle`. Así el mismo vehículo sirve para todos.
+## Es caminable (tarea 51, D84): el jugador se engancha a cualquier cuerpo físico que cuelgue
+## del vehículo (un AnimatableBody3D, D62) y viaja con él. El vehículo no sabe nada de eso.
 
-## Grupo de todos los vehículos: el jugador lo consulta al apretar "interactuar".
+## Grupo de todos los vehículos.
 const GROUP: StringName = &"vehicles"
-## Distancia hacia la derecha del vehículo donde aparece el jugador al bajarse.
-const DISMOUNT_DISTANCE: float = 1.6
 
 @export var data: VehicleData
 ## Tramo que recorre. Si queda vacío, se usa el TrackSegment que cuelga del mismo Path3D:
@@ -16,9 +16,6 @@ const DISMOUNT_DISTANCE: float = 1.6
 ## (limitación del editor para escenas instanciadas, D42).
 ## En la tarea 20, RailNetwork lo reemplaza por una consulta por tramo.
 @export var segment: TrackSegment
-## Dónde se sienta el jugador. Es un Marker3D dentro de la escena del vehículo, así que
-## sí se puede asignar desde el inspector.
-@export var seat: Marker3D
 
 ## Acelerador pedido: 1.0 adelante a fondo, -1.0 marcha atrás, 0.0 soltar.
 var throttle: float = 0.0
@@ -65,14 +62,15 @@ func get_max_speed() -> float:
 	return data.get_max_speed(get_track_condition())
 
 
-## Posición del asiento en el mundo (si no hay asiento, el centro del vehículo).
-func get_seat_position() -> Vector3:
-	return seat.global_position if seat != null else global_position
-
-
-## Dónde queda el jugador al bajarse: al costado derecho, a la altura de la vía.
-func get_dismount_position() -> Vector3:
-	return global_position + global_basis.x * DISMOUNT_DISTANCE
+## El Vehicle al que pertenece `node` (el mismo nodo o uno de sus padres), o null.
+## Sirve para saber si un cuerpo físico que se pisó es parte de un vehículo.
+static func find_owner_of(node: Node) -> Vehicle:
+	while node != null:
+		var vehicle := node as Vehicle
+		if vehicle != null:
+			return vehicle
+		node = node.get_parent()
+	return null
 
 
 ## Nueva velocidad tras un paso. Lógica pura: no toca ningún nodo.
