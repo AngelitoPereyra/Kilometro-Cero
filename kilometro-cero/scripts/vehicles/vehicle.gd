@@ -19,6 +19,8 @@ const GROUP: StringName = &"vehicles"
 
 ## Acelerador pedido: 1.0 adelante a fondo, -1.0 marcha atrás, 0.0 soltar.
 var throttle: float = 0.0
+## Freno pedido: 0.0 suelto, 1.0 a fondo. Mientras frena, el acelerador no empuja (tarea 52).
+var brake: float = 0.0
 ## Velocidad actual en m/s sobre la curva; negativa = marcha atrás.
 var speed: float = 0.0
 
@@ -48,7 +50,15 @@ func _physics_process(delta: float) -> void:
 
 ## Un paso de simulación. Es público para poder probarlo con pasos fijos y sin esperar cuadros.
 func simulate(delta: float) -> void:
-	speed = step_speed(speed, throttle, get_max_speed(), data.acceleration, data.braking, delta)
+	var limit: float = get_max_speed()
+	if brake > 0.0:
+		speed = move_toward(speed, 0.0, data.braking * clampf(brake, 0.0, 1.0) * delta)
+	elif absf(speed) > limit:
+		# Si la vía obliga a ir más despacio, frena de verdad (no alcanza con dejarlo rodar).
+		speed = step_speed(speed, throttle, limit, data.acceleration, data.braking, delta)
+	else:
+		# Sin freno, bajar el acelerador solo deja rodar: lo frena el rozamiento.
+		speed = step_speed(speed, throttle, limit, data.acceleration, data.coast_deceleration, delta)
 	_advance(speed * delta)
 
 

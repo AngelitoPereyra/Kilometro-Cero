@@ -100,7 +100,8 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not _player.controls_enabled:
+	# En la cabina las manos no hacen nada (tarea 52).
+	if not _player.controls_enabled or _player.is_in_cab():
 		return
 	if event.is_action_pressed(&"grab"):
 		try_grab()
@@ -129,7 +130,7 @@ func _physics_process(_delta: float) -> void:
 		_cancel_place()
 
 	# Con un menú abierto no se apunta: se olvida el clic derecho a medio camino.
-	if not _player.controls_enabled and (_place_pressed or _placing):
+	if (not _player.controls_enabled or _player.is_in_cab()) and (_place_pressed or _placing):
 		_place_pressed = false
 		_cancel_place()
 

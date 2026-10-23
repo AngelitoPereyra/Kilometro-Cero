@@ -49,6 +49,13 @@ func add_yaw(amount: float) -> void:
 	_apply()
 
 
+## Vuelve a mostrar esta cámara (por ejemplo, al salir de la cabina, tarea 52).
+func make_current() -> void:
+	var camera: Camera3D = _spring_arm.get_node_or_null(^"Camera3D") as Camera3D
+	if camera != null:
+		camera.make_current()
+
+
 func _apply() -> void:
 	rotation.y = yaw
 	_spring_arm.rotation.x = pitch

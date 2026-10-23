@@ -52,7 +52,7 @@ func _definir_acciones() -> Dictionary:
 		&"move_back": [_tecla(KEY_S)],
 		&"move_left": [_tecla(KEY_A)],
 		&"move_right": [_tecla(KEY_D)],
-		&"interact": [_tecla(KEY_F)],        # subir/bajar del vehículo
+		&"interact": [_tecla(KEY_F)],        # entrar y salir de la cabina (D84)
 		&"grab": [_tecla(KEY_E)],            # recolectar (D69)
 		&"drop": [_tecla(KEY_Q)],            # soltar lo que hay en la mano
 		&"place": [_boton_mouse(MOUSE_BUTTON_RIGHT)],  # toque: soltar; mantener: apuntar el fantasma
@@ -63,6 +63,9 @@ func _definir_acciones() -> Dictionary:
 		&"sprint": [_tecla(KEY_SHIFT)],      # correr mientras se mantiene, sin costo (D91)
 		&"jump": [_tecla(KEY_SPACE)],        # saltar (D91)
 		&"crouch": [_tecla(KEY_CTRL)],       # agacharse mientras se mantiene (D91)
+		# En la cabina W y S mueven la palanca y Espacio frena (D91): reusan las de arriba.
+		&"lights": [_tecla(KEY_L)],          # luces de la locomotora (D91)
+		&"horn": [_tecla(KEY_H)],            # bocina (D91)
 		# El clic izquierdo queda reservado para usar herramientas (D71).
 	}
 

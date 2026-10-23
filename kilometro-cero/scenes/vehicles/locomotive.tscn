@@ -2,6 +2,8 @@
 
 [ext_resource type="Script" path="res://scripts/vehicles/vehicle.gd" id="1_veh"]
 [ext_resource type="Resource" path="res://data/vehicles/locomotive.tres" id="2_data"]
+[ext_resource type="Script" path="res://scripts/vehicles/cab.gd" id="3_cab"]
+[ext_resource type="AudioStream" path="res://data/audio/horn.wav" id="4_horn"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_piso"]
 albedo_color = Color(0.3, 0.3, 0.32, 1)
@@ -170,6 +172,17 @@ size = Vector3(1.6, 0.1, 1)
 
 [sub_resource type="BoxShape3D" id="Shape_RampaIzquierda"]
 size = Vector3(1.6, 0.1, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_Palanca"]
+size = Vector3(0.05, 0.45, 0.05)
+
+[sub_resource type="BoxMesh" id="Mesh_Faro"]
+size = Vector3(0.35, 0.35, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_faro"]
+albedo_color = Color(1, 0.95, 0.7, 1)
+emission_enabled = true
+emission = Color(1, 0.9, 0.6, 1)
 
 [node name="Locomotive" type="PathFollow3D"]
 script = ExtResource("1_veh")
@@ -396,3 +409,33 @@ shape = SubResource("Shape_RampaDerecha")
 [node name="RampaIzquierda" type="CollisionShape3D" parent="CuerpoFisico"]
 transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, -2.16782, 0.356699, 2.5)
 shape = SubResource("Shape_RampaIzquierda")
+
+[node name="Cab" type="Node3D" parent="." node_paths=PackedStringArray("lights")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 0.8, 1.7)
+script = ExtResource("3_cab")
+lights = [NodePath("../Faro")]
+horn_sound = ExtResource("4_horn")
+
+[node name="Camera3D" type="Camera3D" parent="Cab"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+fov = 70.0
+
+[node name="Palanca" type="Node3D" parent="Cab"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 0.95, -0.35)
+
+[node name="Mango" type="MeshInstance3D" parent="Cab/Palanca"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.22, 0)
+material_override = SubResource("Mat_baranda")
+mesh = SubResource("Mesh_Palanca")
+
+[node name="Faro" type="SpotLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -5.1)
+visible = false
+light_energy = 6.0
+spot_range = 60.0
+spot_angle = 25.0
+
+[node name="FaroLampara" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -5.05)
+material_override = SubResource("Mat_faro")
+mesh = SubResource("Mesh_Faro")

@@ -13,6 +13,9 @@ extends CharacterBody3D
 ## Movimiento (tarea 50, D91): Shift corre (sin costo), Espacio salta y Ctrl agacha
 ## mientras se mantiene. Al caminar hacia atrás el cuerpo no se da vuelta: retrocede
 ## mirando hacia adelante.
+## Cabina (tarea 52, D84): F entra a la cabina (`Cab`) más cercana del tren que pisa y vuelve
+## a salir. Adentro no camina, no salta ni agarra: queda parado en el puesto, el cuerpo se
+## esconde y la cámara pasa a la de la cabina. Las teclas de manejo las lee la cabina.
 
 @export_range(0.5, 10.0, 0.1, "suffix:m/s") var walk_speed: float = 4.0
 @export_range(0.5, 15.0, 0.1, "suffix:m/s") var sprint_speed: float = 7.0
@@ -45,6 +48,7 @@ var sprinting: bool = false
 var _platform: Vehicle
 var _platform_body: CollisionObject3D
 var _platform_transform: Transform3D
+var _cab: Cab
 var _camera: ThirdPersonCamera
 var _backpack: Inventory
 var _hands: Hands
@@ -153,6 +157,16 @@ func _physics_process(delta: float) -> void:
 		# El vehículo se borró de la escena: queda caminando donde estaba.
 		_platform = null
 		_platform_body = null
+	if _cab != null and not is_instance_valid(_cab):
+		_leave_cab_state()
+	if controls_enabled and Input.is_action_just_pressed(&"interact"):
+		if _cab != null:
+			exit_cab()
+		else:
+			try_enter_cab()
+	if _cab != null:
+		_stay_in_cab()
+		return
 	if _platform != null:
 		_carry(_get_physics_transform(_platform_body))
 	_walk(delta)
@@ -163,6 +177,55 @@ func _physics_process(delta: float) -> void:
 
 func get_camera() -> ThirdPersonCamera:
 	return _camera
+
+
+## Cabina en la que está manejando, o null.
+func get_cab() -> Cab:
+	return _cab
+
+
+func is_in_cab() -> bool:
+	return _cab != null
+
+
+## Entra a la cabina más cercana en la que se pueda (Cab.can_enter). Devuelve si entró.
+func try_enter_cab() -> bool:
+	if _cab != null or not controls_enabled:
+		return false
+	var best: Cab = null
+	var best_distance: float = INF
+	for node: Node in get_tree().get_nodes_in_group(Cab.GROUP):
+		var cab := node as Cab
+		if cab == null or not cab.can_enter(self):
+			continue
+		var distance: float = cab.horizontal_distance_to(global_position)
+		if distance < best_distance:
+			best = cab
+			best_distance = distance
+	if best == null:
+		return false
+	if crouching:
+		_wants_crouch = false
+		_apply_crouch(false)
+	_cab = best
+	velocity = Vector3.ZERO
+	global_position = _cab.global_position
+	_visual.visible = false
+	_cab.occupy(self)
+	return true
+
+
+## Sale de la cabina: queda parado en el puesto, con la 3ª persona mirando hacia donde
+## miraba en la cabina. Devuelve false si no estaba en una.
+func exit_cab() -> bool:
+	if _cab == null:
+		return false
+	var view_yaw: float = _cab.get_view_yaw()
+	_cab.release()
+	_leave_cab_state()
+	_visual.rotation.y = view_yaw
+	_camera.add_yaw(angle_difference(_camera.yaw, view_yaw))
+	return true
 
 ## Hacia dónde mira el cuerpo, en radianes (0 mira hacia -Z). Las manos (Grabber)
 ## se anclan a esto y no a la cámara: giran con el personaje, no cuando mirás
@@ -180,7 +243,7 @@ func get_backpack() -> Inventory:
 ## desactivarlos se frena: no sigue caminando (si está en un tren, el tren lo sigue llevando).
 func set_controls_enabled(enabled: bool) -> void:
 	controls_enabled = enabled
-	if enabled:
+	if enabled or _cab != null:
 		return
 	velocity.x = 0.0
 	velocity.z = 0.0
@@ -240,6 +303,23 @@ func can_stand() -> bool:
 	if not crouching:
 		return true
 	return not test_move(global_transform, Vector3.UP * (_stand_height - crouch_height))
+
+
+# En la cabina: el tren lo sigue llevando (como en _physics_process), pero no camina y queda
+# parado justo en el puesto.
+func _stay_in_cab() -> void:
+	if _platform != null:
+		_carry(_get_physics_transform(_platform_body))
+		_carry(_platform_body.global_transform)
+	global_position = _cab.global_position
+	velocity = Vector3.ZERO
+
+
+# Vuelve a la 3ª persona. No toca la cabina (puede haberse borrado).
+func _leave_cab_state() -> void:
+	_cab = null
+	_visual.visible = true
+	_camera.make_current()
 
 
 # Arma la mochila con los datos de `backpack_data`.

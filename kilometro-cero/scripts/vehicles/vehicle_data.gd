@@ -19,7 +19,11 @@ const CONDITION_EPSILON: float = 0.0001
 ## Qué fracción de `max_speed` alcanza justo en la condición mínima.
 @export_range(0.0, 1.0, 0.01) var min_speed_fraction: float = 0.4
 @export_range(0.1, 20.0, 0.1, "suffix:m/s²") var acceleration: float = 1.0
+## Desaceleración con el freno a fondo (Vehicle.brake).
 @export_range(0.1, 20.0, 0.1, "suffix:m/s²") var braking: float = 2.5
+## Desaceleración al soltar el acelerador sin frenar (rozamiento, punto muerto). Por defecto
+## igual que `braking`: los vehículos sin freno propio (la zorra) frenan al soltar (tarea 52).
+@export_range(0.01, 20.0, 0.01, "suffix:m/s²") var coast_deceleration: float = 2.5
 
 
 func can_enter(track_condition: float) -> bool:
