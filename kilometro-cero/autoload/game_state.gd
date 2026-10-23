@@ -2,7 +2,8 @@ extends Node
 ## Estado de la partida. Es dueño del reloj del juego (D34).
 ## Los demás datos (dinero, IRR, niveles de estación) entran cuando un sistema los necesite.
 
-const NEEDS_CONFIG_PATH: String = "res://data/config/needs_config.tres"
+## Minutos reales que dura un día de juego (D34). Vivía en NeedsConfig, que se borró (D75).
+const DAY_LENGTH_MINUTES: float = 24.0
 
 var clock: GameClock = GameClock.new()
 ## Permite pausar el tiempo (por ejemplo, en menús) sin tocar nada más.
@@ -15,13 +16,7 @@ var _hours_per_second: float = 0.0
 
 
 func _ready() -> void:
-	var config: NeedsConfig = null
-	if ResourceLoader.exists(NEEDS_CONFIG_PATH):
-		config = load(NEEDS_CONFIG_PATH) as NeedsConfig
-	if config == null:
-		push_warning("No se encontró %s: se usan los valores por defecto de NeedsConfig." % NEEDS_CONFIG_PATH)
-		config = NeedsConfig.new()
-	_hours_per_second = GameClock.hours_per_real_second(config.day_length_minutes)
+	_hours_per_second = GameClock.hours_per_real_second(DAY_LENGTH_MINUTES)
 	# El reloj no conoce al EventBus (es lógica pura): GameState hace de puente.
 	clock.day_started.connect(_on_day_started)
 	clock.time_advanced.connect(_on_time_advanced)

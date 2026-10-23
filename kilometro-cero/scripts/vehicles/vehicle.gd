@@ -75,11 +75,6 @@ func get_dismount_position() -> Vector3:
 	return global_position + global_basis.x * DISMOUNT_DISTANCE
 
 
-## Si bajarse ahora, con la velocidad actual, no causa un accidente.
-func is_dismount_safe() -> bool:
-	return data.is_dismount_safe(speed)
-
-
 ## Nueva velocidad tras un paso. Lógica pura: no toca ningún nodo.
 ## Acelera solo si el objetivo está más lejos del cero que la velocidad actual y en el
 ## mismo sentido. En cualquier otro caso (soltar, límite que baja, invertir) frena.

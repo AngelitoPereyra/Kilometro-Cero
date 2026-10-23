@@ -22,7 +22,6 @@ metadata/_custom_type_script = "uid://36n3lb0yd50r"
 [resource]
 script = ExtResource("1_bf2od")
 layout = SubResource("Resource_itxvh")
-weight_capacity_bonus = 10.0
 id = &"backpack_basic"
 display_name = "Mochila de tela"
 size_class = 1

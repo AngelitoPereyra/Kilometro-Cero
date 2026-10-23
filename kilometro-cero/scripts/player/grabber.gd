@@ -10,7 +10,7 @@ class_name Grabber extends Node
 ## la mochila; si no entra, no se toma nada y avisa.
 
 ## Se emite cuando no se pudo hacer algo. `reason` es &"nothing_near",
-## &"too_big" (solo grúa), &"too_heavy", &"no_room" (no entra en la mochila),
+## &"too_big" (solo grúa), &"no_room" (no entra en la mochila),
 ## &"container_empty", &"hands_empty", &"place_invalid" (el lugar apuntado no es
 ## válido) o &"not_placeable" (el objeto no tiene Placeable). La UI lo usará después.
 signal grab_failed(reason: StringName)
@@ -94,9 +94,6 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Desmayado no se hace nada; caminando o sentado sí.
-	if _player.state == Player.State.FAINTED:
-		return
 	if event.is_action_pressed(&"grab"):
 		try_grab()
 	elif event.is_action_pressed(&"drop"):
@@ -123,10 +120,7 @@ func _physics_process(_delta: float) -> void:
 		_player.get_hands().release()
 		_cancel_place()
 
-	if _player.state == Player.State.FAINTED:
-		_place_pressed = false
-		_cancel_place()
-	elif _place_pressed and not _placing and _held_long_enough():
+	if _place_pressed and not _placing and _held_long_enough():
 		_try_enter_placing()
 
 	if _held == null:
@@ -197,23 +191,17 @@ func _fits_in_backpack(stack: ItemStack) -> bool:
 	return _player.get_backpack().can_store_amount(stack) >= stack.quantity
 
 
-# Plan para recoger `stack` ahora mismo: uno de plan_pickup, o &"too_heavy" si pasa el
-# tope de carga. `room_kg` es el peso que todavía se puede sumar.
-func _plan_for(stack: ItemStack, room_kg: float) -> StringName:
+# Plan para recoger `stack` ahora mismo: uno de plan_pickup. Sin tope de peso (D86).
+func _plan_for(stack: ItemStack) -> StringName:
 	var hands: Hands = _player.get_hands()
 	var hand_busy: bool = not hands.is_empty()
 	var hand_fits: bool = (not hand_busy) or _fits_in_backpack(hands.get_held())
-	var plan: StringName = plan_pickup(
+	return plan_pickup(
 			stack.item.size_class, stack.item.hands, hand_busy, _fits_in_backpack(stack), hand_fits)
-	if not is_ok_plan(plan):
-		return plan
-	if stack.get_weight() > room_kg:
-		return &"too_heavy"
-	return plan
 
 
 func _grab_world_item(target: WorldItem) -> bool:
-	var plan: StringName = _plan_for(target.stack, _player.get_encumbrance().get_pickup_room())
+	var plan: StringName = _plan_for(target.stack)
 	if not is_ok_plan(plan):
 		grab_failed.emit(plan)
 		return false
@@ -236,7 +224,6 @@ func _grab_world_item(target: WorldItem) -> bool:
 # reglas que un objeto suelto. Se comprueba con copias (peek) antes de sacar nada.
 func _take_from_container(area: StorageArea) -> bool:
 	var container: StorageContainer = area.get_container()
-	var room: float = _player.get_encumbrance().get_pickup_room()
 
 	var zone_index: int = -1
 	var plan: StringName = &""
@@ -245,7 +232,7 @@ func _take_from_container(area: StorageArea) -> bool:
 		var sample: ItemStack = container.peek(zone)
 		if sample == null:
 			continue
-		var candidate_plan: StringName = _plan_for(sample.duplicate_stack(1), room)
+		var candidate_plan: StringName = _plan_for(sample.duplicate_stack(1))
 		if is_ok_plan(candidate_plan):
 			zone_index = zone
 			plan = candidate_plan

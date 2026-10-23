@@ -1,9 +1,10 @@
 extends Node3D
-## Prueba de la tarea 9: cálculos del jugador, umbral de accidente, y subir y bajar del vehículo.
-## Después de las pruebas se puede jugar: WASD, mouse, E, Espacio y S.
+## Prueba de la tarea 9: cálculos del jugador y subir y bajar del vehículo.
+## Desde la tarea 47 no hay accidente al bajarse ni desmayo (D75).
+## Después de las pruebas se puede jugar: WASD, mouse y F.
 ## Supone el jugador a 2 m del vehículo y el vehículo detenido al inicio de la vía.
 
-const CONTROLES: String = "WASD: caminar · Mouse: cámara · E: subir/bajar · Espacio: empujar · S: marcha atrás · Esc: soltar el mouse"
+const CONTROLES: String = "WASD: caminar · Mouse: cámara · F: subir/bajar · W: avanzar · S: marcha atrás · Esc: soltar el mouse"
 const TOLERANCIA_M: float = 0.01
 
 @onready var _player: Player = $Player
@@ -11,17 +12,14 @@ const TOLERANCIA_M: float = 0.01
 @onready var _hud: Label = $Hud/Label
 
 var _fallos: int = 0
-var _accidentes: int = 0
 
 
 func _ready() -> void:
 		# Margen desde el borde superior izquierdo, hecho por código para no depender del inspector.
 	_hud.position = Vector2(16.0, 16.0)
 	_hud.text = CONTROLES
-	EventBus.player_fainted.connect(_al_desmayar)
 	_probar_estructura()
 	_probar_calculos()
-	_probar_umbral_de_accidente()
 	await _probar_subir_y_bajar()
 
 	if _fallos == 0:
@@ -33,7 +31,6 @@ func _ready() -> void:
 	_vehicle.speed = 0.0
 	_vehicle.throttle = 0.0
 	_vehicle.progress = 0.0
-	_player.wake_up()
 	_player.global_position = Vector3(2.0, 0.0, 0.0)
 	_hud.text = CONTROLES
 
@@ -56,15 +53,6 @@ func _probar_calculos() -> void:
 	_comprobar(Player.nearest_index(Vector3.ZERO, vacio, 3.0) == -1, "Sin vehículos: -1")
 
 
-func _probar_umbral_de_accidente() -> void:
-	var datos := VehicleData.new()
-	datos.max_safe_dismount_speed = 3.0
-	_comprobar(datos.is_dismount_safe(0.0), "Detenido, bajarse es seguro")
-	_comprobar(datos.is_dismount_safe(3.0), "Justo en el umbral, bajarse es seguro")
-	_comprobar(not datos.is_dismount_safe(3.1), "Sobre el umbral, bajarse es un accidente")
-	_comprobar(not datos.is_dismount_safe(-3.1), "También en marcha atrás")
-
-
 func _probar_subir_y_bajar() -> void:
 	# Lejos del vehículo no se puede subir.
 	_player.global_position = Vector3(50.0, 0.0, 0.0)
@@ -80,29 +68,21 @@ func _probar_subir_y_bajar() -> void:
 	await get_tree().physics_frame
 	await get_tree().physics_frame
 	_comprobar(_player.global_position.distance_to(_vehicle.get_seat_position()) < TOLERANCIA_M, "Sentado, sigue al asiento del vehículo")
-	# Bajar detenido: sin accidente, al costado del vehículo.
+	# Bajar detenido: al costado del vehículo.
 	_vehicle.speed = 0.0
 	_player.dismount()
-	_comprobar(_accidentes == 0, "Bajar detenido no causa accidente")
 	_comprobar(_player.state == Player.State.WALKING, "Después de bajar vuelve a caminar")
 	_comprobar(_player.global_position.distance_to(_vehicle.get_dismount_position()) < TOLERANCIA_M, "Aparece al costado del vehículo")
 	_comprobar(_player.global_position.distance_to(_vehicle.global_position) > 1.0, "Fuera del cuerpo del vehículo")
 	_comprobar(is_zero_approx(_vehicle.throttle), "Al bajar, el acelerador vuelve a 0")
 
-	# Bajar rápido: accidente.
+	# Bajar rápido ya no es un accidente (D75): sigue caminando, al costado.
 	_player.global_position = Vector3(2.0, 0.0, 0.0)
 	_player.try_mount()
 	_vehicle.speed = 5.0
 	_player.dismount()
-	_comprobar(_accidentes == 1, "Bajar a 5 m/s emite player_fainted (accidente)")
-	_comprobar(_player.state == Player.State.FAINTED, "Tras el accidente el jugador queda desmayado (tarea 10)")
-	_player.wake_up()
-	_comprobar(_player.state == Player.State.WALKING, "Al despertar el jugador vuelve a caminar")
-
-
-func _al_desmayar(cause: StringName) -> void:
-	_accidentes += 1
-	_hud.text = "¡Desmayo (%s)!\n%s" % [cause, CONTROLES]
+	_comprobar(_player.state == Player.State.WALKING, "Bajar a 5 m/s deja al jugador caminando, sin desmayo")
+	_comprobar(_player.global_position.distance_to(_vehicle.get_dismount_position()) < TOLERANCIA_M, "Bajando en movimiento también aparece al costado")
 
 
 func _comprobar(condicion: bool, descripcion: String) -> void:

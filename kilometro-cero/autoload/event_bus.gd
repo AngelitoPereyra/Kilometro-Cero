@@ -1,6 +1,6 @@
 extends Node
 ## Bus de señales globales. NO tiene lógica: solo declara señales.
-## Quien emite no conoce a quien escucha, y así los sistemas lejanos (UI, necesidades,
+## Quien emite no conoce a quien escucha, y así los sistemas lejanos (UI, misiones,
 ## estaciones) se comunican sin referenciarse entre sí (02-arquitectura, sección 1).
 ##
 ## No lleva `class_name`: el autoload ya se llama EventBus, y repetir el nombre
@@ -14,18 +14,12 @@ extends Node
 # "señal declarada pero no usada" por cada una. El aviso no aplica a un bus.
 @warning_ignore_start("unused_signal")
 
-## Cambia agua, comida o fatiga. `need` es &"water", &"food" o &"fatigue".
-signal need_changed(need: StringName, value: float)
 ## Empieza un día de juego nuevo.
 signal day_started(day: int)
-## Avanza el reloj de juego (por ejemplo, al tomar mate).
+## Avanza el reloj de juego (por ejemplo, al acampar).
 signal time_advanced(hours: float)
-## Desmayo por una necesidad en 0 o por un accidente.
-signal player_fainted(cause: StringName)
 ## El jugador toma o suelta algo con las manos.
 signal hands_changed()
-## Cambia la relación peso/capacidad (1.0 = al límite sin penalización).
-signal encumbrance_changed(ratio: float)
 ## Se usa una herramienta; `durability` es lo que le queda.
 signal tool_used(tool_id: StringName, durability: float)
 ## Una herramienta se rompió y deja de servir.
@@ -40,10 +34,6 @@ signal track_condition_changed(segment_id: StringName, condition: float)
 signal vehicle_upgraded(vehicle_id: StringName, upgrade_id: StringName)
 ## Cambia el Índice de Recuperación Regional de una región.
 signal irr_changed(region_id: StringName, value: float)
-## Empieza un salto de viaje con mate.
-signal mate_started(destination_id: StringName)
-## Termina el salto de viaje.
-signal mate_ended()
 ## Entra algo a un contenedor con identificador (mochila, vagón, depósito).
 signal item_stored(container_id: StringName, stack: ItemStack)
 ## Sale algo de un contenedor con identificador.

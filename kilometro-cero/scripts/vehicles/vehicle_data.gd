@@ -11,8 +11,6 @@ const CONDITION_EPSILON: float = 0.0001
 @export var id: StringName
 @export var display_name: String
 @export var level: int = 1
-## Velocidad por encima de la cual bajarse en movimiento causa un accidente (D30, D45).
-@export_range(0.0, 100.0, 0.1, "suffix:m/s") var max_safe_dismount_speed: float = 3.0
 
 ## Condición de vía (0.0 a 1.0) por debajo de la cual el vehículo no puede andar.
 @export_range(0.0, 1.0, 0.01) var min_track_condition: float = 0.2
@@ -38,7 +36,3 @@ func get_max_speed(track_condition: float) -> float:
 		return max_speed
 	var t: float = clampf(inverse_lerp(min_track_condition, 1.0, track_condition), 0.0, 1.0)
 	return max_speed * lerpf(min_speed_fraction, 1.0, t)
-
-## Si el jugador puede bajarse a esa velocidad (en cualquier sentido) sin accidente.
-func is_dismount_safe(current_speed: float) -> bool:
-	return absf(current_speed) <= max_safe_dismount_speed

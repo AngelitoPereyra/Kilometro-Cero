@@ -5,18 +5,11 @@ extends CharacterBody3D
 ## hereda el giro del cuerpo (D44).
 ## Sobre un vehículo, el jugador no cambia de padre: copia la posición del asiento en cada
 ## paso de física, y por eso se procesa DESPUÉS del vehículo (ver _ready).
-## Tiene un nodo Needs hijo. Cuando una necesidad llega al límite, o cuando se baja de un
-## vehículo a demasiada velocidad, se desmaya (faint) y al rato despierta (wake_up).
-## Carga: tiene una mochila (el nodo Backpack, un StorageContainer armado con `backpack_data`)
-## y un nodo Encumbrance que suma el peso. Cuando cambia el cociente peso/capacidad, el
-## jugador camina más lento y se cansa más (D20, D50).
+## Tiene una mochila (el nodo Backpack, un StorageContainer armado con `backpack_data`).
+## Sin supervivencia ni peso (D75, D86): no hay desmayo, ni accidente al bajarse, y la
+## carga no cambia la velocidad.
 
-enum State { WALKING, RIDING, FAINTED }
-
-## Nombre de la fuente con la que la mochila informa su peso a Encumbrance.
-const BACKPACK_SOURCE: StringName = &"backpack"
-## Nombre de la fuente con la que las manos informan su peso a Encumbrance.
-const HANDS_SOURCE: StringName = &"hands"
+enum State { WALKING, RIDING }
 
 @export_range(0.5, 10.0, 0.1, "suffix:m/s") var walk_speed: float = 4.0
 @export_range(1.0, 100.0, 0.5) var acceleration: float = 25.0
@@ -26,18 +19,15 @@ const HANDS_SOURCE: StringName = &"hands"
 @export_range(0.5, 10.0, 0.1, "suffix:m") var interaction_range: float = 3.0
 
 @export_group("Carga")
-## Mochila equipada: define las zonas del nodo Backpack y su aporte de capacidad.
+## Mochila equipada: define las zonas del nodo Backpack.
 @export var backpack_data: BackpackData
 
 var state: State = State.WALKING
 
 var _vehicle: Vehicle
 var _camera: ThirdPersonCamera
-var _needs: Needs
-var _encumbrance: Encumbrance
 var _backpack: StorageContainer
 var _hands: Hands
-var _faint_time_left: float = 0.0
 
 @onready var _visual: Node3D = $Visual
 @onready var _collision: CollisionShape3D = $CollisionShape3D
@@ -86,15 +76,9 @@ func _ready() -> void:
 		push_error("La cámara ('%s') debe ser hija directa de Player, no de '%s': si no, gira con el cuerpo y los controles se desordenan." % [_camera.name, _camera.get_parent().name])
 		set_physics_process(false)
 		return
-	_needs = _find_needs()
-	if _needs == null:
-		push_error("Player necesita un nodo Needs como hijo directo.")
-		set_physics_process(false)
-		return
-	_encumbrance = _find_encumbrance()
 	_backpack = _find_backpack()
-	if _encumbrance == null or _backpack == null:
-		push_error("Player necesita como hijos directos un nodo Encumbrance y un StorageContainer (la mochila, llamado Backpack).")
+	if _backpack == null:
+		push_error("Player necesita como hijo directo un StorageContainer (la mochila, llamado Backpack).")
 		set_physics_process(false)
 		return
 	_hands = _find_hands()
@@ -103,9 +87,7 @@ func _ready() -> void:
 		set_physics_process(false)
 		return
 	_setup_backpack()
-	_encumbrance.ratio_changed.connect(_on_encumbrance_changed)
 	_hands.hands_changed.connect(_on_hands_changed)
-	_needs.fainted.connect(faint)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -116,7 +98,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			try_mount()
 		State.RIDING:
 			dismount()
-		# Desmayado no puede hacer nada.
 
 
 func _physics_process(delta: float) -> void:
@@ -125,8 +106,6 @@ func _physics_process(delta: float) -> void:
 			_walk(delta)
 		State.RIDING:
 			_ride()
-		State.FAINTED:
-			_lie_down(delta)
 
 
 func get_camera() -> ThirdPersonCamera:
@@ -136,17 +115,8 @@ func get_camera() -> ThirdPersonCamera:
 ## se anclan a esto y no a la cámara: giran con el personaje, no cuando mirás
 ## alrededor, como dos brazos de verdad (D61).
 ## La raíz nunca rota (D44), así que el giro local del pivote Visual es el del cuerpo.
-## Se usa `rotation.y` y no `global_rotation.y` porque desmayado `Visual` se inclina
-## en X, y con esa inclinación el ángulo global se vuelve inestable.
 func get_facing_yaw() -> float:
 	return _visual.rotation.y
-
-func get_needs() -> Needs:
-	return _needs
-
-
-func get_encumbrance() -> Encumbrance:
-	return _encumbrance
 
 
 func get_backpack() -> StorageContainer:
@@ -155,9 +125,9 @@ func get_backpack() -> StorageContainer:
 func get_hands() -> Hands:
 	return _hands
 	
-## Velocidad de caminata actual: la base por la penalización de la carga.
+## Velocidad de caminata actual. La carga no la cambia (D86); correr llega en la tarea 50.
 func get_walk_speed() -> float:
-	return walk_speed * _encumbrance.get_speed_multiplier()
+	return walk_speed
 
 
 ## Sube al vehículo más cercano al alcance. Devuelve false si no hay ninguno.
@@ -179,50 +149,14 @@ func try_mount() -> bool:
 	return true
 
 
-## Baja del vehículo, al costado. Si va demasiado rápido, es un accidente y se desmaya.
+## Baja del vehículo, al costado. Se puede bajar a cualquier velocidad (D75).
 func dismount() -> void:
 	if state != State.RIDING:
 		return
-	var safe: bool = _vehicle.is_dismount_safe()
 	_leave_vehicle()
-	if not safe:
-		faint(&"accident")
 
 
-## Desmayo: por una necesidad en el límite (lo avisa Needs) o por un accidente.
-## Pierde el conocimiento unos segundos y, al despertar, ha pasado tiempo (ver wake_up).
-func faint(cause: StringName) -> void:
-	if state == State.FAINTED:
-		return
-	if state == State.RIDING:
-		_leave_vehicle()
-	state = State.FAINTED
-	velocity = Vector3.ZERO
-	_faint_time_left = _needs.config.faint_duration_seconds
-	# En pausa: mientras está inconsciente las necesidades no siguen cayendo, y así no hay
-	# un segundo desmayo en cadena.
-	_needs.paused = true
-	# Cae hacia adelante, relativo a hacia dónde miraba (señal visual provisoria).
-	_visual.rotation.x = deg_to_rad(-90.0)
-	EventBus.player_fainted.emit(cause)
-
-
-## Despierta: pasó el tiempo perdido y las necesidades se recuperan un poco.
-## Se llama sola al terminar el desmayo; es pública para poder probarla.
-## Que despierte en la estación más cercana y con menos carga llega con las tareas 21 y 12.
-func wake_up() -> void:
-	if state != State.FAINTED:
-		return
-	_visual.rotation.x = 0.0
-	# Needs sigue en pausa: el tiempo perdido no gasta necesidades además de la recuperación.
-	GameState.clock.advance(_needs.config.faint_hours_lost)
-	_needs.recover_from_faint()
-	_needs.paused = false
-	state = State.WALKING
-
-
-# Arma la mochila con los datos de `backpack_data` y la engancha al peso total.
-# Va en este orden: primero se arma el contenedor y recién después se lo registra.
+# Arma la mochila con los datos de `backpack_data`.
 func _setup_backpack() -> void:
 	if backpack_data == null or backpack_data.layout == null:
 		push_warning("Player no tiene una BackpackData con layout asignada: no podrá guardar objetos.")
@@ -231,22 +165,12 @@ func _setup_backpack() -> void:
 		push_error("El nodo Backpack del jugador necesita un StorageConfig asignado.")
 		return
 	_backpack.setup(backpack_data.layout, _backpack.config)
-	_encumbrance.set_capacity_bonus(BACKPACK_SOURCE, backpack_data.weight_capacity_bonus)
-	_encumbrance.track_container(BACKPACK_SOURCE, _backpack)
 
 
-# Encumbrance no conoce a Needs ni al movimiento: el jugador, que sí, aplica los
-# multiplicadores y es el único que avisa por el bus (mismo criterio que el desmayo, D46).
-func _on_encumbrance_changed(ratio: float) -> void:
-	_needs.fatigue_multiplier = _encumbrance.get_fatigue_multiplier()
-	EventBus.encumbrance_changed.emit(ratio)
-
-# Mismo patrón que la carga (D50): las manos informan su peso y el jugador lo
-# suma; Hands no conoce a Encumbrance. Solo el jugador avisa por el bus.
+# Hands no conoce al bus: el jugador es el único que avisa (D52).
 func _on_hands_changed() -> void:
-	_encumbrance.set_load(HANDS_SOURCE, _hands.get_total_weight())
 	EventBus.hands_changed.emit()
-	
+
 
 func _leave_vehicle() -> void:
 	var vehicle: Vehicle = _vehicle
@@ -273,20 +197,9 @@ func _walk(delta: float) -> void:
 
 func _ride() -> void:
 	# Solo este script lee la entrada; el vehículo recibe un número entre -1 y 1.
-	_vehicle.throttle = Input.get_axis(&"move_back", &"push")
+	_vehicle.throttle = Input.get_axis(&"move_back", &"move_forward")
 	global_position = _vehicle.get_seat_position()
 	_visual.rotation.y = _vehicle.global_rotation.y
-
-
-func _lie_down(delta: float) -> void:
-	velocity.x = 0.0
-	velocity.z = 0.0
-	if not is_on_floor():
-		velocity += get_gravity() * delta
-	move_and_slide()
-	_faint_time_left -= delta
-	if _faint_time_left <= 0.0:
-		wake_up()
 
 
 func _get_vehicles() -> Array[Vehicle]:
@@ -306,21 +219,6 @@ func _find_camera() -> ThirdPersonCamera:
 			return camera
 	return null
 
-
-func _find_needs() -> Needs:
-	for child: Node in get_children():
-		var needs := child as Needs
-		if needs != null:
-			return needs
-	return null
-
-
-func _find_encumbrance() -> Encumbrance:
-	for child: Node in get_children():
-		var encumbrance := child as Encumbrance
-		if encumbrance != null:
-			return encumbrance
-	return null
 
 func _find_hands() -> Hands:
 	for child: Node in get_children():

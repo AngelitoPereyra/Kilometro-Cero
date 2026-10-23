@@ -12,10 +12,10 @@ func _ready() -> void:
 	_comprobar(has_node("/root/SaveSystem"), "SaveSystem está registrado")
 
 	# Si el bus entrega una señal con sus argumentos, el cableado funciona.
-	EventBus.need_changed.connect(_al_cambiar_necesidad)
-	EventBus.need_changed.emit(&"water", 42.0)
-	_comprobar(_recibido and is_equal_approx(_valor_recibido, 42.0), "need_changed llega con su valor")
-	EventBus.need_changed.disconnect(_al_cambiar_necesidad)
+	EventBus.time_advanced.connect(_al_avanzar_el_tiempo)
+	EventBus.time_advanced.emit(42.0)
+	_comprobar(_recibido and is_equal_approx(_valor_recibido, 42.0), "time_advanced llega con su valor")
+	EventBus.time_advanced.disconnect(_al_avanzar_el_tiempo)
 
 	if _fallos == 0:
 		print("Tarea 5: todas las comprobaciones pasaron.")
@@ -23,9 +23,9 @@ func _ready() -> void:
 		push_error("Tarea 5: fallaron %d comprobaciones." % _fallos)
 
 
-func _al_cambiar_necesidad(_need: StringName, value: float) -> void:
+func _al_avanzar_el_tiempo(hours: float) -> void:
 	_recibido = true
-	_valor_recibido = value
+	_valor_recibido = hours
 
 
 func _comprobar(condicion: bool, descripcion: String) -> void:

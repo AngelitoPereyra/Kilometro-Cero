@@ -1,8 +1,8 @@
 extends Node3D
 ## Prueba de la mano, el Grabber, la recogida por tamaño, StorageArea, la mochila
 ## y la colocación (tareas 13 a 15b). Genera objetos y una caja de carga delante
-## del jugador, y muestra en pantalla lo que tenés en la mano, en la mochila,
-## las necesidades y lo que pasa.
+## del jugador, y muestra en pantalla lo que tenés en la mano, en la mochila
+## y lo que pasa. Sin peso ni necesidades desde la tarea 47 (D75, D86).
 
 const WORLD_ITEM_SCENE: PackedScene = preload("res://scenes/items/world_item.tscn")
 const HELP: String = "E: recolectar · Q: soltar · Clic der: soltar (mantener: apuntar, rueda: girar) · F: vehículo"
@@ -12,7 +12,6 @@ var _grabber: Grabber
 var _hud: Label
 var _crosshair: Label
 var _message: String = HELP
-var _ratio: float = 0.0
 var _box_container: StorageContainer
 var _box_label: Label3D
 
@@ -275,13 +274,11 @@ func _connect_feedback() -> void:
 	EventBus.item_held.connect(_on_item_held)
 	EventBus.item_released.connect(_on_item_released)
 	EventBus.item_placed.connect(_on_item_placed)
-	EventBus.encumbrance_changed.connect(_on_encumbrance_changed)
 	_box_container.item_stored.connect(_on_box_stored)
 	_box_container.item_taken.connect(_on_box_taken)
 	var backpack: StorageContainer = _player.get_backpack()
 	backpack.item_stored.connect(_on_backpack_stored)
 	backpack.item_taken.connect(_on_backpack_taken)
-	_ratio = _player.get_encumbrance().get_ratio()
 	print("test_grab: Grabber conectado.")
 
 
@@ -330,10 +327,6 @@ func _on_box_rejected(leftover: ItemStack) -> void:
 	_say("No entra en la caja: sobran %d de %s." % [leftover.quantity, leftover.item.id])
 
 
-func _on_encumbrance_changed(ratio: float) -> void:
-	_ratio = ratio
-
-
 func _on_grab_failed(reason: StringName) -> void:
 	match reason:
 		&"nothing_near":
@@ -342,8 +335,6 @@ func _on_grab_failed(reason: StringName) -> void:
 			_say("No tenés nada en la mano.")
 		&"too_big":
 			_say("Es demasiado grande: hace falta una grúa.")
-		&"too_heavy":
-			_say("Pesa demasiado para cargarlo.")
 		&"container_empty":
 			_say("El contenedor está vacío.")
 		&"no_room":
@@ -360,12 +351,9 @@ func _say(text: String) -> void:
 
 
 func _refresh_hud() -> void:
-	var needs: Needs = _player.get_needs()
 	var hands: Hands = _player.get_hands()
 	var lines: PackedStringArray = []
 	lines.append("Día %d · %s" % [GameState.clock.current_day, GameClock.format_time(GameState.clock.time_of_day)])
-	lines.append("Agua %.0f · Comida %.0f · Fatiga %.0f" % [
-		needs.get_value(Needs.WATER), needs.get_value(Needs.FOOD), needs.get_value(Needs.FATIGUE)])
 	var held: ItemStack = hands.get_held()
 	var held_text: String = "—"
 	if held != null:
@@ -373,7 +361,6 @@ func _refresh_hud() -> void:
 	lines.append("Mano: %s" % held_text)
 	lines.append("Mochila:")
 	lines.append_array(_zone_lines(_player.get_backpack()))
-	lines.append("Carga: %.0f %%" % (_ratio * 100.0))
 	lines.append(_message)
 	lines.append(_diagnostic_line())
 	_hud.text = "\n".join(lines)

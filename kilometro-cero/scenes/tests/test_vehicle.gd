@@ -3,7 +3,7 @@ extends Node3D
 ## Las comprobaciones corren con simulate() en pasos fijos, sin esperar cuadros reales.
 ## Supone la vía de 200 m de las tareas 6 y 7, y un VehicleData con
 ## min_track_condition > 0 y max_speed mayor que la velocidad en la condición mínima.
-## Después de las pruebas se puede manejar el vehículo: Espacio empuja, S marcha atrás.
+## Después de las pruebas se puede manejar el vehículo: W avanza, S marcha atrás.
 ## Para ver cómo cambia la velocidad, mové la condición del TrackSegment desde la
 ## pestaña Remote del panel Scene mientras el juego corre.
 
@@ -42,13 +42,13 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	if _manual:
 		# Solo la escena de prueba lee la entrada; el vehículo recibe un número (-1 a 1).
-		_vehicle.throttle = Input.get_axis(&"move_back", &"push")
+		_vehicle.throttle = Input.get_axis(&"move_back", &"move_forward")
 
 
 func _process(_delta: float) -> void:
 	if _hud == null or not _manual:
 		return
-	_hud.text = "Condición de vía: %d %%\nVelocidad: %.1f m/s (%.0f km/h) · máxima en este tramo: %.1f m/s\nEspacio: empujar · S: marcha atrás" % [
+	_hud.text = "Condición de vía: %d %%\nVelocidad: %.1f m/s (%.0f km/h) · máxima en este tramo: %.1f m/s\nW: avanzar · S: marcha atrás" % [
 		roundi(_segment.condition * 100.0),
 		_vehicle.speed,
 		absf(_vehicle.speed) * 3.6,

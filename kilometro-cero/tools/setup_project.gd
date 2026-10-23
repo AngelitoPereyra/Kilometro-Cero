@@ -17,12 +17,14 @@ const CAPAS_FISICAS_3D: Array[String] = [
 ]
 
 # Acciones que existieron antes y ya no se usan. Se borran para que el Input Map
-# no acumule teclas muertas (D68, D71: una sola mano, una sola acción de soltar).
+# no acumule teclas muertas (D68, D71: una sola mano, una sola acción de soltar;
+# D91: el vehículo avanza con W y se libera Espacio para saltar).
 const ACCIONES_OBSOLETAS: Array[StringName] = [
 	&"drop_left",
 	&"drop_right",
 	&"backpack_store",
 	&"backpack_take",
+	&"push",
 ]
 
 
@@ -46,12 +48,11 @@ func _run() -> void:
 # El código del juego solo conoce los nombres, nunca las teclas (02-arquitectura, sección 4).
 func _definir_acciones() -> Dictionary:
 	return {
-		&"move_forward": [_tecla(KEY_W)],
+		&"move_forward": [_tecla(KEY_W)],    # también acelera el vehículo
 		&"move_back": [_tecla(KEY_S)],
 		&"move_left": [_tecla(KEY_A)],
 		&"move_right": [_tecla(KEY_D)],
 		&"interact": [_tecla(KEY_F)],        # subir/bajar del vehículo
-		&"push": [_tecla(KEY_SPACE)],        # empujar la zorra; pasa a W en la tarea 9b
 		&"grab": [_tecla(KEY_E)],            # recolectar (D69)
 		&"drop": [_tecla(KEY_Q)],            # soltar lo que hay en la mano
 		&"place": [_boton_mouse(MOUSE_BUTTON_RIGHT)],  # toque: soltar; mantener: apuntar el fantasma
