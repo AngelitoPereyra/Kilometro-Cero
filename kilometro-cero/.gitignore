@@ -1,3 +1,27 @@
-# Godot 4+ specific ignores
+# Godot 4+
 .godot/
 /android/
+
+# Temporales de guardado de Godot
+*.tmp
+
+# Exportaciones (builds)
+/builds/
+/export/
+*.pck
+*.exe
+*.apk
+*.aab
+
+# export_presets.cfg puede guardar contraseñas de firma; descomentar si alguna vez las cargás
+# export_presets.cfg
+
+# Sistema operativo / OneDrive
+Thumbs.db
+desktop.ini
+.DS_Store
+*~
+
+# Editores
+.vscode/
+.idea/
