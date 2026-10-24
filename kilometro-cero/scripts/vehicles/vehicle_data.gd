@@ -11,6 +11,9 @@ const CONDITION_EPSILON: float = 0.0001
 @export var id: StringName
 @export var display_name: String
 @export var level: int = 1
+## Largo de tope a tope. Con él se separan los vehículos acoplados y se frena en los
+## extremos de la vía sin que nada quede afuera (tarea 53).
+@export_range(0.5, 40.0, 0.1, "suffix:m") var length: float = 4.0
 
 ## Condición de vía (0.0 a 1.0) por debajo de la cual el vehículo no puede andar.
 @export_range(0.0, 1.0, 0.01) var min_track_condition: float = 0.2

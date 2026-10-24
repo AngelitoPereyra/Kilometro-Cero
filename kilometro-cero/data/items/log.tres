@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/storage/item_data.gd" id="1_item"]
+[ext_resource type="PackedScene" path="res://scenes/items/log.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"log"
+display_name = "tronco"
+size_class = 2
+unit_weight = 20.0
+hands = 1
+tags = Array[StringName]([&"log"])
+scene = ExtResource("2_scene")

@@ -292,30 +292,28 @@ func _grab_world_item(target: WorldItem) -> bool:
 	return true
 
 
-# Saca UNA unidad de la primera zona de la que se pueda y la recoge con las mismas
+# Saca UNA unidad de la primera pila de la que se pueda y la recoge con las mismas
 # reglas que un objeto suelto. Se comprueba con copias (peek) antes de sacar nada.
 func _take_from_container(area: StorageArea) -> bool:
 	var container: StorageContainer = area.get_container()
 
-	var zone_index: int = -1
+	var stack_index: int = -1
 	var plan: StringName = &""
 	var first_failure: StringName = &"container_empty"
-	for zone: int in container.get_zone_count():
-		var sample: ItemStack = container.peek(zone)
-		if sample == null:
-			continue
+	for index: int in container.get_stack_count():
+		var sample: ItemStack = container.peek(index)
 		var candidate_plan: StringName = _plan_for(sample.duplicate_stack(1))
 		if is_ok_plan(candidate_plan):
-			zone_index = zone
+			stack_index = index
 			plan = candidate_plan
 			break
 		if first_failure == &"container_empty":
 			first_failure = candidate_plan
-	if zone_index == -1:
+	if stack_index == -1:
 		grab_failed.emit(first_failure)
 		return false
 
-	var taken: ItemStack = container.take(zone_index, 1)
+	var taken: ItemStack = container.take(stack_index, 1)
 	if taken == null:
 		grab_failed.emit(&"container_empty")
 		return false
@@ -359,7 +357,7 @@ func _stow_held_in_backpack() -> void:
 	var stack: ItemStack = item.stack
 	var leftover: ItemStack = _player.get_backpack().try_store(stack)
 	if leftover != null:
-		push_error("La mochila guardó solo una parte de un stack que había confirmado: revisar StorageContainer.")
+		push_error("La mochila guardó solo una parte de un stack que había confirmado: revisar Inventory.")
 	_player.get_hands().release()
 	_held = null
 	EventBus.item_released.emit(stack)

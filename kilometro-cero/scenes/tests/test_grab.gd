@@ -5,7 +5,8 @@ extends Node3D
 ## y lo que pasa. Sin peso ni necesidades desde la tarea 47 (D75, D86).
 
 const WORLD_ITEM_SCENE: PackedScene = preload("res://scenes/items/world_item.tscn")
-const BOX_CONFIG: StorageConfig = preload("res://data/config/storage_config.tres")
+## Unidades que entran en la caja de prueba (sin zonas ni compatibilidad desde la tarea 53).
+const BOX_CAPACITY: int = 6
 ## Ranuras de la mochila de prueba: con 4, el quinto tipo de objeto pequeño ya no entra.
 const TEST_BACKPACK_SLOTS: int = 4
 const ALERT_NAMES: Array[String] = ["normal", "casi llena", "llena"]
@@ -171,7 +172,7 @@ func _hands_text(hands: ItemData.HandsRequired) -> String:
 
 
 # Caja de carga: una plataforma con un volumen encima (el StorageArea) y un
-# StorageContainer de 4 zonas: 2 chicas, 1 mediana y 1 grande.
+# StorageContainer de BOX_CAPACITY unidades que acepta cualquier cosa.
 func _build_storage_box() -> void:
 	var origin: Vector3 = _player.global_position + Vector3(5.0, 0.0, -3.0)
 	origin.y = _floor_height(origin)
@@ -197,19 +198,9 @@ func _build_storage_box() -> void:
 	pad.add_child(pad_mesh)
 	box.add_child(pad)
 
-	# Contenedor: se arma solo en _ready porque ya tiene layout y config.
-	var zones: Array[ZoneSpec] = [
-		_zone(ItemData.SizeClass.SMALL, 2),
-		_zone(ItemData.SizeClass.MEDIUM, 1),
-		_zone(ItemData.SizeClass.LARGE, 1),
-	]
-	var layout := StorageLayout.new()
-	layout.zones = zones
 	_box_container = StorageContainer.new()
 	_box_container.container_id = &"caja_test"
-	_box_container.layout = layout
-	# La mochila ya no usa StorageConfig (tarea 48): la caja carga el de siempre.
-	_box_container.config = BOX_CONFIG
+	_box_container.capacity = BOX_CAPACITY
 	box.add_child(_box_container)
 
 	# Área: el volumen donde se guarda lo que se suelta. Va después del contenedor
@@ -234,13 +225,6 @@ func _build_storage_box() -> void:
 	print("test_grab: caja de carga creada.")
 
 
-func _zone(size: ItemData.SizeClass, count: int) -> ZoneSpec:
-	var spec := ZoneSpec.new()
-	spec.size_class = size
-	spec.count = count
-	return spec
-
-
 # Piso bajo un punto, para apoyar la caja bien sin importar dónde esté el origen del Player.
 func _floor_height(near: Vector3) -> float:
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
@@ -253,14 +237,13 @@ func _floor_height(near: Vector3) -> float:
 	return point.y
 
 
-# Una línea por zona de un contenedor: "Zona 0 (SMALL): chatarra x3".
-func _zone_lines(container: StorageContainer) -> PackedStringArray:
+# Una línea por pila de un contenedor: "chatarra x3", y cuánto lugar queda.
+func _stack_lines(container: StorageContainer) -> PackedStringArray:
 	var lines: PackedStringArray = []
-	for i in container.get_zone_count():
+	for i in container.get_stack_count():
 		var stack: ItemStack = container.peek(i)
-		var size_name: String = ItemData.SizeClass.keys()[container.get_zone_size(i)]
-		var contents: String = "vacía" if stack == null else "%s x%d" % [stack.item.id, stack.quantity]
-		lines.append("  Zona %d (%s): %s" % [i, size_name, contents])
+		lines.append("  %s x%d" % [stack.item.id, stack.quantity])
+	lines.append("  (%d de %d)" % [container.get_total(), container.capacity])
 	return lines
 
 
@@ -286,7 +269,7 @@ func _use_test_backpack() -> void:
 
 func _refresh_box_label() -> void:
 	var lines: PackedStringArray = ["Caja de prueba"]
-	lines.append_array(_zone_lines(_box_container))
+	lines.append_array(_stack_lines(_box_container))
 	_box_label.text = "\n".join(lines)
 
 

@@ -2,15 +2,13 @@ extends Node3D
 ## Prueba de las tareas 51 y 52: caminar dentro del tren en movimiento y manejarlo desde
 ## la cabina en 1ª persona (D84).
 ## Supone una vía con una recta de 120 m y después una curva hacia la derecha, la
-## locomotora y una plataforma detrás. Todavía no hay acople (tarea 53): esta escena
-## coloca la plataforma a una distancia fija detrás de la locomotora en cada paso.
+## locomotora y una plataforma detrás. Desde la tarea 53 la plataforma va acoplada y se
+## pasa de una a otra caminando por la pasarela.
 ## Las comprobaciones usan cuadros de física reales: durante unos 10 segundos el tren y el
 ## jugador se mueven solos (y el jugador salta de un lugar a otro); no toques nada.
 ## Después se puede jugar: se sube al tren por las rampas y se maneja desde la cabina (F).
 
 const CONTROLES: String = "WASD: caminar · Shift: correr · Espacio: saltar · Ctrl: agacharse · F: entrar o salir de la cabina · Esc: soltar el mouse\nEn la cabina: W / S palanca · Espacio (mantener) freno · L luces · H bocina · mouse mirar\nSubí por las rampas del costado, caminá hasta el puesto (a la derecha, detrás del mando) y apretá F."
-## Distancia entre los centros de la locomotora y la plataforma (10 m de largo + 0,6 m de hueco).
-const SEPARACION_M: float = 10.6
 const INICIO_M: float = 30.0
 ## Avance donde empieza la curva de la vía de esta escena.
 const CURVA_M: float = 118.0
@@ -33,10 +31,7 @@ var _bocinazos: int = 0
 
 func _ready() -> void:
 	_hud.text = CONTROLES
-	# Acople provisorio: la plataforma no se mueve sola, la ubica esta escena después de que
-	# avanza la locomotora (prioridad 0) y antes que el jugador (prioridad 10).
-	_flatcar.set_physics_process(false)
-	process_physics_priority = 5
+	_comprobar(_loco.couple(_flatcar), "La plataforma se acopla detrás de la locomotora")
 	# Durante las comprobaciones el mouse no gira la cámara: si no, moverlo cambia el
 	# giro medido en la curva.
 	_player.get_camera().set_process_unhandled_input(false)
@@ -63,11 +58,6 @@ func _ready() -> void:
 	_player.global_position = _loco.global_transform * JUNTO_A_LA_RAMPA_LOCAL
 	_player.velocity = Vector3.ZERO
 	_player.get_camera().set_process_unhandled_input(true)
-
-
-func _physics_process(_delta: float) -> void:
-	_flatcar.progress = maxf(_loco.progress - SEPARACION_M, 0.0)
-	_flatcar.speed = _loco.speed
 
 
 func _process(_delta: float) -> void:
@@ -173,27 +163,29 @@ func _probar_pared() -> void:
 	_poner_velocidad(0.0)
 
 
-# Salta corriendo desde la puerta de atrás de la cabina a la plataforma, con el tren andando.
+# Camina, sin saltar, desde la puerta de atrás de la cabina hasta la plataforma por la
+# pasarela, con el tren andando (tarea 53).
 func _probar_pasar_a_la_plataforma() -> void:
 	_poner_tren(INICIO_M, 6.0)
 	await _esperar(2)
+	_comprobar(_loco.get_node("Visual/Pasarela").visible and _flatcar.front == _loco, "Acoplada, la locomotora muestra su pasarela")
+	_comprobar(not _flatcar.get_node("Visual/Pasarela").visible, "La plataforma, sin nada atrás, no")
+	var hueco: float = (_loco.global_position - _flatcar.global_position).length() - Vehicle.coupling_distance(_loco.data.length, _flatcar.data.length)
+	_comprobar(absf(hueco) < 0.01, "Quedan a la distancia de acople (error %.3f m)" % hueco)
 	_player.global_position = _loco.global_transform * Vector3(0.0, 0.85, 3.6)
 	_player.velocity = Vector3.ZERO
 	await _esperar(10)
 	_mirar_hacia_atras_del_tren()
 	Input.action_press(&"move_forward")
-	Input.action_press(&"sprint")
-	var salto: bool = false
+	var altura_minima: float = INF
 	for _i: int in 180:
 		await get_tree().physics_frame
-		if not salto and _posicion_local().z > 4.7:
-			salto = _player.jump()
+		altura_minima = minf(altura_minima, _posicion_local().y)
 		if _player.get_platform() == _flatcar:
 			break
 	Input.action_release(&"move_forward")
-	Input.action_release(&"sprint")
-	_comprobar(salto, "Saltó desde el borde de la locomotora")
-	_comprobar(_player.get_platform() == _flatcar, "Aterrizó en la plataforma y quedó enganchado a ella")
+	_comprobar(_player.get_platform() == _flatcar, "Caminando por la pasarela llegó a la plataforma y quedó enganchado a ella")
+	_comprobar(altura_minima > 0.7, "No cayó en el hueco (altura mínima %.2f m)" % altura_minima)
 	await _esperar(30)
 	_comprobar(_player.get_platform() == _flatcar, "Sigue sobre la plataforma con el tren andando")
 	_poner_velocidad(0.0)
@@ -306,17 +298,16 @@ func _enviar_accion(accion: StringName) -> void:
 	await _esperar(1)
 
 
-# Coloca los dos vehículos en la vía (la plataforma detrás) a esa velocidad.
+# Coloca el tren en la vía (la plataforma, acoplada detrás) a esa velocidad.
 func _poner_tren(avance: float, velocidad: float) -> void:
 	_loco.progress = avance
-	_flatcar.progress = avance - SEPARACION_M
+	_loco.place_rear_vehicles()
 	_poner_velocidad(velocidad)
 
 
 # Velocidad constante: el acelerador pide justo esa velocidad, así no acelera ni frena.
 func _poner_velocidad(velocidad: float) -> void:
 	_loco.speed = velocidad
-	_flatcar.speed = velocidad
 	_loco.throttle = velocidad / _loco.get_max_speed()
 
 

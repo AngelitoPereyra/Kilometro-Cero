@@ -113,13 +113,15 @@ func _probar_vehiculo() -> void:
 	_simular(1.0)
 	_comprobar(is_equal_approx(_vehicle.progress, avance), "Y no avanza aunque se acelere")
 
-	# Topes: al llegar a un extremo de la vía se detiene en seco.
-	_reiniciar(1.0, largo - 1.0, 6.0, 1.0)
+	# Topes: al llegar a un extremo de la vía se detiene en seco, con la punta justo en el
+	# extremo (el centro queda a medio largo, tarea 53).
+	var medio: float = _vehicle.data.length * 0.5
+	_reiniciar(1.0, largo - medio - 1.0, 6.0, 1.0)
 	_simular(2.0)
-	_comprobar(is_equal_approx(_vehicle.progress, largo) and is_zero_approx(_vehicle.speed), "Se detiene en el tope del final de la vía")
-	_reiniciar(1.0, 1.0, -6.0, -1.0)
+	_comprobar(is_equal_approx(_vehicle.progress, largo - medio) and is_zero_approx(_vehicle.speed), "Se detiene en el tope del final de la vía sin salirse")
+	_reiniciar(1.0, medio + 1.0, -6.0, -1.0)
 	_simular(2.0)
-	_comprobar(is_zero_approx(_vehicle.progress) and is_zero_approx(_vehicle.speed), "Se detiene en el tope del inicio de la vía")
+	_comprobar(is_equal_approx(_vehicle.progress, medio) and is_zero_approx(_vehicle.speed), "Se detiene en el tope del inicio de la vía sin salirse")
 
 
 func _reiniciar(condicion: float, avance: float = 0.0, velocidad: float = 0.0, acelerador: float = 0.0) -> void:

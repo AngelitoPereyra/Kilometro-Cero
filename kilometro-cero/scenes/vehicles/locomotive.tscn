@@ -184,6 +184,15 @@ albedo_color = Color(1, 0.95, 0.7, 1)
 emission_enabled = true
 emission = Color(1, 0.9, 0.6, 1)
 
+[sub_resource type="StandardMaterial3D" id="Mat_pasarela"]
+albedo_color = Color(0.3, 0.3, 0.32, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_Pasarela"]
+size = Vector3(1, 0.03, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_Pasarela"]
+size = Vector3(1, 0.03, 1)
+
 [node name="Locomotive" type="PathFollow3D"]
 script = ExtResource("1_veh")
 data = ExtResource("2_data")
@@ -439,3 +448,12 @@ spot_angle = 25.0
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -5.05)
 material_override = SubResource("Mat_faro")
 mesh = SubResource("Mesh_Faro")
+
+[node name="Pasarela" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.815, 5.45)
+material_override = SubResource("Mat_pasarela")
+mesh = SubResource("Mesh_Pasarela")
+
+[node name="Pasarela" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.815, 5.45)
+shape = SubResource("Shape_Pasarela")

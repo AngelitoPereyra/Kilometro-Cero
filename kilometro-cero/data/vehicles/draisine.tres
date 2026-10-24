@@ -6,4 +6,5 @@
 script = ExtResource("1_pqito")
 id = &"draisine"
 display_name = "zorra manual"
+length = 2.4
 metadata/_custom_type_script = "uid://nmlvl15xbw3n"

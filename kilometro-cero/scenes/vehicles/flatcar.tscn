@@ -1,7 +1,9 @@
 [gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/vehicles/vehicle.gd" id="1_veh"]
-[ext_resource type="Resource" path="res://data/vehicles/locomotive.tres" id="2_data"]
+[ext_resource type="Script" path="res://scripts/vehicles/wagon.gd" id="1_veh"]
+[ext_resource type="Resource" path="res://data/vehicles/flatcar.tres" id="2_data"]
+[ext_resource type="Script" path="res://scripts/storage/storage_container.gd" id="3_cont"]
+[ext_resource type="Script" path="res://scripts/storage/storage_area.gd" id="4_area"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_piso"]
 albedo_color = Color(0.5, 0.35, 0.2, 1)
@@ -35,6 +37,24 @@ size = Vector3(1.6, 0.1, 1)
 
 [sub_resource type="BoxShape3D" id="Shape_RampaIzquierda"]
 size = Vector3(1.6, 0.1, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_pasarela"]
+albedo_color = Color(0.3, 0.3, 0.32, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_Pasarela"]
+size = Vector3(1, 0.03, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_Pasarela"]
+size = Vector3(1, 0.03, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_troncos"]
+albedo_color = Color(0.55, 0.38, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_Troncos"]
+size = Vector3(2.4, 1, 9)
+
+[sub_resource type="BoxShape3D" id="Shape_ZonaDeCarga"]
+size = Vector3(3, 1.6, 10)
 
 [node name="Flatcar" type="PathFollow3D"]
 script = ExtResource("1_veh")
@@ -81,3 +101,32 @@ shape = SubResource("Shape_RampaDerecha")
 [node name="RampaIzquierda" type="CollisionShape3D" parent="CuerpoFisico"]
 transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, -2.16782, 0.356699, 0)
 shape = SubResource("Shape_RampaIzquierda")
+
+[node name="Pasarela" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.815, 5.45)
+material_override = SubResource("Mat_pasarela")
+mesh = SubResource("Mesh_Pasarela")
+
+[node name="Pasarela" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.815, 5.45)
+shape = SubResource("Shape_Pasarela")
+
+[node name="Carga" type="Node3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+visible = false
+
+[node name="Troncos" type="MeshInstance3D" parent="Visual/Carga"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+material_override = SubResource("Mat_troncos")
+mesh = SubResource("Mesh_Troncos")
+
+[node name="Carga" type="Node" parent="."]
+script = ExtResource("3_cont")
+
+[node name="ZonaDeCarga" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+script = ExtResource("4_area")
+reach = 6.0
+
+[node name="Forma" type="CollisionShape3D" parent="ZonaDeCarga"]
+shape = SubResource("Shape_ZonaDeCarga")

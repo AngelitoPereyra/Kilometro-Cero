@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/items/word_item.gd" id="1_item"]
+[ext_resource type="Script" path="res://scripts/components/holdable.gd" id="2_hold"]
+[ext_resource type="Script" path="res://scripts/components/placeable.gd" id="3_place"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_tronco"]
+albedo_color = Color(0.5, 0.33, 0.18, 1)
+
+[sub_resource type="CylinderMesh" id="Mesh_tronco"]
+top_radius = 0.15
+bottom_radius = 0.15
+height = 1.6
+
+[sub_resource type="CylinderShape3D" id="Shape_tronco"]
+radius = 0.15
+height = 1.6
+
+[node name="Tronco" type="RigidBody3D"]
+script = ExtResource("1_item")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
+material_override = SubResource("Mat_tronco")
+mesh = SubResource("Mesh_tronco")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
+shape = SubResource("Shape_tronco")
+
+[node name="Holdable" type="Node" parent="."]
+script = ExtResource("2_hold")
+
+[node name="Placeable" type="Node" parent="."]
+script = ExtResource("3_place")
