@@ -30,6 +30,9 @@ signal contribution_delivered(station_id: StringName, item_id: StringName, amoun
 signal station_level_changed(station_id: StringName, level: int)
 ## Cambia la condición (0.0 a 1.0) de un tramo de vía.
 signal track_condition_changed(segment_id: StringName, condition: float)
+## Un tramo pasa a cortado, abierto o mejorado (valores de TrackSegment.State). La emite
+## RailNetwork, una vez por tramo aunque tenga vía doble (tarea 54).
+signal segment_state_changed(segment_id: StringName, state: int)
 ## Se aplica una mejora a un vehículo.
 signal vehicle_upgraded(vehicle_id: StringName, upgrade_id: StringName)
 ## Cambia el Índice de Recuperación Regional de una región.

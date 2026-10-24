@@ -9,6 +9,10 @@ extends PathFollow3D
 ## Se acopla (tarea 53): el que encabeza el tren simula y ubica a los de atrás sobre la misma
 ## curva, a la distancia de acople. Ningún vehículo sale de la vía ni se superpone con otro de
 ## la misma vía: al tocarlo frena en seco y, si lo tocó con la cola (marcha atrás), se le acopla.
+## Pasa de un tramo a otro (tarea 54): al llegar al final de su curva, si hay un RailNetwork en la
+## escena, le pregunta por dónde sigue y se cambia de Path3D. El tren se ubica sobre una
+## TrainRoute (las curvas que ocupa), así puede quedar repartido entre dos tramos. A un tramo
+## cortado no entra: se frena con la punta en el final de su curva, como en un tope.
 
 signal coupled(rear_vehicle: Vehicle)
 signal uncoupled(rear_vehicle: Vehicle)
@@ -21,16 +25,22 @@ const COUPLING_GAP: float = 0.6
 ## Nombre de los nodos de la pasarela trasera (malla y forma de choque): solo están mientras
 ## haya algo acoplado atrás, para no tener que saltar el hueco.
 const GANGWAY_NODE: StringName = &"Pasarela"
+## Cuánto antes de llegar al final de su curva el tren ya mira el tramo que sigue (y lo que hay
+## en él), para frenar a tiempo ante un vehículo parado del otro lado de la estación.
+const LOOKAHEAD: float = 30.0
 
 @export var data: VehicleData
 ## Tramo que recorre. Si queda vacío, se usa el TrackSegment que cuelga del mismo Path3D:
 ## desde el inspector no se puede apuntar a nodos de la escena que contiene al vehículo
 ## (limitación del editor para escenas instanciadas, D42).
-## En la tarea 20, RailNetwork lo reemplaza por una consulta por tramo.
+## Al pasar a otra curva se cambia solo por el TrackSegment de esa curva (tarea 54).
 @export var segment: TrackSegment
 ## Al empezar, se acopla detrás del vehículo más cercano que tenga adelante en la misma vía.
 ## Así se arma un tren en el editor sin apuntar nodos (D42).
 @export var couple_on_start: bool = false
+## Mira hacia el principio de su curva (avance 0) en vez de hacia el final. Lo cambia solo al
+## pasar a un tramo dibujado al revés.
+@export var reversed: bool = false
 
 ## Acelerador pedido: 1.0 adelante a fondo, -1.0 marcha atrás, 0.0 soltar.
 var throttle: float = 0.0
@@ -42,6 +52,12 @@ var speed: float = 0.0
 ## Solo se cambian con couple() y uncouple_rear().
 var front: Vehicle
 var rear: Vehicle
+## Estación a la que va. Solo decide en los cruces (estaciones con más de un tramo para seguir);
+## vacío: en un cruce se frena. Lo escribe quien maneja; vale el de la cabeza del tren.
+var destination: StringName
+
+# Las curvas que ocupa el tren, si este vehículo lo encabeza.
+var _route: TrainRoute
 
 
 func _ready() -> void:
@@ -50,8 +66,10 @@ func _ready() -> void:
 	loop = false
 	# En PathFollow3D, `use_model_front = true` orienta el eje +Z hacia adelante. Nuestro
 	# frente es -Z (Vector3.FORWARD, la convención de Godot para cámaras y modelos), que es
-	# el valor por defecto: lo dejamos explícito para que nadie lo cambie por error (D43).
-	use_model_front = false
+	# el valor por defecto (D43).
+	# Un vehículo dado vuelta sobre su curva (`reversed`) usa +Z como frente: es el mismo giro
+	# de 180° sin tocar la escena.
+	use_model_front = reversed
 	if segment == null:
 		segment = _find_segment()
 	if segment == null:
@@ -91,7 +109,7 @@ func simulate(delta: float) -> void:
 
 func get_track_condition() -> float:
 	# Sin tramo asignado no hay desgaste que limite al vehículo.
-	return segment.condition if segment != null else 1.0
+	return segment.get_effective_condition() if segment != null else 1.0
 
 
 ## Velocidad máxima permitida ahora mismo: la del más lento del tren, según la vía que pisa.
@@ -107,14 +125,18 @@ func get_max_speed() -> float:
 func couple(vehicle: Vehicle) -> bool:
 	if vehicle == null or vehicle.data == null or rear != null or vehicle.front != null:
 		return false
-	if vehicle.get_parent() != get_parent() or get_train().has(vehicle):
+	if get_train().has(vehicle):
+		return false
+	var head: Vehicle = get_head()
+	head._sync_route()
+	if not head._route.has_path(vehicle.get_parent() as Path3D):
 		return false
 	rear = vehicle
 	vehicle.front = self
 	vehicle.throttle = 0.0
 	vehicle.brake = 0.0
 	_update_gangway()
-	get_head().place_rear_vehicles()
+	head.place_rear_vehicles()
 	coupled.emit(vehicle)
 	return true
 
@@ -125,8 +147,13 @@ func uncouple_rear() -> Vehicle:
 	var old_rear: Vehicle = rear
 	if old_rear == null:
 		return null
+	var head: Vehicle = get_head()
+	head._sync_route()
 	rear = null
 	old_rear.front = null
+	# Lo de atrás sigue sobre las mismas curvas: arranca con una copia de la ruta.
+	old_rear._route = head._route.duplicate_route()
+	old_rear._route.head = old_rear._route.coordinate_of(old_rear.get_parent() as Path3D, old_rear.progress)
 	_update_gangway()
 	uncoupled.emit(old_rear)
 	return old_rear
@@ -159,14 +186,39 @@ func get_train() -> Array[Vehicle]:
 
 
 ## Ubica a los vehículos acoplados detrás de este, a la distancia de acople y con su
-## velocidad. Lo llama el que encabeza el tren cada vez que avanza.
+## velocidad. Lo llama el que encabeza el tren cada vez que avanza. Si alguien movió `progress`
+## a mano, toma esa posición como la nueva.
 func place_rear_vehicles() -> void:
-	var vehicle: Vehicle = self
-	while vehicle.rear != null:
-		var next: Vehicle = vehicle.rear
-		next.progress = vehicle.progress - coupling_distance(vehicle.data.length, next.data.length)
-		next.speed = speed
-		vehicle = next
+	_sync_route()
+	var train: Array[Vehicle] = get_train()
+	var network: RailNetwork = RailNetwork.find_in(get_tree()) if is_inside_tree() else null
+	if network != null:
+		_extend_back(network, _route.head - _length_behind(train), train)
+	_place_train(train)
+
+
+## Pone este vehículo (y lo que lleve atrás) en el avance `at` de `path`, mirando hacia el
+## final de la curva o, con `facing_back`, hacia el principio. Sirve para armar o restaurar un
+## tren por código (estaciones, guardado, pruebas). Si va acoplado detrás de otro, no hace nada.
+func place_on(path: Path3D, at: float, facing_back: bool = false) -> void:
+	if front != null or path == null:
+		return
+	_move_to(path, at, -1 if facing_back else 1)
+	_route = TrainRoute.new()
+	_route.reset(path, get_curve_direction(), progress)
+	place_rear_vehicles()
+
+
+## Hacia dónde de su curva mira: 1 hacia el final, -1 hacia el principio (`reversed`).
+func get_curve_direction() -> int:
+	return -1 if reversed else 1
+
+
+## Las curvas que ocupa el tren de este vehículo (las de su cabeza). Solo lectura.
+func get_route() -> TrainRoute:
+	var head: Vehicle = get_head()
+	head._sync_route()
+	return head._route
 
 
 ## Distancia sobre la curva entre los centros de dos vehículos acoplados. Lógica pura.
@@ -196,50 +248,216 @@ static func step_speed(current_speed: float, throttle_input: float, speed_limit:
 	return move_toward(current_speed, target, rate * delta)
 
 
-# Avanza el tren entero. Los topes de la vía y los demás vehículos de la misma vía lo
-# detienen en seco sin que nada se superponga; lo que toca con la cola se le acopla.
+# Avanza el tren entero sobre su ruta. Los topes (final de la vía o tramo cortado) y los demás
+# vehículos de las curvas que ocupa lo detienen en seco sin que nada se superponga; lo que toca
+# con la cola se le acopla.
 func _advance(distance: float) -> void:
 	var path := get_parent() as Path3D
 	if path == null or path.curve == null:
 		return
+	_sync_route()
 	var train: Array[Vehicle] = get_train()
-	var tail: Vehicle = train.back()
 	# Cuánto ocupa el tren detrás del centro de este (el que lo encabeza).
-	var behind: float = tail.data.length * 0.5
-	for i: int in range(1, train.size()):
-		behind += coupling_distance(train[i - 1].data.length, train[i].data.length)
+	var behind: float = _length_behind(train)
 	var ahead: float = data.length * 0.5
 
-	# Topes de la vía: ninguna punta del tren sale de la curva.
+	# Si hay red, se suma el tramo que sigue antes de llegar a él.
+	var network: RailNetwork = RailNetwork.find_in(get_tree())
+	if network != null:
+		if distance > 0.0:
+			_extend_front(network, _route.head + ahead + distance + LOOKAHEAD)
+		elif distance < 0.0:
+			_extend_back(network, _route.head - behind + distance - LOOKAHEAD, train)
+
+	# Topes de la ruta: ninguna punta del tren sale de las curvas que ocupa.
 	var lowest: float = behind
-	var highest: float = path.curve.get_baked_length() - ahead
+	var highest: float = _route.get_length() - ahead
 	var blocker_behind: Vehicle = null
 	for node: Node in get_tree().get_nodes_in_group(GROUP):
 		var other := node as Vehicle
-		if other == null or other.data == null or other.get_parent() != path or train.has(other):
+		if other == null or other.data == null or train.has(other):
 			continue
+		var other_path := other.get_parent() as Path3D
+		if not _route.has_path(other_path):
+			continue
+		var at: float = _route.coordinate_of(other_path, other.progress)
 		var other_half: float = other.data.length * 0.5
-		if other.progress >= progress:
-			highest = minf(highest, other.progress - other_half - COUPLING_GAP - ahead)
+		if at >= _route.head:
+			highest = minf(highest, at - other_half - COUPLING_GAP - ahead)
 		else:
-			var limit: float = other.progress + other_half + COUPLING_GAP + behind
+			var limit: float = at + other_half + COUPLING_GAP + behind
 			if limit > lowest:
 				lowest = limit
 				blocker_behind = other
 
-	var target: float = progress + distance
+	var current: float = _route.head
+	var target: float = current + distance
 	if distance < 0.0 and target <= lowest:
 		# Si ya estaba más allá del límite (colocado así en el editor), no se lo mueve
 		# de golpe: solo no puede ir más atrás.
-		target = minf(lowest, progress)
+		target = minf(lowest, current)
 		speed = 0.0
-		if blocker_behind != null and lowest <= progress:
-			tail.couple(blocker_behind)
+		if blocker_behind != null and lowest <= current:
+			train.back().couple(blocker_behind)
+			train = get_train()
 	elif distance > 0.0 and target >= highest:
-		target = maxf(highest, progress)
+		target = maxf(highest, current)
 		speed = 0.0
-	progress = target
-	place_rear_vehicles()
+	_route.head = target
+	_place_train(train)
+	var tail_at: float = _route.head - _length_behind(train)
+	_route.trim(tail_at, _route.head + ahead)
+	_drop_cut_spares(tail_at, _route.head + ahead)
+	if network != null:
+		_use_own_way_on_spares(network, _length_behind(train), ahead)
+
+
+# Los pedazos de ruta que se guardan por si el tren vuelve (adelante o atrás de él) se olvidan
+# si su tramo está cortado: a un tramo cortado no se entra, tampoco marcha atrás.
+func _drop_cut_spares(tail_at: float, front_at: float) -> void:
+	var from: float = tail_at
+	var to: float = front_at
+	while _route.get_piece_count() > 1 and _route.piece_start(1) <= from and _is_cut(_route.get_path(0)):
+		# Al sacar un pedazo de atrás, todas las coordenadas corren lo que medía.
+		var shift: float = _route.piece_length(0)
+		_route.drop_back()
+		from -= shift
+		to -= shift
+	while _route.get_piece_count() > 1:
+		var last: int = _route.get_piece_count() - 1
+		if _route.piece_start(last) < to or not _is_cut(_route.get_path(last)):
+			break
+		_route.drop_front()
+
+
+# Los pedazos guardados por si el tren vuelve recuerdan por qué tramo vino, pero en un tramo de
+# vía doble el tren vuelve por la vía de su sentido (D81): la que sale de la estación hacia
+# donde va. Así, marcha atrás desde el pueblo, entra a la Vuelta y no a la Ida.
+func _use_own_way_on_spares(network: RailNetwork, behind: float, ahead: float) -> void:
+	var count: int = _route.get_piece_count()
+	if count < 2:
+		return
+	# Atrás: el pedazo 0, si el tren ya salió entero de él.
+	if _route.piece_start(1) <= _route.head - behind:
+		var next_track: TrackSegment = RailNetwork.track_of(_route.get_path(1))
+		var spare: TrackSegment = RailNetwork.track_of(_route.get_path(0))
+		if next_track != null and spare != null:
+			var station: StringName = next_track.from_station if _route.get_dir(1) > 0 else next_track.to_station
+			var own: TrackSegment = network.track_leaving(spare.segment_id, station)
+			if own != null and own != spare and own.get_track_path() != null:
+				_route.replace_piece(0, own.get_track_path(), -1 if own.from_station == station else 1)
+	# Adelante: el último pedazo, si el tren todavía no entró a él.
+	var last: int = _route.get_piece_count() - 1
+	if _route.piece_start(last) >= _route.head + ahead:
+		var prev_track: TrackSegment = RailNetwork.track_of(_route.get_path(last - 1))
+		var spare: TrackSegment = RailNetwork.track_of(_route.get_path(last))
+		if prev_track != null and spare != null:
+			var station: StringName = prev_track.to_station if _route.get_dir(last - 1) > 0 else prev_track.from_station
+			var own: TrackSegment = network.track_leaving(spare.segment_id, station)
+			if own != null and own != spare and own.get_track_path() != null:
+				_route.replace_piece(last, own.get_track_path(), 1 if own.from_station == station else -1)
+
+
+static func _is_cut(path: Path3D) -> bool:
+	var track: TrackSegment = RailNetwork.track_of(path)
+	return track != null and track.is_cut()
+
+
+# Lo que ocupa el tren detrás del centro de su cabeza (hasta la punta de la cola).
+func _length_behind(train: Array[Vehicle]) -> float:
+	var behind: float = train.back().data.length * 0.5
+	for i: int in range(1, train.size()):
+		behind += coupling_distance(train[i - 1].data.length, train[i].data.length)
+	return behind
+
+
+# Ubica a todo el tren sobre la ruta: cada vehículo a su distancia de la cabeza, en la curva
+# que le toque y mirando para el lado del tren.
+func _place_train(train: Array[Vehicle]) -> void:
+	var at: float = _route.head
+	for i: int in train.size():
+		var vehicle: Vehicle = train[i]
+		if i > 0:
+			at -= coupling_distance(train[i - 1].data.length, vehicle.data.length)
+			vehicle.speed = speed
+		var spot: Array = _route.locate(at)
+		vehicle._move_to(_route.get_path(spot[0]), spot[1], _route.get_dir(spot[0]))
+
+
+# Lleva el vehículo a `progress` de `path`, mirando según `dir`. Si cambia de curva, se cambia
+# de padre (sin tocar a quien vaya arriba: el jugador sigue al cuerpo físico).
+func _move_to(path: Path3D, at: float, dir: int) -> void:
+	if path == null:
+		return
+	if get_parent() != path:
+		reparent(path, false)
+		segment = _find_segment()
+	reversed = dir < 0
+	if use_model_front != reversed:
+		use_model_front = reversed
+	progress = at
+
+
+# La cabeza se ubica en la ruta: si nadie la armó o el vehículo está en otra curva (lo movieron
+# a mano), arranca una ruta nueva donde está; si no, toma su avance actual.
+func _sync_route() -> void:
+	var path := get_parent() as Path3D
+	if _route == null or not _route.has_path(path):
+		_route = TrainRoute.new()
+		_route.reset(path, get_curve_direction(), progress)
+		return
+	var at: float = _route.coordinate_of(path, progress)
+	if not is_nan(at):
+		_route.head = at
+
+
+# Suma tramos adelante hasta que la ruta llegue a la coordenada `needed` o no haya por dónde.
+func _extend_front(network: RailNetwork, needed: float) -> void:
+	for _i: int in 8:
+		if _route.get_length() >= needed:
+			return
+		var last: int = _route.get_piece_count() - 1
+		var track: TrackSegment = RailNetwork.track_of(_route.get_path(last))
+		if track == null:
+			return
+		var station: StringName = track.to_station if _route.get_dir(last) > 0 else track.from_station
+		var next: TrackSegment = network.next_track(track, station, get_head().destination)
+		if next == null or next.get_track_path() == null or _route.has_path(next.get_track_path()):
+			return
+		# Si sale de la estación por el principio de la curva, el frente mira hacia su final.
+		_route.push_front(next.get_track_path(), 1 if next.from_station == station else -1)
+
+
+# Suma tramos atrás hasta que la ruta empiece antes de la coordenada `needed` (que puede ser
+# negativa) o no haya por dónde.
+func _extend_back(network: RailNetwork, needed: float, train: Array[Vehicle]) -> void:
+	var missing: float = -needed
+	for _i: int in 8:
+		if missing <= 0.0:
+			return
+		var track: TrackSegment = RailNetwork.track_of(_route.get_path(0))
+		if track == null:
+			return
+		var station: StringName = track.from_station if _route.get_dir(0) > 0 else track.to_station
+		var next: TrackSegment = _track_behind(network, track, station, train)
+		if next == null or next.get_track_path() == null or _route.has_path(next.get_track_path()):
+			return
+		var before: float = _route.get_length()
+		# La cola sale de la estación: si entra por el principio de la curva, el frente mira
+		# hacia la estación, o sea hacia el principio.
+		_route.push_back(next.get_track_path(), -1 if next.from_station == station else 1)
+		missing -= _route.get_length() - before
+
+
+# Por dónde sigue la ruta hacia atrás: primero, la curva donde ya está algún vehículo del tren
+# (al acoplar uno que quedó del otro lado de la estación); si no, lo que diga la red.
+func _track_behind(network: RailNetwork, current: TrackSegment, station: StringName, train: Array[Vehicle]) -> TrackSegment:
+	for vehicle: Vehicle in train:
+		var track: TrackSegment = RailNetwork.track_of(vehicle.get_parent() as Path3D)
+		if track != null and track != current and not _route.has_path(track.get_track_path()) \
+				and (track.from_station == station or track.to_station == station):
+			return track
+	return network.next_track(current, station)
 
 
 # El vehículo más cercano adelante en la misma vía (mayor avance), si tiene la cola libre.
@@ -249,7 +467,8 @@ func _couple_to_vehicle_ahead() -> void:
 		var other := node as Vehicle
 		if other == null or other == self or other.get_parent() != get_parent():
 			continue
-		if other.progress > progress and (nearest == null or other.progress < nearest.progress):
+		var dir: int = get_curve_direction()
+		if other.progress * dir > progress * dir and (nearest == null or other.progress * dir < nearest.progress * dir):
 			nearest = other
 	if nearest == null or not nearest.couple(self):
 		push_warning("%s no encontró adelante un vehículo libre al que acoplarse." % name)
