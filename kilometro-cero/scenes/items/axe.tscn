@@ -1,0 +1,40 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/items/word_item.gd" id="1_item"]
+[ext_resource type="Script" path="res://scripts/components/holdable.gd" id="2_hold"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_mango"]
+albedo_color = Color(0.55, 0.38, 0.2, 1)
+
+[sub_resource type="CylinderMesh" id="Mesh_mango"]
+top_radius = 0.03
+bottom_radius = 0.03
+height = 0.8
+
+[sub_resource type="StandardMaterial3D" id="Mat_hoja"]
+albedo_color = Color(0.6, 0.62, 0.66, 1)
+metallic = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_hoja"]
+size = Vector3(0.22, 0.14, 0.04)
+
+[sub_resource type="BoxShape3D" id="Shape_hacha"]
+size = Vector3(0.25, 0.8, 0.08)
+
+[node name="Hacha" type="RigidBody3D"]
+script = ExtResource("1_item")
+
+[node name="Mango" type="MeshInstance3D" parent="."]
+material_override = SubResource("Mat_mango")
+mesh = SubResource("Mesh_mango")
+
+[node name="Hoja" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.09, 0.32, 0)
+material_override = SubResource("Mat_hoja")
+mesh = SubResource("Mesh_hoja")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_hacha")
+
+[node name="Holdable" type="Node" parent="."]
+script = ExtResource("2_hold")

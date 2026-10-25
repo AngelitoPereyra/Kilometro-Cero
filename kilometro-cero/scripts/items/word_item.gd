@@ -19,6 +19,11 @@ const MIN_MASS: float = 0.05
 # en el sentido contrario formaría un ciclo.
 const DEFAULT_SCENE_PATH: String = "res://scenes/items/world_item.tscn"
 
+## Para dejar objetos ya puestos en una escena (tarea 55): si al entrar no tiene stack,
+## se arma con esto. Los que se crean por código (create) no lo usan.
+@export var start_item: ItemData
+@export_range(1, 999, 1) var start_amount: int = 1
+
 var stack: ItemStack
 
 # Teletransporte pendiente: se aplica en _integrate_forces (ver teleport_to).
@@ -43,6 +48,8 @@ static func create(new_stack: ItemStack) -> WorldItem:
 
 func _ready() -> void:
 	add_to_group(GROUP)
+	if stack == null and start_item != null:
+		setup(ItemStack.new(start_item, start_amount))
 	set_held(false)
 
 

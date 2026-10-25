@@ -66,7 +66,7 @@ func _definir_acciones() -> Dictionary:
 		# En la cabina W y S mueven la palanca y Espacio frena (D91): reusan las de arriba.
 		&"lights": [_tecla(KEY_L)],          # luces de la locomotora (D91)
 		&"horn": [_tecla(KEY_H)],            # bocina (D91)
-		# El clic izquierdo queda reservado para usar herramientas (D71).
+		&"use_tool": [_boton_mouse(MOUSE_BUTTON_LEFT)],  # golpear con la herramienta clave (D91, tarea 55)
 	}
 
 

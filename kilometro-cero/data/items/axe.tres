@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="KeyItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/key_item_data.gd" id="1_key"]
+[ext_resource type="PackedScene" path="res://scenes/items/axe.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_key")
+action_text = "Talar árboles y despejar troncos caídos."
+id = &"axe"
+display_name = "hacha"
+unit_weight = 1.5
+tags = Array[StringName]([&"tool"])
+scene = ExtResource("2_scene")

@@ -9,6 +9,9 @@ extends Node
 ## El estado de un tramo vive en sus vías: si cambia en una (desde acá, desde el inspector o
 ## desde un obstáculo), la red lo copia a la otra vía y lo avisa por
 ## EventBus.segment_state_changed.
+## Bloqueos (tarea 55): un obstáculo (Obstacle) u otra cosa que corta un tramo se anota con
+## add_blocker. Mientras un tramo tenga bloqueos queda cortado y no se lo puede abrir; al irse
+## el último, vuelve al estado que tenía antes (abierto si estaba cortado).
 
 ## Grupo del nodo RailNetwork, para que los vehículos lo encuentren sin apuntarlo (D42).
 const GROUP: StringName = &"rail_network"
@@ -20,6 +23,10 @@ var _stations: Dictionary = {}
 var _built: bool = false
 # Mientras se copia el estado de una vía a su gemela, para avisar una sola vez.
 var _syncing: bool = false
+# segment_id -> Array[Object] con lo que lo corta. No se borra al rearmar la red.
+var _blockers: Dictionary = {}
+# segment_id -> State al que vuelve cuando se va el último bloqueo.
+var _state_before_block: Dictionary = {}
 
 
 func _enter_tree() -> void:
@@ -72,7 +79,9 @@ func add_track(track: TrackSegment) -> void:
 	var list: Array[TrackSegment] = _tracks[track.segment_id]
 	if list.has(track):
 		return
-	if not list.is_empty() and list[0].state != track.state:
+	if is_blocked(track.segment_id):
+		track.state = TrackSegment.State.CUT
+	elif not list.is_empty() and list[0].state != track.state:
 		# Las dos vías de un tramo tienen un solo estado: manda la primera.
 		track.state = list[0].state
 	list.append(track)
@@ -138,10 +147,13 @@ func get_state(segment_id: StringName) -> TrackSegment.State:
 	return tracks[0].state if not tracks.is_empty() else TrackSegment.State.CUT
 
 
-## Cambia el estado del tramo en todas sus vías. Devuelve false si el tramo no existe.
+## Cambia el estado del tramo en todas sus vías. Devuelve false si el tramo no existe, o si
+## tiene bloqueos y se lo quiere abrir.
 func set_state(segment_id: StringName, value: TrackSegment.State) -> bool:
 	var tracks: Array[TrackSegment] = get_tracks(segment_id)
 	if tracks.is_empty():
+		return false
+	if value != TrackSegment.State.CUT and is_blocked(segment_id):
 		return false
 	# Alcanza con la primera: _on_track_state_changed copia a la otra y avisa.
 	tracks[0].state = value
@@ -150,6 +162,53 @@ func set_state(segment_id: StringName, value: TrackSegment.State) -> bool:
 
 func is_cut(segment_id: StringName) -> bool:
 	return get_state(segment_id) == TrackSegment.State.CUT
+
+
+## Anota algo que corta el tramo (un obstáculo). El tramo pasa a cortado; el estado que
+## tenía se recuerda para cuando se vaya el último bloqueo. Devuelve false si no existe.
+func add_blocker(segment_id: StringName, blocker: Object) -> bool:
+	if blocker == null or not has_segment(segment_id):
+		return false
+	var list: Array = get_blockers(segment_id)
+	if list.has(blocker):
+		return true
+	if list.is_empty():
+		var before: TrackSegment.State = get_state(segment_id)
+		_state_before_block[segment_id] = TrackSegment.State.OPEN if before == TrackSegment.State.CUT else before
+	list.append(blocker)
+	_blockers[segment_id] = list
+	set_state(segment_id, TrackSegment.State.CUT)
+	return true
+
+
+## Saca un bloqueo. Si era el último, el tramo vuelve al estado de antes. Devuelve false si
+## ese bloqueo no estaba anotado.
+func remove_blocker(segment_id: StringName, blocker: Object) -> bool:
+	var list: Array = get_blockers(segment_id)
+	if not list.has(blocker):
+		return false
+	list.erase(blocker)
+	if not list.is_empty():
+		_blockers[segment_id] = list
+		return true
+	_blockers.erase(segment_id)
+	var restore: TrackSegment.State = _state_before_block.get(segment_id, TrackSegment.State.OPEN)
+	_state_before_block.erase(segment_id)
+	set_state(segment_id, restore)
+	return true
+
+
+## Lo que corta el tramo ahora (los que ya no existen se descartan).
+func get_blockers(segment_id: StringName) -> Array:
+	var alive: Array = []
+	for blocker: Variant in _blockers.get(segment_id, []):
+		if is_instance_valid(blocker):
+			alive.append(blocker)
+	return alive
+
+
+func is_blocked(segment_id: StringName) -> bool:
+	return not get_blockers(segment_id).is_empty()
 
 
 ## Largo del tramo: el de su vía más corta.
@@ -294,6 +353,13 @@ func _ensure_built() -> void:
 
 func _on_track_state_changed(value: TrackSegment.State, track: TrackSegment) -> void:
 	if _syncing:
+		return
+	if value != TrackSegment.State.CUT and is_blocked(track.segment_id):
+		# Se lo quiso abrir desde el inspector o por código con un obstáculo encima: sigue cortado.
+		push_warning("RailNetwork: el tramo %s tiene un obstáculo; sigue cortado hasta despejarlo." % track.segment_id)
+		_syncing = true
+		track.state = TrackSegment.State.CUT
+		_syncing = false
 		return
 	_syncing = true
 	for other: TrackSegment in get_tracks(track.segment_id):

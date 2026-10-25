@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/harvestable.gd" id="1_harv"]
+[ext_resource type="Resource" path="res://data/items/axe.tres" id="2_axe"]
+[ext_resource type="Resource" path="res://data/items/log.tres" id="3_log"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_tronco"]
+albedo_color = Color(0.42, 0.28, 0.15, 1)
+
+[sub_resource type="CylinderMesh" id="Mesh_tronco"]
+top_radius = 0.22
+bottom_radius = 0.3
+height = 4.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_copa"]
+albedo_color = Color(0.22, 0.5, 0.22, 1)
+
+[sub_resource type="SphereMesh" id="Mesh_copa"]
+radius = 1.6
+height = 2.8
+
+[sub_resource type="CylinderShape3D" id="Shape_tronco"]
+radius = 0.3
+height = 4.0
+
+[node name="Arbol" type="StaticBody3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+shape = SubResource("Shape_tronco")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Tronco" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+material_override = SubResource("Mat_tronco")
+mesh = SubResource("Mesh_tronco")
+
+[node name="Copa" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.6, 0)
+material_override = SubResource("Mat_copa")
+mesh = SubResource("Mesh_copa")
+
+[node name="Harvestable" type="Node" parent="."]
+script = ExtResource("1_harv")
+required_tool = ExtResource("2_axe")
+reach = 2.5
+drop_item = ExtResource("3_log")
+drop_amount = 3

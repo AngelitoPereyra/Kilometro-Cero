@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="KeyItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/key_item_data.gd" id="1_key"]
+[ext_resource type="PackedScene" path="res://scenes/items/crowbar.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_key")
+action_text = "Mover piedras de la vía."
+id = &"crowbar"
+display_name = "barreta"
+unit_weight = 3.0
+tags = Array[StringName]([&"tool"])
+scene = ExtResource("2_scene")

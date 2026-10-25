@@ -16,6 +16,8 @@ extends CharacterBody3D
 ## Cabina (tarea 52, D84): F entra a la cabina (`Cab`) más cercana del tren que pisa y vuelve
 ## a salir. Adentro no camina, no salta ni agarra: queda parado en el puesto, el cuerpo se
 ## esconde y la cámara pasa a la de la cabina. Las teclas de manejo las lee la cabina.
+## Herramientas clave (tarea 55, D83): el nodo KeyItems (hijo directo, opcional) guarda las que
+## tiene; las usa el ToolUser con el clic izquierdo.
 
 @export_range(0.5, 10.0, 0.1, "suffix:m/s") var walk_speed: float = 4.0
 @export_range(0.5, 15.0, 0.1, "suffix:m/s") var sprint_speed: float = 7.0
@@ -52,6 +54,7 @@ var _cab: Cab
 var _camera: ThirdPersonCamera
 var _backpack: Inventory
 var _hands: Hands
+var _key_items: KeyItems
 # Lo que pide el jugador. Si quiere pararse y hay un techo encima, sigue agachado
 # y se vuelve a intentar en cada paso hasta que haya lugar.
 var _wants_crouch: bool = false
@@ -144,6 +147,9 @@ func _ready() -> void:
 	_setup_crouch()
 	_hands.hands_changed.connect(_on_hands_changed)
 	_backpack.alert_changed.connect(_on_backpack_alert_changed)
+	_key_items = _find_key_items()
+	if _key_items != null:
+		_key_items.item_added.connect(_on_key_item_added)
 
 
 func _physics_process(delta: float) -> void:
@@ -255,6 +261,11 @@ func get_platform() -> Vehicle:
 
 func get_hands() -> Hands:
 	return _hands
+
+
+## Las herramientas clave, o null si el jugador no tiene el nodo KeyItems.
+func get_key_items() -> KeyItems:
+	return _key_items
 	
 ## Velocidad de caminata normal. La carga no la cambia (D86).
 func get_walk_speed() -> float:
@@ -366,6 +377,11 @@ func _on_backpack_alert_changed(alert: Inventory.Alert) -> void:
 	EventBus.backpack_alert_changed.emit(alert)
 
 
+# Y con las herramientas clave (tarea 55).
+func _on_key_item_added(item: KeyItemData) -> void:
+	EventBus.key_item_obtained.emit(item.id)
+
+
 func _walk(delta: float) -> void:
 	var input_vector: Vector2 = Vector2.ZERO
 	if controls_enabled:
@@ -455,6 +471,14 @@ func _find_hands() -> Hands:
 		if hands != null:
 			return hands
 	return null
+
+func _find_key_items() -> KeyItems:
+	for child: Node in get_children():
+		var key_items := child as KeyItems
+		if key_items != null:
+			return key_items
+	return null
+
 
 # Por ahora el único Inventory hijo directo es la mochila. Cuando haya más de uno
 # (cinturón de herramientas, por ejemplo), se distinguirán por `container_id`.

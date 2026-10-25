@@ -20,10 +20,13 @@ signal day_started(day: int)
 signal time_advanced(hours: float)
 ## El jugador toma o suelta algo con las manos.
 signal hands_changed()
-## Se usa una herramienta; `durability` es lo que le queda.
-signal tool_used(tool_id: StringName, durability: float)
-## Una herramienta se rompió y deja de servir.
-signal tool_broken(tool_id: StringName)
+## Se da un golpe con una herramienta clave (&"" si fue con las manos). Sin durabilidad (D83).
+signal tool_used(tool_id: StringName)
+## El jugador consigue una herramienta clave nueva (tarea 55). La emite Player.
+signal key_item_obtained(item_id: StringName)
+## Se despeja un obstáculo del tramo `segment_id` (tarea 55). El tramo se abre recién cuando
+## no le queda ninguno: para eso, segment_state_changed.
+signal obstacle_cleared(segment_id: StringName)
 ## Se entregan materiales al depósito de una estación.
 signal contribution_delivered(station_id: StringName, item_id: StringName, amount: int)
 ## El pueblo terminó una mejora de la estación.

@@ -13,6 +13,8 @@ class_name Grabber extends Node
 ## Desde la interfaz del inventario (tarea 49) se pasa una unidad de una ranura a la
 ## mano (take_from_backpack) y lo de la mano a la mochila (stow_held).
 ## Con los controles del jugador apagados (inventario abierto) no lee las teclas.
+## Una herramienta clave suelta (KeyItemData, tarea 55) no va a la mano ni a la mochila: pasa
+## a los KeyItems del jugador y el objeto desaparece. Si ya la tenía, también desaparece.
 
 ## Se emite cuando no se pudo hacer algo. `reason` es &"nothing_near",
 ## &"too_big" (solo grúa), &"no_room" (no entra en la mochila),
@@ -273,6 +275,16 @@ func _plan_for(stack: ItemStack) -> StringName:
 
 
 func _grab_world_item(target: WorldItem) -> bool:
+	var key_item := target.stack.item as KeyItemData
+	if key_item != null:
+		var key_items: KeyItems = _player.get_key_items()
+		if key_items == null:
+			push_error("El jugador no tiene un nodo KeyItems: no puede recoger '%s'." % key_item.id)
+			grab_failed.emit(&"too_big")
+			return false
+		key_items.add(key_item)
+		target.queue_free()
+		return true
 	var plan: StringName = _plan_for(target.stack)
 	if not is_ok_plan(plan):
 		grab_failed.emit(plan)
