@@ -1,3 +1,4 @@
+@tool
 class_name ItemAmount
 extends Resource
 ## Una cantidad de un objeto: "15 troncos". La usan los datos de las estaciones (producción y

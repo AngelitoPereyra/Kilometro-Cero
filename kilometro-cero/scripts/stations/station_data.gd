@@ -2,7 +2,7 @@ class_name StationData
 extends Resource
 ## Definición de una estación (D31, D79, tarea 56): nombre, tipo, región, producción y consumo
 ## por nivel y servicios. Es compartida y no guarda estado: el nivel actual vive en Station
-## (y desde la tarea 57 en el ProductionModel). Lo calcula todo en lógica pura, para que el
+## y en el ProductionModel (tarea 57). Lo calcula todo en lógica pura, para que el
 ## modelo de producción y las misiones lo usen sin escena.
 ## Datos: data/stations/*.tres. El `id` es el mismo nombre de estación que usan las vías
 ## (TrackSegment.from_station y to_station).
@@ -67,6 +67,14 @@ func get_growth_needs(level: int) -> Dictionary[StringName, int]:
 		return {}
 	var data: StationLevelData = get_level_data(level)
 	return ItemAmount.sum_by_id(data.needs) if data != null else {}
+
+
+## Días con todo cubierto que hacen falta para crecer desde `level` (0 si ya no crece).
+func get_days_to_grow(level: int) -> int:
+	if not can_grow(level):
+		return 0
+	var data: StationLevelData = get_level_data(level)
+	return data.days_to_grow if data != null else 0
 
 
 ## Todo lo que consume por día en `level`: el consumo de los niveles hasta ese, incluido el

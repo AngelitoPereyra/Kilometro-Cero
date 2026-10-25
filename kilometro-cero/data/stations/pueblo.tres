@@ -1,9 +1,9 @@
-[gd_resource type="Resource" script_class="StationData" format=3]
+[gd_resource type="Resource" script_class="StationData" format=3 uid="uid://dex5b5qters0h"]
 
-[ext_resource type="Script" path="res://scripts/stations/station_level_data.gd" id="1_qu3tr"]
-[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_nqyaq"]
+[ext_resource type="Script" uid="uid://dotr4bvlkpu0w" path="res://scripts/stations/station_level_data.gd" id="1_qu3tr"]
+[ext_resource type="Script" uid="uid://ds0unwhb6wxu0" path="res://scripts/storage/item_amount.gd" id="2_nqyaq"]
 [ext_resource type="Resource" path="res://data/items/log.tres" id="3_4vqb7"]
-[ext_resource type="Script" path="res://scripts/stations/station_data.gd" id="4_ix6e5"]
+[ext_resource type="Script" uid="uid://cqaqvh42fd3s6" path="res://scripts/stations/station_data.gd" id="4_ix6e5"]
 
 [sub_resource type="Resource" id="Resource_s0pbw"]
 script = ExtResource("2_nqyaq")

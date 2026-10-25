@@ -36,9 +36,9 @@ const STOP_SPEED: float = 0.1
 		data = value
 		if is_node_ready():
 			_refresh()
-## Nivel de crecimiento (1 a data.get_max_level()). En el juego lo cambia el modelo de
-## producción con EventBus.station_level_changed; acá sirve para empezar en otro nivel y
-## para ver los niveles en el editor.
+## Nivel de crecimiento (1 a data.get_max_level()). En el juego lo maneja el modelo de
+## producción (GameState.production, tarea 57) con EventBus.station_level_changed; acá sirve
+## para el nivel inicial de una partida nueva y para ver los niveles en el editor.
 @export_range(1, 10) var level: int = 1:
 	get:
 		return _level
@@ -92,6 +92,8 @@ func _ready() -> void:
 	else:
 		for problem: String in data.validate():
 			push_warning("Station %s: %s." % [name, problem])
+		# Si el modelo ya la conocía (escena recargada, partida guardada) manda su nivel.
+		_apply_level(GameState.production.add_station(data, _level))
 	# Diferido: la red arma el grafo en su primer cuadro.
 	_check_network.call_deferred()
 
@@ -142,6 +144,25 @@ func get_consumption() -> Dictionary[StringName, int]:
 ## Lo que le falta cubrir por día para crecer al nivel siguiente.
 func get_growth_needs() -> Dictionary[StringName, int]:
 	return data.get_growth_needs(level) if data != null else {}
+
+
+## Lo que le llega por día con los flujos de hoy (del modelo de producción).
+func get_supply() -> Dictionary[StringName, int]:
+	return GameState.production.get_supply(get_station_id())
+
+
+## Lo que le falta por día para cubrir todo su consumo (vacío si está cubierta).
+func get_missing() -> Dictionary[StringName, int]:
+	return GameState.production.get_missing(get_station_id())
+
+
+## Días cubiertos juntados para crecer, y cuántos hacen falta (0 si ya no crece).
+func get_growth_progress() -> int:
+	return GameState.production.get_growth_progress(get_station_id())
+
+
+func get_days_to_grow() -> int:
+	return GameState.production.get_days_to_grow(get_station_id())
 
 
 func has_market() -> bool:
@@ -209,8 +230,12 @@ func describe() -> String:
 	return "%s (%s, nivel %d de %d)" % [data.display_name, StationData.type_name(data.type), level, get_max_level()]
 
 
+# Lee solo propiedades de los datos, sin llamar a sus métodos: al abrir el editor, los .tres
+# pueden cargarse antes que su script y mientras tanto son "placeholder" sin métodos.
 func _clamped(value: int) -> int:
-	return data.clamp_level(value) if data != null else maxi(1, value)
+	if data == null:
+		return maxi(1, value)
+	return clampi(value, 1, maxi(1, data.levels.size()))
 
 
 # Pone el nivel y sus nodos, sin avisar por EventBus. True si cambió.
