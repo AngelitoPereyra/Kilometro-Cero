@@ -1,0 +1,124 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/station.gd" id="1_st"]
+[ext_resource type="Resource" path="res://data/stations/pueblo.tres" id="2_st"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_anden"]
+albedo_color = Color(0.8, 0.75, 0.6, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_edificio"]
+albedo_color = Color(0.75, 0.45, 0.35, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_casa_a"]
+albedo_color = Color(0.85, 0.75, 0.55, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_casa_b"]
+albedo_color = Color(0.75, 0.5, 0.4, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_casa_c"]
+albedo_color = Color(0.9, 0.9, 0.85, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_plaza"]
+albedo_color = Color(0.3, 0.55, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="Box_1"]
+size = Vector3(6, 0.6, 20)
+
+[sub_resource type="BoxShape3D" id="Shape_2"]
+size = Vector3(6, 0.6, 20)
+
+[sub_resource type="BoxMesh" id="Box_3"]
+size = Vector3(5, 4, 8)
+
+[sub_resource type="BoxShape3D" id="Shape_4"]
+size = Vector3(5, 4, 8)
+
+[sub_resource type="BoxShape3D" id="Shape_5"]
+size = Vector3(14, 4, 24)
+
+[sub_resource type="BoxMesh" id="Box_6"]
+size = Vector3(4, 3, 4)
+
+[sub_resource type="BoxMesh" id="Box_7"]
+size = Vector3(4, 3, 5)
+
+[sub_resource type="BoxMesh" id="Box_8"]
+size = Vector3(5, 3, 4)
+
+[sub_resource type="BoxMesh" id="Box_9"]
+size = Vector3(4, 3, 4)
+
+[sub_resource type="BoxMesh" id="Box_10"]
+size = Vector3(8, 0.1, 10)
+
+[node name="TownStation" type="Node3D"]
+script = ExtResource("1_st")
+data = ExtResource("2_st")
+
+[node name="Anden" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.3, 0)
+
+[node name="Malla" type="MeshInstance3D" parent="Anden"]
+material_override = SubResource("Mat_anden")
+mesh = SubResource("Box_1")
+
+[node name="Forma" type="CollisionShape3D" parent="Anden"]
+shape = SubResource("Shape_2")
+
+[node name="Edificio" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 2, 0)
+
+[node name="Malla" type="MeshInstance3D" parent="Edificio"]
+material_override = SubResource("Mat_edificio")
+mesh = SubResource("Box_3")
+
+[node name="Forma" type="CollisionShape3D" parent="Edificio"]
+shape = SubResource("Shape_4")
+
+[node name="Cartel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 3.2, 0)
+billboard = 1
+font_size = 96
+outline_size = 16
+text = "Estación"
+
+[node name="Zona" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 2.2, 0)
+collision_layer = 0
+collision_mask = 3
+
+[node name="Forma" type="CollisionShape3D" parent="Zona"]
+shape = SubResource("Shape_5")
+
+[node name="Niveles" type="Node3D" parent="."]
+
+[node name="Nivel1" type="Node3D" parent="Niveles"]
+
+[node name="Casa1" type="MeshInstance3D" parent="Niveles/Nivel1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1.5, -6)
+material_override = SubResource("Mat_casa_a")
+mesh = SubResource("Box_6")
+
+[node name="Nivel2" type="Node3D" parent="Niveles"]
+
+[node name="Casa2" type="MeshInstance3D" parent="Niveles/Nivel2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1.5, 4)
+material_override = SubResource("Mat_casa_b")
+mesh = SubResource("Box_7")
+
+[node name="Casa3" type="MeshInstance3D" parent="Niveles/Nivel2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27, 1.5, -2)
+material_override = SubResource("Mat_casa_c")
+mesh = SubResource("Box_8")
+
+[node name="Nivel3" type="Node3D" parent="Niveles"]
+
+[node name="Casa4" type="MeshInstance3D" parent="Niveles/Nivel3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -27, 1.5, 8)
+material_override = SubResource("Mat_casa_a")
+mesh = SubResource("Box_9")
+
+[node name="Plaza" type="MeshInstance3D" parent="Niveles/Nivel3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34, 0.05, 0)
+material_override = SubResource("Mat_plaza")
+mesh = SubResource("Box_10")

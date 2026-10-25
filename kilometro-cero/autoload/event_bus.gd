@@ -29,8 +29,13 @@ signal key_item_obtained(item_id: StringName)
 signal obstacle_cleared(segment_id: StringName)
 ## Se entregan materiales al depósito de una estación.
 signal contribution_delivered(station_id: StringName, item_id: StringName, amount: int)
-## El pueblo terminó una mejora de la estación.
+## Una estación cambió de nivel de crecimiento (D79). La emite Station.set_level (y desde la
+## tarea 57 el modelo de producción); cada Station escucha la suya y muestra sus nodos.
 signal station_level_changed(station_id: StringName, level: int)
+## Un tren se detuvo en una estación (tarea 56). La emite Station, una vez por parada.
+signal train_stopped_at_station(station_id: StringName, head: Vehicle)
+## El jugador entró a la zona de una estación, o salió (&"") (tarea 56). La emite Station.
+signal player_station_changed(station_id: StringName)
 ## Cambia la condición (0.0 a 1.0) de un tramo de vía.
 signal track_condition_changed(segment_id: StringName, condition: float)
 ## Un tramo pasa a cortado, abierto o mejorado (valores de TrackSegment.State). La emite

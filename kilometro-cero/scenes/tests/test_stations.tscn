@@ -1,0 +1,132 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/tests/test_stations.gd" id="1_sta"]
+[ext_resource type="Script" uid="uid://vjyhstl4bvxp" path="res://scripts/world/manual_track.gd" id="2_sta"]
+[ext_resource type="Script" uid="uid://63tp0rc2s27h" path="res://scripts/world/track_builder.gd" id="3_sta"]
+[ext_resource type="Script" uid="uid://cr8u1ddxfxvhv" path="res://scripts/world/track_segment.gd" id="4_sta"]
+[ext_resource type="Script" path="res://scripts/world/rail_network.gd" id="5_sta"]
+[ext_resource type="PackedScene" path="res://scenes/vehicles/locomotive.tscn" id="6_sta"]
+[ext_resource type="PackedScene" path="res://scenes/vehicles/flatcar.tscn" id="7_sta"]
+[ext_resource type="PackedScene" uid="uid://dwcrgtb107qxo" path="res://scenes/player/player.tscn" id="8_sta"]
+[ext_resource type="PackedScene" path="res://scenes/stations/city_station.tscn" id="9_sta"]
+[ext_resource type="PackedScene" path="res://scenes/stations/town_station.tscn" id="10_sta"]
+[ext_resource type="PackedScene" path="res://scenes/stations/freight_station.tscn" id="11_sta"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_sta"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_sta"]
+sky_material = SubResource("ProceduralSkyMaterial_sta")
+
+[sub_resource type="Environment" id="Environment_sta"]
+background_mode = 2
+sky = SubResource("Sky_sta")
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_piso"]
+albedo_color = Color(0.35, 0.6, 0.3, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_piso"]
+size = Vector3(1000, 1, 1000)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_piso"]
+size = Vector3(1000, 1, 1000)
+
+[sub_resource type="BoxMesh" id="BoxMesh_modulo"]
+size = Vector3(1.6, 0.2, 4.8)
+
+[sub_resource type="Curve3D" id="Curve3D_ab"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -150),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[sub_resource type="Curve3D" id="Curve3D_bc"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, -150, 0, 0, 0, 0, 0, 0, 0, 0, -300),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[node name="TestStations" type="Node3D"]
+script = ExtResource("1_sta")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_sta")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+shadow_enabled = true
+
+[node name="Ground" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -150)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+material_override = SubResource("StandardMaterial3D_piso")
+mesh = SubResource("BoxMesh_piso")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("BoxShape3D_piso")
+
+[node name="RailNetwork" type="Node" parent="."]
+script = ExtResource("5_sta")
+
+[node name="Ida" type="Path3D" parent="."]
+curve = SubResource("Curve3D_ab")
+script = ExtResource("2_sta")
+
+[node name="TrackBuilder" type="Node3D" parent="Ida" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_sta")
+module_mesh = SubResource("BoxMesh_modulo")
+segment = NodePath("../TrackSegment")
+
+[node name="TrackSegment" type="Node" parent="Ida"]
+script = ExtResource("4_sta")
+segment_id = &"a_b"
+from_station = &"ciudad"
+to_station = &"pueblo"
+condition = 1.0
+
+[node name="Locomotive" parent="Ida" instance=ExtResource("6_sta")]
+progress = 40.0
+
+[node name="Flatcar" parent="Ida" instance=ExtResource("7_sta")]
+progress = 29.4
+couple_on_start = true
+
+[node name="Ramal" type="Path3D" parent="."]
+curve = SubResource("Curve3D_bc")
+script = ExtResource("2_sta")
+
+[node name="TrackBuilder" type="Node3D" parent="Ramal" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_sta")
+module_mesh = SubResource("BoxMesh_modulo")
+segment = NodePath("../TrackSegment")
+
+[node name="TrackSegment" type="Node" parent="Ramal"]
+script = ExtResource("4_sta")
+segment_id = &"b_c"
+from_station = &"pueblo"
+to_station = &"maderera"
+condition = 1.0
+
+[node name="Ciudad" parent="." instance=ExtResource("9_sta")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -24)
+
+[node name="Pueblo" parent="." instance=ExtResource("10_sta")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -150)
+
+[node name="Maderera" parent="." instance=ExtResource("11_sta")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -288)
+
+[node name="Player" parent="." instance=ExtResource("8_sta")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.7, -20)
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="Label" type="Label" parent="Hud"]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 56.0
+offset_bottom = 39.0

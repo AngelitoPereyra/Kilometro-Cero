@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="StationData" format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/station_level_data.gd" id="1_dn0ey"]
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_qifbp"]
+[ext_resource type="Resource" path="res://data/items/log.tres" id="3_qvl3q"]
+[ext_resource type="Script" path="res://scripts/stations/station_data.gd" id="4_qann5"]
+
+[sub_resource type="Resource" id="Resource_jrdya"]
+script = ExtResource("1_dn0ey")
+description = "Aserradero que produce troncos."
+
+[sub_resource type="Resource" id="Resource_qus52"]
+script = ExtResource("2_qifbp")
+item = ExtResource("3_qvl3q")
+amount = 15
+
+[resource]
+script = ExtResource("4_qann5")
+id = &"maderera"
+display_name = "Maderera"
+type = 2
+region = &"hito_a"
+production = Array[ExtResource("2_qifbp")]([SubResource("Resource_qus52")])
+levels = Array[ExtResource("1_dn0ey")]([SubResource("Resource_jrdya")])

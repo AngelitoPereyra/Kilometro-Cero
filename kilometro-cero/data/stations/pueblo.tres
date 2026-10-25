@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="StationData" format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/station_level_data.gd" id="1_qu3tr"]
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_nqyaq"]
+[ext_resource type="Resource" path="res://data/items/log.tres" id="3_4vqb7"]
+[ext_resource type="Script" path="res://scripts/stations/station_data.gd" id="4_ix6e5"]
+
+[sub_resource type="Resource" id="Resource_s0pbw"]
+script = ExtResource("2_nqyaq")
+item = ExtResource("3_4vqb7")
+amount = 10
+
+[sub_resource type="Resource" id="Resource_tx1m6"]
+script = ExtResource("1_qu3tr")
+needs = Array[ExtResource("2_nqyaq")]([SubResource("Resource_s0pbw")])
+description = "Pueblo casi vacío."
+
+[sub_resource type="Resource" id="Resource_nm8xk"]
+script = ExtResource("2_nqyaq")
+item = ExtResource("3_4vqb7")
+amount = 15
+
+[sub_resource type="Resource" id="Resource_rr07s"]
+script = ExtResource("1_qu3tr")
+needs = Array[ExtResource("2_nqyaq")]([SubResource("Resource_nm8xk")])
+market = true
+description = "Casas arregladas y almacén de ramos generales (mercado)."
+
+[sub_resource type="Resource" id="Resource_jvrvd"]
+script = ExtResource("1_qu3tr")
+market = true
+description = "Pueblo con vida: plaza y más casas."
+
+[resource]
+script = ExtResource("4_ix6e5")
+id = &"pueblo"
+display_name = "Pueblo"
+region = &"hito_a"
+levels = Array[ExtResource("1_qu3tr")]([SubResource("Resource_tx1m6"), SubResource("Resource_rr07s"), SubResource("Resource_jvrvd")])

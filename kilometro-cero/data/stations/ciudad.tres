@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="StationData" format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/station_level_data.gd" id="1_dbvwu"]
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_k6ase"]
+[ext_resource type="Resource" path="res://data/items/log.tres" id="3_nm4px"]
+[ext_resource type="Script" path="res://scripts/stations/station_data.gd" id="4_d5nnq"]
+
+[sub_resource type="Resource" id="Resource_3628f"]
+script = ExtResource("2_k6ase")
+item = ExtResource("3_nm4px")
+amount = 20
+
+[sub_resource type="Resource" id="Resource_6gvhx"]
+script = ExtResource("1_dbvwu")
+needs = Array[ExtResource("2_k6ase")]([SubResource("Resource_3628f")])
+market = true
+description = "Ciudad apagada: pocas luces y el mercado abierto."
+
+[sub_resource type="Resource" id="Resource_s0jhf"]
+script = ExtResource("2_k6ase")
+item = ExtResource("3_nm4px")
+amount = 30
+
+[sub_resource type="Resource" id="Resource_6xtt5"]
+script = ExtResource("1_dbvwu")
+needs = Array[ExtResource("2_k6ase")]([SubResource("Resource_s0jhf")])
+market = true
+workshop = true
+description = "Vuelve la obra: casas nuevas y el taller."
+
+[sub_resource type="Resource" id="Resource_1ikck"]
+script = ExtResource("2_k6ase")
+item = ExtResource("3_nm4px")
+amount = 40
+
+[sub_resource type="Resource" id="Resource_c4bfb"]
+script = ExtResource("1_dbvwu")
+needs = Array[ExtResource("2_k6ase")]([SubResource("Resource_1ikck")])
+market = true
+workshop = true
+description = "Barrios nuevos y más movimiento."
+
+[sub_resource type="Resource" id="Resource_mfh2k"]
+script = ExtResource("1_dbvwu")
+market = true
+workshop = true
+description = "La ciudad en marcha."
+
+[resource]
+script = ExtResource("4_d5nnq")
+id = &"ciudad"
+display_name = "Ciudad"
+type = 0
+region = &"hito_a"
+levels = Array[ExtResource("1_dbvwu")]([SubResource("Resource_6gvhx"), SubResource("Resource_6xtt5"), SubResource("Resource_c4bfb"), SubResource("Resource_mfh2k")])
