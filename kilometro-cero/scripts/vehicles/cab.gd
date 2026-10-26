@@ -180,7 +180,7 @@ func get_camera() -> Camera3D:
 func can_enter(player: Player) -> bool:
 	if player == null or is_occupied() or _vehicle == null or _camera == null:
 		return false
-	if player.get_platform() != _vehicle:
+	if player.get_platform() != _vehicle or _vehicle.automatic:
 		return false
 	return horizontal_distance_to(player.global_position) <= enter_radius
 

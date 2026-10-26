@@ -12,4 +12,5 @@ unit_weight = 20.0
 hands = 1
 tags = Array[StringName]([&"log"])
 base_value = 10.0
+cargo_name = "troncos"
 scene = ExtResource("2_scene")

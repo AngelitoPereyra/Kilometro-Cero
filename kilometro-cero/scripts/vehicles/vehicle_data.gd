@@ -27,6 +27,8 @@ const CONDITION_EPSILON: float = 0.0001
 ## Desaceleración al soltar el acelerador sin frenar (rozamiento, punto muerto). Por defecto
 ## igual que `braking`: los vehículos sin freno propio (la zorra) frenan al soltar (tarea 52).
 @export_range(0.01, 20.0, 0.01, "suffix:m/s²") var coast_deceleration: float = 2.5
+## Cuántos vagones puede arrastrar como locomotora de un tren automático (tarea 61, D110).
+@export_range(0, 20) var max_wagons: int = 4
 
 
 func can_enter(track_condition: float) -> bool:

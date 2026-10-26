@@ -1,0 +1,250 @@
+class_name AutoTrainRun
+extends RefCounted
+## El viaje de un tren automático (D81, D110, tarea 61): un tren por conexión entre dos
+## estaciones (`home` y `away`), que lleva los flujos permanentes de esa conexión en los dos
+## sentidos. Va y vuelve según su horario: sale de `home` a `out_hour` y vuelve de `away` a
+## `back_hour`; si llega tarde, sale apenas puede. A la ida va con la locomotora adelante y a la
+## vuelta marcha atrás (empujando), hasta que haya cómo dar la vuelta.
+## Lógica pura: no conoce la escena. Quien lo maneja (AutoTrains) le da el camino al salir y lo
+## hace avanzar: lejos del jugador con advance() (solo un número), cerca copiando la posición
+## del tren de verdad con set_position(). La entrega de los flujos la sigue haciendo el
+## ProductionModel una vez por día (D95): el tren es solo cómo se ve el flujo.
+## Posiciones en metros sobre el tramo de viaje ("leg"): 0 en la estación de salida. La posición
+## es la del centro de la locomotora.
+
+enum State { AT_HOME, OUTBOUND, AT_AWAY, INBOUND }
+
+const STATE_NAMES: Array[String] = ["en %s", "viajando a %s", "en %s", "volviendo a %s"]
+## Lo que queda libre entre la punta del tren y la estación al parar.
+const STOP_MARGIN: float = 3.0
+## Horas mínimas que espera en una estación al llegar, aunque ya sea su hora de salida.
+const MIN_DWELL_HOURS: float = 0.5
+## Horas entre la salida de ida y la de vuelta (provisorio, D110).
+const BACK_AFTER_HOURS: float = 6.0
+
+var id: int = 0
+var home: StringName
+var away: StringName
+## El nombre que se ve en el cartel y en el tablero (D106).
+var display_name: String = ""
+## Ids de los ProductionFlow que lleva (del más viejo al más nuevo).
+var flow_ids: Array[int] = []
+## Vagones, de la locomotora hacia atrás: {"kind": &"flatcar" o &"coach", "item": id,
+## "dir": 1 ida, -1 vuelta, 0 los dos sentidos, "units": unidades por viaje}.
+var wagons: Array[Dictionary] = []
+## Hora del día de la salida de ida y de la de vuelta.
+var out_hour: float = 7.0
+var back_hour: float = 13.0
+var state: State = State.AT_HOME
+## Hora absoluta (horas desde el principio de la partida) de la próxima salida.
+var due: float = 0.0
+## Centro de la locomotora sobre el tramo de viaje.
+var position: float = 0.0
+## Los tramos del viaje actual (en orden desde la estación de salida) y sus largos.
+var leg: Array[StringName] = []
+var leg_lengths: Array[float] = []
+## Por qué está parado, si lo está: "" o un texto ("vía cortada", "vía ocupada", "esperando vía libre").
+var waiting: String = ""
+## Largo de la locomotora y del tren detrás del centro de la locomotora.
+var loco_length: float = 10.0
+var behind: float = 0.0
+
+
+## Una hora del día que vuelve cada día: la primera vez que llega en `after` o después.
+static func next_occurrence(hour_of_day: float, after: float) -> float:
+	var day_start: float = floorf(after / GameClock.HOURS_PER_DAY) * GameClock.HOURS_PER_DAY
+	var at: float = day_start + hour_of_day
+	if at < after:
+		at += GameClock.HOURS_PER_DAY
+	return at
+
+
+## "07:00".
+static func hour_text(hour_of_day: float) -> String:
+	return GameClock.format_time(fposmod(hour_of_day, GameClock.HOURS_PER_DAY))
+
+
+## Pone el horario (la vuelta BACK_AFTER_HOURS después de la ida) y la primera salida.
+func set_schedule(hour_out: float, now: float) -> void:
+	out_hour = fposmod(hour_out, GameClock.HOURS_PER_DAY)
+	back_hour = fposmod(out_hour + BACK_AFTER_HOURS, GameClock.HOURS_PER_DAY)
+	if state == State.AT_HOME:
+		due = next_occurrence(out_hour, now)
+	elif state == State.AT_AWAY:
+		due = next_occurrence(back_hour, now)
+
+
+func is_moving() -> bool:
+	return state == State.OUTBOUND or state == State.INBOUND
+
+
+## Si el viaje actual (o el próximo, parado en una estación) es de ida.
+func is_outbound() -> bool:
+	return state == State.OUTBOUND or state == State.AT_HOME
+
+
+## La estación de donde sale el viaje actual o el próximo.
+func leg_from() -> StringName:
+	return home if is_outbound() else away
+
+
+func leg_to() -> StringName:
+	return away if is_outbound() else home
+
+
+## Hacia dónde va la carga que se ve: 1 ida, -1 vuelta.
+func cargo_dir() -> int:
+	return 1 if is_outbound() else -1
+
+
+## Del centro de la locomotora a la punta que va adelante, y a la de atrás. A la ida va
+## adelante la locomotora; a la vuelta, los vagones.
+func lead_offset() -> float:
+	return loco_length * 0.5 if is_outbound() else behind
+
+
+func trail_offset() -> float:
+	return behind if is_outbound() else loco_length * 0.5
+
+
+func get_leg_length() -> float:
+	var total: float = 0.0
+	for length: float in leg_lengths:
+		total += length
+	return total
+
+
+## Donde queda la locomotora parada en la estación de salida: la cola a STOP_MARGIN de ella.
+func start_position() -> float:
+	return STOP_MARGIN + trail_offset()
+
+
+## Donde para en la estación de llegada: la punta a STOP_MARGIN de ella.
+func stop_position() -> float:
+	return get_leg_length() - STOP_MARGIN - lead_offset()
+
+
+func remaining() -> float:
+	return stop_position() - position
+
+
+## Si ya es hora de salir (horas absolutas).
+func is_due(now: float) -> bool:
+	return not is_moving() and now >= due
+
+
+## Sale por el camino `route` (tramos desde la estación de salida, con sus largos). Devuelve
+## false si no está en una estación o el camino está vacío.
+func depart(route: Array[StringName], lengths: Array[float]) -> bool:
+	if is_moving() or route.is_empty() or route.size() != lengths.size():
+		return false
+	leg = route.duplicate()
+	leg_lengths = lengths.duplicate()
+	position = start_position()
+	waiting = ""
+	state = State.OUTBOUND if state == State.AT_HOME else State.INBOUND
+	return true
+
+
+## Avanza `distance` metros sin pasar de `limit` (otro tren, un tramo cortado). Al llegar a la
+## parada, llega. Devuelve true si llegó.
+func advance(distance: float, now: float, limit: float = INF) -> bool:
+	if not is_moving():
+		return false
+	var target: float = minf(position + maxf(distance, 0.0), stop_position())
+	if target > limit:
+		target = maxf(position, limit)
+		waiting = "esperando vía libre"
+	else:
+		waiting = ""
+	position = target
+	if position >= stop_position() - 0.01:
+		arrive(now)
+		return true
+	return false
+
+
+## La posición que tiene el tren de verdad (cuando está cerca del jugador).
+func set_position(value: float) -> void:
+	position = value
+
+
+## Llegó: queda en la estación hasta su próxima salida.
+func arrive(now: float) -> void:
+	if not is_moving():
+		return
+	var after: float = now + MIN_DWELL_HOURS
+	if state == State.OUTBOUND:
+		state = State.AT_AWAY
+		due = next_occurrence(back_hour, after)
+	else:
+		state = State.AT_HOME
+		due = next_occurrence(out_hour, after)
+	waiting = ""
+	# Parado, la posición queda donde arranca el próximo viaje (el tramo de vuelta mide igual).
+	leg.reverse()
+	leg_lengths.reverse()
+	position = start_position()
+
+
+## En qué tramo del viaje queda la coordenada `at`: [índice, metros desde el principio de ese
+## tramo en el sentido del viaje]. [-1, 0] si no hay viaje.
+func locate(at: float) -> Array:
+	if leg.is_empty():
+		return [-1, 0.0]
+	var start: float = 0.0
+	for index: int in leg.size():
+		if at <= start + leg_lengths[index] or index == leg.size() - 1:
+			return [index, clampf(at - start, 0.0, leg_lengths[index])]
+		start += leg_lengths[index]
+	return [-1, 0.0]
+
+
+## Dónde empieza el tramo `index` del viaje.
+func segment_start(index: int) -> float:
+	var start: float = 0.0
+	for i: int in mini(index, leg_lengths.size()):
+		start += leg_lengths[i]
+	return start
+
+
+## La estación de donde sale el tramo `index` del viaje: la de salida para el primero, después
+## la del otro extremo del anterior (la da `other_end`, func(segment_id, station) -> station).
+func segment_entry(index: int, other_end: Callable) -> StringName:
+	# Parado, `leg` ya está dado vuelta para el próximo viaje: sale de leg_from() igual.
+	var station: StringName = leg_from()
+	for i: int in mini(index, leg.size()):
+		station = other_end.call(leg[i], station)
+	return station
+
+
+## "Tren de troncos de Maderera: viajando a Pueblo · sale 07:00, vuelve 13:00".
+func status_text(station_name: Callable) -> String:
+	var where: String = STATE_NAMES[state] % station_name.call(leg_to() if is_moving() else (home if state == State.AT_HOME else away))
+	if not waiting.is_empty():
+		where += " (%s)" % waiting
+	return "%s: %s · sale %s, vuelve %s" % [display_name, where, hour_text(out_hour), hour_text(back_hour)]
+
+
+## Para el guardado (tarea 65).
+func to_dict() -> Dictionary:
+	return {
+		"id": id, "home": String(home), "away": String(away), "state": int(state), "due": due,
+		"position": position, "out_hour": out_hour, "back_hour": back_hour,
+		"leg": leg.map(func(segment_id: StringName) -> String: return String(segment_id)),
+		"leg_lengths": leg_lengths.duplicate(),
+	}
+
+
+func load_dict(values: Dictionary) -> void:
+	state = int(values.get("state", 0)) as State
+	due = float(values.get("due", 0.0))
+	position = float(values.get("position", 0.0))
+	out_hour = float(values.get("out_hour", out_hour))
+	back_hour = float(values.get("back_hour", back_hour))
+	leg.clear()
+	for segment_id: Variant in values.get("leg", []):
+		leg.append(StringName(segment_id))
+	leg_lengths.clear()
+	for length: Variant in values.get("leg_lengths", []):
+		leg_lengths.append(float(length))

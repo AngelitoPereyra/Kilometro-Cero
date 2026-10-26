@@ -138,6 +138,13 @@ func build_text() -> String:
 	var coach_hint: String = _coach_hint(mains)
 	if not coach_hint.is_empty():
 		lines.append(coach_hint)
+	# Tarea 61: los trenes automáticos que salen o llegan acá, con su horario.
+	var trains: AutoTrains = AutoTrains.find_in(get_tree()) if is_inside_tree() else null
+	if trains != null:
+		var train_lines: PackedStringArray = trains.describe_at(station_id)
+		if not train_lines.is_empty():
+			lines.append("— Trenes —")
+			lines.append_array(train_lines)
 	var plan: Dictionary[StringName, int] = get_delivery_plan()
 	if not plan.is_empty():
 		lines.append("F: entregar " + _amounts_text(plan))

@@ -25,6 +25,8 @@ const SPECIALIST_TAG: StringName = &"specialist"
 ## Etiquetas para las reglas de compatibilidad (por ejemplo &"chemical", &"food").
 @export var tags: Array[StringName] = []
 @export var base_value: float = 0.0
+## Cómo se nombra como carga de un tren ("troncos", "piedra"; tarea 61, D106). Vacío: su nombre.
+@export var cargo_name: String = ""
 ## Cómo se ve el objeto suelto en el mundo (tarea 13).
 @export var scene: PackedScene
 @export var icon: Texture2D

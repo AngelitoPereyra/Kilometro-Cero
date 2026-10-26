@@ -58,7 +58,7 @@ func get_station() -> Station:
 
 
 func can_open_doors() -> bool:
-	return get_station() != null
+	return not automatic and get_station() != null
 
 
 ## Pasajeros a bordo: id -> unidades.
@@ -130,6 +130,11 @@ func _take_item(item_id: StringName, amount: int) -> int:
 	return taken
 
 
+func _update_cargo_visual() -> void:
+	super._update_cargo_visual()
+	_update_seated()
+
+
 func _apply_doors() -> void:
 	if _doors != null:
 		_doors.visible = not doors_open
@@ -145,7 +150,7 @@ func _apply_doors() -> void:
 func _update_seated() -> void:
 	if _seated == null:
 		return
-	var total: int = get_cargo().get_total() if get_cargo() != null else 0
+	var total: int = get_shown_units()
 	var index: int = 0
 	for child: Node in _seated.get_children():
 		var figure := child as Node3D

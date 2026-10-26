@@ -11,3 +11,4 @@ acceleration = 1.5
 braking = 3.0
 coast_deceleration = 0.3
 length = 10.0
+max_wagons = 4

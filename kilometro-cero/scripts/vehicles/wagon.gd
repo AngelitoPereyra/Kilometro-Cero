@@ -14,6 +14,8 @@ const CARGO_VISUAL_PATH: NodePath = ^"Visual/Carga"
 
 var _cargo: StorageContainer
 var _cargo_visual: Node3D
+# Carga de adorno de un tren automático (tarea 61); -1: se ve la carga de verdad.
+var _display_units: int = -1
 
 
 func _ready() -> void:
@@ -44,9 +46,24 @@ func get_cargo() -> StorageContainer:
 	return _cargo
 
 
-## Qué tan lleno está, de 0.0 a 1.0.
+## Qué tan lleno se ve, de 0.0 a 1.0 (con la carga de adorno, si tiene).
 func get_fill_ratio() -> float:
-	return fill_ratio(_cargo.get_total(), _cargo.capacity) if _cargo != null else 0.0
+	return fill_ratio(get_shown_units(), _cargo.capacity) if _cargo != null else 0.0
+
+
+## Muestra `units` unidades sin cargar nada de verdad (trenes automáticos, tarea 61): el
+## contenedor sigue vacío, así no se descarga ni cuenta para el tablero. -1 vuelve a mostrar
+## la carga de verdad.
+func set_display_load(units: int) -> void:
+	_display_units = units
+	_update_cargo_visual()
+
+
+## Lo que se ve cargado: la carga de adorno o, si no hay, la de verdad.
+func get_shown_units() -> int:
+	if _display_units >= 0:
+		return _display_units
+	return _cargo.get_total() if _cargo != null else 0
 
 
 ## Lógica pura: fracción llena, sin pasar de 1 ni dividir por 0.

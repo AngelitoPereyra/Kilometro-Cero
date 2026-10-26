@@ -237,10 +237,11 @@ func has_stopped_train() -> bool:
 
 
 ## Las cabezas de los trenes detenidos en la estación (tarea 58: el tablero entrega su carga).
+## Los automáticos no cuentan (tarea 61): su carga es de adorno.
 func get_stopped_trains() -> Array[Vehicle]:
 	var heads: Array[Vehicle] = []
 	for head: Vehicle in get_trains_present():
-		if absf(head.speed) < STOP_SPEED:
+		if absf(head.speed) < STOP_SPEED and not head.automatic:
 			heads.append(head)
 	return heads
 
@@ -352,7 +353,7 @@ func _check_stops() -> void:
 		if not is_instance_valid(old) or absf(old.speed) >= STOP_SPEED or not get_trains_present().has(old):
 			_stopped_heads.remove_at(index)
 	for head: Vehicle in get_trains_present():
-		if absf(head.speed) < STOP_SPEED and not _stopped_heads.has(head):
+		if absf(head.speed) < STOP_SPEED and not head.automatic and not _stopped_heads.has(head):
 			_stopped_heads.append(head)
 			train_stopped.emit(head)
 			EventBus.train_stopped_at_station.emit(get_station_id(), head)

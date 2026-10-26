@@ -55,6 +55,9 @@ var rear: Vehicle
 ## Estación a la que va. Solo decide en los cruces (estaciones con más de un tramo para seguir);
 ## vacío: en un cruce se frena. Lo escribe quien maneja; vale el de la cabeza del tren.
 var destination: StringName
+## Es parte de un tren automático (tarea 61, D110): no se acopla con trenes que no lo son
+## (tampoco al tocarlos con la cola) y su cabina no se usa. Lo pone AutoTrains.
+var automatic: bool = false
 
 # Las curvas que ocupa el tren, si este vehículo lo encabeza.
 var _route: TrainRoute
@@ -125,7 +128,7 @@ func get_max_speed() -> float:
 func couple(vehicle: Vehicle) -> bool:
 	if vehicle == null or vehicle.data == null or rear != null or vehicle.front != null:
 		return false
-	if get_train().has(vehicle):
+	if get_train().has(vehicle) or vehicle.automatic != automatic:
 		return false
 	var head: Vehicle = get_head()
 	head._sync_route()
@@ -457,7 +460,8 @@ func _track_behind(network: RailNetwork, current: TrackSegment, station: StringN
 		if track != null and track != current and not _route.has_path(track.get_track_path()) \
 				and (track.from_station == station or track.to_station == station):
 			return track
-	return network.next_track(current, station)
+	# Marcha atrás también decide en los cruces por el destino (tarea 61: los automáticos vuelven así).
+	return network.next_track(current, station, get_head().destination)
 
 
 # El vehículo más cercano adelante en la misma vía (mayor avance), si tiene la cola libre.

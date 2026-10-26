@@ -18,6 +18,9 @@ var last_delivered: int = 0
 ## Flujo de pasajeros (tarea 60b): el tren va y vuelve con gente (a la ida los que llegan al
 ## pueblo; a la vuelta estudiantes y compradores hacia la ciudad). Lo usa la tarea 61.
 var round_trip: bool = false
+## Nombre especial del flujo y de su tren ("El Marplatense", D106); vacío: el armado por
+## FlowNames. Se guarda.
+var custom_name: String = ""
 
 
 func _init(new_from: StringName = &"", new_to: StringName = &"", new_item: StringName = &"", new_amount: int = 0) -> void:
@@ -42,6 +45,7 @@ func to_dict() -> Dictionary:
 		"item": String(item_id),
 		"amount": amount,
 		"round_trip": round_trip,
+		"name": custom_name,
 	}
 
 
@@ -51,4 +55,5 @@ static func from_dict(values: Dictionary) -> ProductionFlow:
 		StringName(values.get("item", "")), int(values.get("amount", 0)))
 	flow.id = int(values.get("id", 0))
 	flow.round_trip = bool(values.get("round_trip", false))
+	flow.custom_name = String(values.get("name", ""))
 	return flow
