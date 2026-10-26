@@ -4,6 +4,14 @@
 [ext_resource type="Script" path="res://scripts/stations/station_board.gd" id="3_tab"]
 [ext_resource type="Script" path="res://scripts/stations/market.gd" id="4_mer"]
 [ext_resource type="Resource" path="res://data/stations/maderera.tres" id="2_st"]
+[ext_resource type="Script" path="res://scripts/stations/growth_celebration.gd" id="5_fes"]
+[ext_resource type="Script" path="res://scripts/stations/townsperson.gd" id="6_pob"]
+[ext_resource type="Script" path="res://scripts/stations/ambient_layer.gd" id="7_amb"]
+[ext_resource type="PackedScene" path="res://scenes/world/street_lamp.tscn" id="8_far"]
+[ext_resource type="AudioStream" path="res://data/audio/growth_chime.wav" id="9_cam"]
+[ext_resource type="AudioStream" path="res://data/audio/ambient_birds.wav" id="10_paj"]
+[ext_resource type="AudioStream" path="res://data/audio/ambient_town.wav" id="11_gen"]
+[ext_resource type="AudioStream" path="res://data/audio/ambient_music.wav" id="12_mus"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_anden"]
 albedo_color = Color(0.55, 0.45, 0.35, 1)
@@ -149,3 +157,29 @@ shape = SubResource("Shape_5")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1.5, -5)
 material_override = SubResource("Mat_troncos")
 mesh = SubResource("Box_6")
+
+[node name="Festejo" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 6, 0)
+script = ExtResource("5_fes")
+sound = ExtResource("9_cam")
+
+[node name="Poblador1" type="Node3D" parent="Niveles/Nivel1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, 4)
+script = ExtResource("6_pob")
+wander_radius = 3.0
+
+[node name="Poblador2" type="Node3D" parent="Niveles/Nivel1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, -6)
+script = ExtResource("6_pob")
+wander_radius = 3.0
+
+[node name="Farol1" parent="Niveles/Nivel1" instance=ExtResource("8_far")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, -10)
+
+[node name="Ambiente" type="AudioStreamPlayer3D" parent="Niveles/Nivel1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 3, 0)
+stream = ExtResource("10_paj")
+unit_size = 15.0
+max_distance = 70.0
+script = ExtResource("7_amb")
+loudness = 1.0

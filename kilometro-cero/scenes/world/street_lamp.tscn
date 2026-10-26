@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/night_light.gd" id="1_luz"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_poste"]
+albedo_color = Color(0.2, 0.2, 0.22, 1)
+
+[sub_resource type="CylinderMesh" id="Mesh_poste"]
+top_radius = 0.06
+bottom_radius = 0.09
+height = 3.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_vidrio"]
+albedo_color = Color(0.95, 0.9, 0.7, 1)
+emission = Color(1, 0.8, 0.45, 1)
+emission_energy_multiplier = 3.0
+
+[sub_resource type="BoxMesh" id="Mesh_farol"]
+size = Vector3(0.35, 0.45, 0.35)
+
+[node name="StreetLamp" type="Node3D"]
+
+[node name="Poste" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+material_override = SubResource("Mat_poste")
+mesh = SubResource("Mesh_poste")
+
+[node name="Farol" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, 0)
+material_override = SubResource("Mat_vidrio")
+mesh = SubResource("Mesh_farol")
+
+[node name="Luz" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.0, 0)
+light_color = Color(1, 0.8, 0.5, 1)
+light_energy = 2.0
+omni_range = 9.0
+script = ExtResource("1_luz")
+glow_mesh = NodePath("../Farol")

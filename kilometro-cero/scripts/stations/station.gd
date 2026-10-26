@@ -7,14 +7,18 @@ extends Node3D
 ## y to_station), así se ubica en el RailNetwork.
 ## Hijos que usa (todos opcionales):
 ## - "Cartel" (Label3D): muestra el nombre.
-## - "Niveles": sus hijos "Nivel1", "Nivel2"... se ven desde ese nivel (D79; la tarea 60
-##   suma gente, luces y sonido).
+## - "Niveles": sus hijos "Nivel1", "Nivel2"... se ven desde ese nivel (D79). Desde la tarea
+##   60 llevan también pobladores (Townsperson), faroles (NightLight) y sonido (AmbientLayer).
+## - "Festejo" (GrowthCelebration, tarea 60): hace brotar lo nuevo y festeja cuando crece.
 ## - "Zona" (Area3D): avisa qué trenes y si el jugador están en la estación, y cuándo un tren
 ##   se detiene en ella (para entregas, misiones y trenes automáticos).
 ## Es @tool para ver el nombre y los niveles en el editor al cambiar `data` o `level`.
 
 ## Cambió el nivel.
 signal level_changed(level: int)
+## Creció jugando (tarea 60): subió de `previous` a `level`. No se emite al cargar la escena,
+## al bajar de nivel ni en el editor.
+signal grew(level: int, previous: int)
 ## Entró o salió de la zona un vehículo (cualquiera del tren).
 signal vehicle_entered(vehicle: Vehicle)
 signal vehicle_exited(vehicle: Vehicle)
@@ -121,11 +125,22 @@ func get_display_name() -> String:
 ## Cambia el nivel (limitado a lo que permiten los datos), muestra sus nodos y lo avisa
 ## también por EventBus. Devuelve false si quedó igual.
 func set_level(value: int) -> bool:
-	if not _apply_level(value):
+	if not _apply_level(value, true):
 		return false
 	if not Engine.is_editor_hint():
 		EventBus.station_level_changed.emit(get_station_id(), level)
 	return true
+
+
+## El nodo "Niveles/NivelN" de ese nivel, o null.
+func get_level_node(level_number: int) -> Node3D:
+	var levels_node: Node = get_node_or_null(LEVELS_PATH)
+	if levels_node == null:
+		return null
+	for child: Node in levels_node.get_children():
+		if child is Node3D and level_of_node(child.name) == level_number:
+			return child
+	return null
 
 
 func get_max_level() -> int:
@@ -254,14 +269,18 @@ func _clamped(value: int) -> int:
 	return clampi(value, 1, maxi(1, data.levels.size()))
 
 
-# Pone el nivel y sus nodos, sin avisar por EventBus. True si cambió.
-func _apply_level(value: int) -> bool:
+# Pone el nivel y sus nodos, sin avisar por EventBus. True si cambió. Con `growing`, si subió
+# jugando avisa que creció (el nivel inicial que manda el modelo al cargar no es crecer).
+func _apply_level(value: int, growing: bool = false) -> bool:
 	var clamped: int = _clamped(value)
 	if clamped == _level:
 		return false
+	var previous: int = _level
 	_level = clamped
 	_update_level_nodes()
 	level_changed.emit(level)
+	if growing and clamped > previous and not Engine.is_editor_hint():
+		grew.emit(clamped, previous)
 	return true
 
 
@@ -290,7 +309,7 @@ func _check_network() -> void:
 
 func _on_station_level_changed(station_id: StringName, new_level: int) -> void:
 	if station_id == get_station_id():
-		_apply_level(new_level)
+		_apply_level(new_level, true)
 
 
 func _on_body_entered(body: Node3D) -> void:
