@@ -82,7 +82,7 @@ func _probar_stock() -> void:
 	var economia: Economy = _economia_hito()
 	var modelo: ProductionModel = economia.production
 	_comprobar(economia.get_stock(&"maderera") == _dic({&"log": 45}), "La maderera arranca con 3 días de producción (45 troncos)")
-	_comprobar(economia.get_stock(&"pueblo").is_empty() and economia.get_stock(&"ciudad").is_empty(), "Pueblo y ciudad no producen: sin stock")
+	_comprobar(economia.get_stock_of(&"pueblo", &"log") == 0 and economia.get_stock_of(&"ciudad", &"log") == 0, "Pueblo y ciudad no producen troncos: sin stock de troncos")
 	_comprobar(economia.has_market(&"maderera") and economia.has_market(&"ciudad") and not economia.has_market(&"pueblo"), "Mercado en la maderera y la ciudad; el pueblo abre en el nivel 2")
 	modelo.set_level(&"pueblo", 2)
 	_comprobar(economia.has_market(&"pueblo"), "En el nivel 2 el pueblo abre su mercado")
@@ -152,7 +152,7 @@ func _probar_guardado() -> void:
 		var datos: StationData = load("res://data/stations/%s.tres" % archivo)
 		modelo.add_station(datos)
 		copia.add_station(datos)
-	_comprobar(copia.get_stock(&"maderera") == _dic({&"log": 5}) and copia.get_stock(&"ciudad") == _dic({&"log": 7}), "El stock vuelve del guardado y no se rellena al registrar las estaciones")
+	_comprobar(copia.get_stock(&"maderera") == _dic({&"log": 5}) and copia.get_stock_of(&"ciudad", &"log") == 7, "El stock vuelve del guardado y no se rellena al registrar las estaciones")
 
 
 # --- Escena ---

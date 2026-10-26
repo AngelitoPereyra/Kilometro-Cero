@@ -112,7 +112,9 @@ func get_rows(player: Player = null) -> Array[Dictionary]:
 	var available: Dictionary[StringName, int] = goods.get_available()
 	var ids: Array[StringName] = []
 	for item_id: StringName in economy.get_stock(station_id):
-		ids.append(item_id)
+		# Lo que no tiene valor (los pasajeros, tarea 60b) no se comercia.
+		if Economy.is_tradable(economy.get_item(item_id)):
+			ids.append(item_id)
 	for item_id: StringName in available:
 		economy.register_item(goods.find_item(item_id))
 		if not ids.has(item_id) and Economy.is_tradable(economy.get_item(item_id)):

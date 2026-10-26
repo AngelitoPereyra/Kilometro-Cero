@@ -127,7 +127,7 @@ func _probar_crecimiento() -> void:
 	modelo.advance_day()
 	_comprobar(modelo.get_level(&"pueblo") == 2 and modelo.get_growth_progress(&"pueblo") == 0, "Al tercer día sube al nivel 2 y vuelve a contar")
 	_comprobar(avisos == [[&"pueblo", 2]], "Avisa el cambio de nivel una vez")
-	_comprobar(modelo.get_consumption(&"pueblo") == _dic({&"log": 25}) and modelo.get_missing(&"pueblo") == _dic({&"log": 15}), "Nace el consumo nuevo: ahora pide 25 y le faltan 15")
+	_comprobar(modelo.get_consumption(&"pueblo") == _dic({&"log": 25, &"settlers": 5}) and modelo.get_missing(&"pueblo") == _dic({&"log": 15, &"settlers": 5}), "Nace el consumo nuevo: ahora pide 25 troncos y 5 colonos; le faltan 15 y los colonos")
 	_comprobar(modelo.get_level(&"ciudad") == 1 and modelo.get_growth_progress(&"ciudad") == 0, "La ciudad sin flujos no avanza")
 	_comprobar(modelo.get_growth_progress(&"maderera") == 0 and modelo.get_days_to_grow(&"maderera") == 0, "La maderera (un solo nivel) no crece")
 

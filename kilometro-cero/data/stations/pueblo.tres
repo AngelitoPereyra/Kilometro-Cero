@@ -4,6 +4,24 @@
 [ext_resource type="Script" uid="uid://ds0unwhb6wxu0" path="res://scripts/storage/item_amount.gd" id="2_nqyaq"]
 [ext_resource type="Resource" path="res://data/items/log.tres" id="3_4vqb7"]
 [ext_resource type="Script" uid="uid://cqaqvh42fd3s6" path="res://scripts/stations/station_data.gd" id="4_ix6e5"]
+[ext_resource type="Resource" path="res://data/items/settlers.tres" id="5_col"]
+[ext_resource type="Resource" path="res://data/items/teacher.tres" id="6_mae"]
+[ext_resource type="Resource" path="res://data/items/travelers.tres" id="7_pas"]
+
+[sub_resource type="Resource" id="Pide_colonos"]
+script = ExtResource("2_nqyaq")
+item = ExtResource("5_col")
+amount = 5
+
+[sub_resource type="Resource" id="Pide_maestra"]
+script = ExtResource("2_nqyaq")
+item = ExtResource("6_mae")
+amount = 1
+
+[sub_resource type="Resource" id="Prod_pasajeros"]
+script = ExtResource("2_nqyaq")
+item = ExtResource("7_pas")
+amount = 3
 
 [sub_resource type="Resource" id="Resource_s0pbw"]
 script = ExtResource("2_nqyaq")
@@ -22,18 +40,20 @@ amount = 15
 
 [sub_resource type="Resource" id="Resource_rr07s"]
 script = ExtResource("1_qu3tr")
-needs = Array[ExtResource("2_nqyaq")]([SubResource("Resource_nm8xk")])
+needs = Array[ExtResource("2_nqyaq")]([SubResource("Resource_nm8xk"), SubResource("Pide_colonos")])
 market = true
 description = "Casas arregladas y almacén de ramos generales (mercado)."
 
 [sub_resource type="Resource" id="Resource_jvrvd"]
 script = ExtResource("1_qu3tr")
+needs = Array[ExtResource("2_nqyaq")]([SubResource("Pide_maestra")])
 market = true
-description = "Pueblo con vida: plaza y más casas."
+description = "Pueblo con vida: plaza, más casas y la escuela cuando llega la maestra."
 
 [resource]
 script = ExtResource("4_ix6e5")
 id = &"pueblo"
 display_name = "Pueblo"
 region = &"hito_a"
+production = Array[ExtResource("2_nqyaq")]([SubResource("Prod_pasajeros")])
 levels = Array[ExtResource("1_qu3tr")]([SubResource("Resource_tx1m6"), SubResource("Resource_rr07s"), SubResource("Resource_jvrvd")])

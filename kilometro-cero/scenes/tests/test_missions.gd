@@ -105,7 +105,7 @@ func _probar_principales() -> void:
 	_comprobar(tablero.get_main_missions(&"pueblo").is_empty() and tablero.production.get_uncommitted_needs(&"pueblo").is_empty(), "El pueblo ya no tiene principales: su consumo está comprometido")
 
 	tablero.production.advance_days(3)
-	var segunda: Array[Mission] = tablero.get_main_missions(&"pueblo")
+	var segunda: Array[Mission] = tablero.get_main_missions(&"pueblo").filter(func(m: Mission) -> bool: return m.item_id == &"log")
 	_comprobar(tablero.production.get_level(&"pueblo") == 2 and segunda.size() == 1 and segunda[0].flow_amount == 15 and segunda[0].id == &"main:pueblo:log:2", "Al crecer pide 15 más: nace la segunda principal")
 
 

@@ -7,6 +7,8 @@ extends Interactable
 ## de los trenes detenidos en la estación, de la mano y de la mochila del jugador solo lo que
 ## piden las misiones (en ese orden; de la mano, solo si se entrega todo lo que sostiene).
 ## Lo que hay al alcance lo junta StationGoods (tarea 59, lo comparte con el mercado).
+## Los pasajeros no se entregan acá: bajan al abrir las puertas del coche (tarea 60b). Si la
+## estación pide pasajeros y el coche de regalo no está en la vía, el tablero dice dónde buscarlo.
 
 ## Se aprobó una entrega: id de objeto -> unidades entregadas.
 signal delivered(amounts: Dictionary[StringName, int])
@@ -59,7 +61,7 @@ func get_prompt() -> String:
 ## Lo que hay para entregar ahora: vagones de los trenes detenidos, la mano y la mochila del
 ## jugador (id de objeto -> unidades). `player` null: el que esté en la zona de la estación.
 func get_available(player: Player = null) -> Dictionary[StringName, int]:
-	return StationGoods.new(_station, player).get_available()
+	return _without_passengers(StationGoods.new(_station, player).get_available())
 
 
 ## Lo que aceptarían las misiones de lo disponible (lo que entregaría F ahora).
@@ -77,7 +79,7 @@ func deliver(player: Player = null) -> Dictionary[StringName, int]:
 		return result
 	var station_id: StringName = _station.get_station_id()
 	var goods := StationGoods.new(_station, player)
-	var plan: Dictionary[StringName, int] = GameState.missions.plan_delivery(station_id, goods.get_available())
+	var plan: Dictionary[StringName, int] = GameState.missions.plan_delivery(station_id, _without_passengers(goods.get_available()))
 	for item_id: StringName in plan:
 		var taken: int = goods.take(item_id, plan[item_id])
 		if taken <= 0:
@@ -133,6 +135,9 @@ func build_text() -> String:
 	if not shown_sides.is_empty():
 		lines.append("— Secundarias —")
 		lines.append_array(shown_sides)
+	var coach_hint: String = _coach_hint(mains)
+	if not coach_hint.is_empty():
+		lines.append(coach_hint)
 	var plan: Dictionary[StringName, int] = get_delivery_plan()
 	if not plan.is_empty():
 		lines.append("F: entregar " + _amounts_text(plan))
@@ -155,6 +160,29 @@ func _amounts_text(amounts: Dictionary[StringName, int]) -> String:
 	for item_id: StringName in amounts:
 		parts.append("%d %s" % [amounts[item_id], GameState.missions.name_of(item_id)])
 	return ", ".join(parts)
+
+
+# Los pasajeros bajan por las puertas del coche, no por el tablero (tarea 60b).
+func _without_passengers(available: Dictionary[StringName, int]) -> Dictionary[StringName, int]:
+	var result: Dictionary[StringName, int] = {}
+	for item_id: StringName in available:
+		if not GameState.missions.is_passenger(item_id) and not GameState.passengers.is_passenger(item_id):
+			result[item_id] = available[item_id]
+	return result
+
+
+# Dónde está el coche de pasajeros, si una principal de acá pide pasajeros y todavía no salió.
+func _coach_hint(mains: Array[Mission]) -> String:
+	var traffic: PassengerTraffic = GameState.passengers
+	if traffic.coach_state == PassengerTraffic.CoachState.DELIVERED:
+		return ""
+	for mission: Mission in mains:
+		if GameState.missions.is_passenger(mission.item_id):
+			var city: String = GameState.missions.station_name(traffic.gift_station)
+			if traffic.coach_state == PassengerTraffic.CoachState.READY:
+				return "Coche de pasajeros listo en el taller de %s" % city
+			return "Hace falta un coche de pasajeros: repararlo en el taller de %s" % city
+	return ""
 
 
 func _find_station() -> Station:

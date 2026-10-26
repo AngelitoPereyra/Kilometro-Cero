@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/storage/item_data.gd" id="1_item"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"travelers"
+display_name = "pasajero"
+size_class = 2
+unit_weight = 70.0
+hands = 1
+tags = Array[StringName]([&"passenger"])

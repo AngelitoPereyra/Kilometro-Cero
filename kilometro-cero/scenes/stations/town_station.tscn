@@ -12,6 +12,7 @@
 [ext_resource type="AudioStream" path="res://data/audio/ambient_birds.wav" id="10_paj"]
 [ext_resource type="AudioStream" path="res://data/audio/ambient_town.wav" id="11_gen"]
 [ext_resource type="AudioStream" path="res://data/audio/ambient_music.wav" id="12_mus"]
+[ext_resource type="Script" path="res://scripts/stations/arrival_building.gd" id="13_esc"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_anden"]
 albedo_color = Color(0.8, 0.75, 0.6, 1)
@@ -81,6 +82,21 @@ albedo_color = Color(0.85, 0.25, 0.2, 1)
 
 [sub_resource type="BoxMesh" id="Box_toldo"]
 size = Vector3(2.8, 0.1, 1.4)
+
+[sub_resource type="StandardMaterial3D" id="Mat_escuela"]
+albedo_color = Color(0.95, 0.93, 0.85, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_bandera"]
+albedo_color = Color(0.45, 0.7, 0.95, 1)
+
+[sub_resource type="BoxMesh" id="Box_escuela"]
+size = Vector3(6, 3.5, 9)
+
+[sub_resource type="BoxMesh" id="Box_mastil"]
+size = Vector3(0.1, 4, 0.1)
+
+[sub_resource type="BoxMesh" id="Box_bandera"]
+size = Vector3(0.05, 0.6, 1)
 
 [node name="TownStation" type="Node3D"]
 script = ExtResource("1_st")
@@ -286,3 +302,22 @@ unit_size = 15.0
 max_distance = 70.0
 script = ExtResource("7_amb")
 loudness = 0.7
+
+[node name="Escuela" type="Node3D" parent="Niveles/Nivel3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 0, -10)
+script = ExtResource("13_esc")
+
+[node name="Edificio" type="MeshInstance3D" parent="Niveles/Nivel3/Escuela"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 0)
+material_override = SubResource("Mat_escuela")
+mesh = SubResource("Box_escuela")
+
+[node name="Mastil" type="MeshInstance3D" parent="Niveles/Nivel3/Escuela"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, 0)
+material_override = SubResource("Mat_escuela")
+mesh = SubResource("Box_mastil")
+
+[node name="Bandera" type="MeshInstance3D" parent="Niveles/Nivel3/Escuela"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3.6, 0.5)
+material_override = SubResource("Mat_bandera")
+mesh = SubResource("Box_bandera")

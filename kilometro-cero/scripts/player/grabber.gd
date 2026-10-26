@@ -281,6 +281,9 @@ func _fits_in_backpack(stack: ItemStack) -> bool:
 
 # Plan para recoger `stack` ahora mismo: uno de plan_pickup. Sin tope de peso (D86).
 func _plan_for(stack: ItemStack) -> StringName:
+	# Los pasajeros solo viajan en coches de pasajeros (tarea 60b): nunca a la mano ni a la mochila.
+	if ItemData.is_passenger(stack.item):
+		return &"passenger"
 	var hands: Hands = _player.get_hands()
 	var hand_busy: bool = not hands.is_empty()
 	var hand_fits: bool = (not hand_busy) or _fits_in_backpack(hands.get_held())

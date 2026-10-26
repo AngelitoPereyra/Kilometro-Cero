@@ -12,6 +12,10 @@
 [ext_resource type="AudioStream" path="res://data/audio/ambient_birds.wav" id="10_paj"]
 [ext_resource type="AudioStream" path="res://data/audio/ambient_town.wav" id="11_gen"]
 [ext_resource type="AudioStream" path="res://data/audio/ambient_music.wav" id="12_mus"]
+[ext_resource type="Script" path="res://scripts/stations/coach_gift.gd" id="13_tal"]
+[ext_resource type="PackedScene" path="res://scenes/vehicles/passenger_coach.tscn" id="14_coc"]
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="15_ia"]
+[ext_resource type="Resource" path="res://data/items/log.tres" id="16_log"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_anden"]
 albedo_color = Color(0.75, 0.75, 0.72, 1)
@@ -93,6 +97,26 @@ albedo_color = Color(0.85, 0.25, 0.2, 1)
 
 [sub_resource type="BoxMesh" id="Box_toldo"]
 size = Vector3(2.8, 0.1, 1.4)
+
+[sub_resource type="Resource" id="Costo_troncos"]
+script = ExtResource("15_ia")
+item = ExtResource("16_log")
+amount = 10
+
+[sub_resource type="StandardMaterial3D" id="Mat_taller"]
+albedo_color = Color(0.45, 0.4, 0.35, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_coche_roto"]
+albedo_color = Color(0.45, 0.15, 0.12, 1)
+
+[sub_resource type="BoxMesh" id="Box_galpon"]
+size = Vector3(6, 0.2, 14)
+
+[sub_resource type="BoxMesh" id="Box_coche_roto"]
+size = Vector3(3, 2.6, 10)
+
+[sub_resource type="BoxMesh" id="Box_taco"]
+size = Vector3(0.8, 0.6, 0.8)
 
 [node name="CityStation" type="Node3D"]
 script = ExtResource("1_st")
@@ -349,3 +373,45 @@ unit_size = 15.0
 max_distance = 70.0
 script = ExtResource("7_amb")
 loudness = 0.7
+
+[node name="Taller" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 28)
+script = ExtResource("13_tal")
+reach = 7.0
+coach_scene = ExtResource("14_coc")
+repair_cost = Array[ExtResource("15_ia")]([SubResource("Costo_troncos")])
+
+[node name="Piso" type="MeshInstance3D" parent="Taller"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+material_override = SubResource("Mat_taller")
+mesh = SubResource("Box_galpon")
+
+[node name="CocheEnReparacion" type="Node3D" parent="Taller"]
+visible = false
+
+[node name="Caja" type="MeshInstance3D" parent="Taller/CocheEnReparacion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+material_override = SubResource("Mat_coche_roto")
+mesh = SubResource("Box_coche_roto")
+
+[node name="TacoFrente" type="MeshInstance3D" parent="Taller/CocheEnReparacion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, -3.5)
+material_override = SubResource("Mat_taller")
+mesh = SubResource("Box_taco")
+
+[node name="TacoCola" type="MeshInstance3D" parent="Taller/CocheEnReparacion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 3.5)
+material_override = SubResource("Mat_taller")
+mesh = SubResource("Box_taco")
+
+[node name="Texto" type="Label3D" parent="Taller"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 3.2, 4, 0)
+pixel_size = 0.004
+font_size = 20
+outline_size = 4
+autowrap_mode = 3
+width = 620.0
+text = "Taller"
+
+[node name="Salida" type="Marker3D" parent="Taller"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 2)

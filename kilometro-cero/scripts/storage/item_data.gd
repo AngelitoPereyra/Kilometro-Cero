@@ -10,6 +10,13 @@ enum SizeClass { SMALL, MEDIUM, LARGE }
 ## Cuántas manos necesita para levantarlo. CRANE: solo con vagón grúa (a futuro).
 enum HandsRequired { ONE, TWO, CRANE }
 
+## Etiqueta de los pasajeros (tarea 60b): solo viajan en coches de pasajeros. Nunca van a la
+## mano, a la mochila ni a una grúa.
+const PASSENGER_TAG: StringName = &"passenger"
+## Etiqueta de los pasajeros especialistas (maestra, médico): la primera carga de su misión es
+## uno solo (D103).
+const SPECIALIST_TAG: StringName = &"specialist"
+
 @export var id: StringName
 @export var display_name: String
 @export var size_class: SizeClass = SizeClass.SMALL
@@ -21,3 +28,13 @@ enum HandsRequired { ONE, TWO, CRANE }
 ## Cómo se ve el objeto suelto en el mundo (tarea 13).
 @export var scene: PackedScene
 @export var icon: Texture2D
+
+
+## Si es un pasajero (tarea 60b). Sirve con null.
+static func is_passenger(item: ItemData) -> bool:
+	return item != null and item.tags.has(PASSENGER_TAG)
+
+
+## Si es un pasajero especialista (tarea 60b). Sirve con null.
+static func is_specialist(item: ItemData) -> bool:
+	return item != null and item.tags.has(SPECIALIST_TAG)

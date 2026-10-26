@@ -1,0 +1,421 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicles/passenger_coach.gd" id="1_veh"]
+[ext_resource type="Resource" path="res://data/vehicles/passenger_coach.tres" id="2_data"]
+[ext_resource type="Script" path="res://scripts/storage/storage_container.gd" id="3_cont"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_chasis"]
+albedo_color = Color(0.08, 0.08, 0.08, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_piso"]
+albedo_color = Color(0.45, 0.32, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_caja"]
+albedo_color = Color(0.55, 0.12, 0.12, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_techo"]
+albedo_color = Color(0.25, 0.25, 0.27, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_banco"]
+albedo_color = Color(0.4, 0.26, 0.14, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_puerta"]
+albedo_color = Color(0.85, 0.75, 0.45, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_pasarela"]
+albedo_color = Color(0.3, 0.3, 0.32, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_escalon"]
+albedo_color = Color(0.2, 0.2, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_gente"]
+albedo_color = Color(0.3, 0.45, 0.75, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_Chasis"]
+size = Vector3(2, 0.5, 9.4)
+
+[sub_resource type="BoxShape3D" id="Shape_Chasis"]
+size = Vector3(2, 0.5, 9.4)
+
+[sub_resource type="BoxMesh" id="Mesh_Piso"]
+size = Vector3(3, 0.3, 10)
+
+[sub_resource type="BoxShape3D" id="Shape_Piso"]
+size = Vector3(3, 0.3, 10)
+
+[sub_resource type="BoxMesh" id="Mesh_ParedLarga"]
+size = Vector3(0.1, 2.4, 4.8)
+
+[sub_resource type="BoxShape3D" id="Shape_ParedLarga"]
+size = Vector3(0.1, 2.4, 4.8)
+
+[sub_resource type="BoxMesh" id="Mesh_ParedCorta"]
+size = Vector3(0.1, 2.4, 1.4)
+
+[sub_resource type="BoxShape3D" id="Shape_ParedCorta"]
+size = Vector3(0.1, 2.4, 1.4)
+
+[sub_resource type="BoxMesh" id="Mesh_Dintel"]
+size = Vector3(0.1, 0.4, 1.2)
+
+[sub_resource type="BoxShape3D" id="Shape_Dintel"]
+size = Vector3(0.1, 0.4, 1.2)
+
+[sub_resource type="BoxMesh" id="Mesh_Techo"]
+size = Vector3(3.2, 0.1, 10.2)
+
+[sub_resource type="BoxShape3D" id="Shape_Techo"]
+size = Vector3(3.2, 0.1, 10.2)
+
+[sub_resource type="BoxMesh" id="Mesh_Puerta"]
+size = Vector3(0.06, 2.0, 1.2)
+
+[sub_resource type="BoxShape3D" id="Shape_Puerta"]
+size = Vector3(0.06, 2.0, 1.2)
+
+[sub_resource type="BoxMesh" id="Mesh_Escalon"]
+size = Vector3(0.6, 0.3, 1.2)
+
+[sub_resource type="BoxShape3D" id="Shape_Escalon"]
+size = Vector3(0.6, 0.3, 1.2)
+
+[sub_resource type="BoxMesh" id="Mesh_Pasarela"]
+size = Vector3(1, 0.03, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_Pasarela"]
+size = Vector3(1, 0.03, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_Banco"]
+size = Vector3(0.6, 0.45, 1.0)
+
+[sub_resource type="BoxShape3D" id="Shape_Banco"]
+size = Vector3(0.6, 0.45, 1.0)
+
+[sub_resource type="CapsuleMesh" id="Mesh_Sentado"]
+radius = 0.2
+height = 0.9
+
+[node name="PassengerCoach" type="PathFollow3D"]
+script = ExtResource("1_veh")
+data = ExtResource("2_data")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="CuerpoFisico" type="AnimatableBody3D" parent="."]
+sync_to_physics = false
+collision_mask = 0
+
+[node name="Chasis" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = SubResource("Mat_chasis")
+mesh = SubResource("Mesh_Chasis")
+
+[node name="Chasis" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+shape = SubResource("Shape_Chasis")
+
+[node name="Piso" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+material_override = SubResource("Mat_piso")
+mesh = SubResource("Mesh_Piso")
+
+[node name="Piso" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+shape = SubResource("Shape_Piso")
+
+[node name="Techo" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.25, 0)
+material_override = SubResource("Mat_techo")
+mesh = SubResource("Mesh_Techo")
+
+[node name="Techo" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.25, 0)
+shape = SubResource("Shape_Techo")
+
+[node name="ParedIzqCentro" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2.0, 0)
+material_override = SubResource("Mat_caja")
+mesh = SubResource("Mesh_ParedLarga")
+
+[node name="ParedIzqCentro" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2.0, 0)
+shape = SubResource("Shape_ParedLarga")
+
+[node name="ParedIzqFrente" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2.0, -4.3)
+material_override = SubResource("Mat_caja")
+mesh = SubResource("Mesh_ParedCorta")
+
+[node name="ParedIzqFrente" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2.0, -4.3)
+shape = SubResource("Shape_ParedCorta")
+
+[node name="ParedIzqCola" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2.0, 4.3)
+material_override = SubResource("Mat_caja")
+mesh = SubResource("Mesh_ParedCorta")
+
+[node name="ParedIzqCola" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2.0, 4.3)
+shape = SubResource("Shape_ParedCorta")
+
+[node name="DintelIzqFrente" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 3.0, -3)
+material_override = SubResource("Mat_caja")
+mesh = SubResource("Mesh_Dintel")
+
+[node name="DintelIzqFrente" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 3.0, -3)
+shape = SubResource("Shape_Dintel")
+
+[node name="EscalonIzqFrente" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8125, 0.45, -3)
+material_override = SubResource("Mat_escalon")
+mesh = SubResource("Mesh_Escalon")
+
+[node name="EscalonIzqFrente" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8125, 0.45, -3)
+shape = SubResource("Shape_Escalon")
+
+[node name="DintelIzqCola" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 3.0, 3)
+material_override = SubResource("Mat_caja")
+mesh = SubResource("Mesh_Dintel")
+
+[node name="DintelIzqCola" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 3.0, 3)
+shape = SubResource("Shape_Dintel")
+
+[node name="EscalonIzqCola" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8125, 0.45, 3)
+material_override = SubResource("Mat_escalon")
+mesh = SubResource("Mesh_Escalon")
+
+[node name="EscalonIzqCola" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.8125, 0.45, 3)
+shape = SubResource("Shape_Escalon")
+
+[node name="ParedDerCentro" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2.0, 0)
+material_override = SubResource("Mat_caja")
+mesh = SubResource("Mesh_ParedLarga")
+
+[node name="ParedDerCentro" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2.0, 0)
+shape = SubResource("Shape_ParedLarga")
+
+[node name="ParedDerFrente" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2.0, -4.3)
+material_override = SubResource("Mat_caja")
+mesh = SubResource("Mesh_ParedCorta")
+
+[node name="ParedDerFrente" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2.0, -4.3)
+shape = SubResource("Shape_ParedCorta")
+
+[node name="ParedDerCola" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2.0, 4.3)
+material_override = SubResource("Mat_caja")
+mesh = SubResource("Mesh_ParedCorta")
+
+[node name="ParedDerCola" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2.0, 4.3)
+shape = SubResource("Shape_ParedCorta")
+
+[node name="DintelDerFrente" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 3.0, -3)
+material_override = SubResource("Mat_caja")
+mesh = SubResource("Mesh_Dintel")
+
+[node name="DintelDerFrente" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 3.0, -3)
+shape = SubResource("Shape_Dintel")
+
+[node name="EscalonDerFrente" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8125, 0.45, -3)
+material_override = SubResource("Mat_escalon")
+mesh = SubResource("Mesh_Escalon")
+
+[node name="EscalonDerFrente" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8125, 0.45, -3)
+shape = SubResource("Shape_Escalon")
+
+[node name="DintelDerCola" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 3.0, 3)
+material_override = SubResource("Mat_caja")
+mesh = SubResource("Mesh_Dintel")
+
+[node name="DintelDerCola" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 3.0, 3)
+shape = SubResource("Shape_Dintel")
+
+[node name="EscalonDerCola" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8125, 0.45, 3)
+material_override = SubResource("Mat_escalon")
+mesh = SubResource("Mesh_Escalon")
+
+[node name="EscalonDerCola" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8125, 0.45, 3)
+shape = SubResource("Shape_Escalon")
+
+[node name="BancoIzq1" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 1.025, -4)
+material_override = SubResource("Mat_banco")
+mesh = SubResource("Mesh_Banco")
+
+[node name="BancoIzq2" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 1.025, -2)
+material_override = SubResource("Mat_banco")
+mesh = SubResource("Mesh_Banco")
+
+[node name="BancoIzq3" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 1.025, 0)
+material_override = SubResource("Mat_banco")
+mesh = SubResource("Mesh_Banco")
+
+[node name="BancoIzq4" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 1.025, 2)
+material_override = SubResource("Mat_banco")
+mesh = SubResource("Mesh_Banco")
+
+[node name="BancoIzq5" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 1.025, 4)
+material_override = SubResource("Mat_banco")
+mesh = SubResource("Mesh_Banco")
+
+[node name="BancoDer1" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.025, -4)
+material_override = SubResource("Mat_banco")
+mesh = SubResource("Mesh_Banco")
+
+[node name="BancoDer2" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.025, -2)
+material_override = SubResource("Mat_banco")
+mesh = SubResource("Mesh_Banco")
+
+[node name="BancoDer3" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.025, 0)
+material_override = SubResource("Mat_banco")
+mesh = SubResource("Mesh_Banco")
+
+[node name="BancoDer4" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.025, 2)
+material_override = SubResource("Mat_banco")
+mesh = SubResource("Mesh_Banco")
+
+[node name="BancoDer5" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.025, 4)
+material_override = SubResource("Mat_banco")
+mesh = SubResource("Mesh_Banco")
+
+[node name="Pasarela" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.815, 5.45)
+material_override = SubResource("Mat_pasarela")
+mesh = SubResource("Mesh_Pasarela")
+
+[node name="Pasarela" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.815, 5.45)
+shape = SubResource("Shape_Pasarela")
+
+[node name="Puertas" type="Node3D" parent="Visual"]
+
+[node name="PuertaIzqFrente" type="MeshInstance3D" parent="Visual/Puertas"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 1.8, -3)
+material_override = SubResource("Mat_puerta")
+mesh = SubResource("Mesh_Puerta")
+
+[node name="PuertaIzqFrente" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 1.8, -3)
+shape = SubResource("Shape_Puerta")
+
+[node name="PuertaIzqCola" type="MeshInstance3D" parent="Visual/Puertas"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 1.8, 3)
+material_override = SubResource("Mat_puerta")
+mesh = SubResource("Mesh_Puerta")
+
+[node name="PuertaIzqCola" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 1.8, 3)
+shape = SubResource("Shape_Puerta")
+
+[node name="PuertaDerFrente" type="MeshInstance3D" parent="Visual/Puertas"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 1.8, -3)
+material_override = SubResource("Mat_puerta")
+mesh = SubResource("Mesh_Puerta")
+
+[node name="PuertaDerFrente" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 1.8, -3)
+shape = SubResource("Shape_Puerta")
+
+[node name="PuertaDerCola" type="MeshInstance3D" parent="Visual/Puertas"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 1.8, 3)
+material_override = SubResource("Mat_puerta")
+mesh = SubResource("Mesh_Puerta")
+
+[node name="PuertaDerCola" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 1.8, 3)
+shape = SubResource("Shape_Puerta")
+
+[node name="Pasajeros" type="Node3D" parent="Visual"]
+
+[node name="Sentado1" type="MeshInstance3D" parent="Visual/Pasajeros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 1.7, -4)
+visible = false
+material_override = SubResource("Mat_gente")
+mesh = SubResource("Mesh_Sentado")
+
+[node name="Sentado2" type="MeshInstance3D" parent="Visual/Pasajeros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 1.7, -2)
+visible = false
+material_override = SubResource("Mat_gente")
+mesh = SubResource("Mesh_Sentado")
+
+[node name="Sentado3" type="MeshInstance3D" parent="Visual/Pasajeros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 1.7, 0)
+visible = false
+material_override = SubResource("Mat_gente")
+mesh = SubResource("Mesh_Sentado")
+
+[node name="Sentado4" type="MeshInstance3D" parent="Visual/Pasajeros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 1.7, 2)
+visible = false
+material_override = SubResource("Mat_gente")
+mesh = SubResource("Mesh_Sentado")
+
+[node name="Sentado5" type="MeshInstance3D" parent="Visual/Pasajeros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 1.7, 4)
+visible = false
+material_override = SubResource("Mat_gente")
+mesh = SubResource("Mesh_Sentado")
+
+[node name="Sentado6" type="MeshInstance3D" parent="Visual/Pasajeros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.7, -4)
+visible = false
+material_override = SubResource("Mat_gente")
+mesh = SubResource("Mesh_Sentado")
+
+[node name="Sentado7" type="MeshInstance3D" parent="Visual/Pasajeros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.7, -2)
+visible = false
+material_override = SubResource("Mat_gente")
+mesh = SubResource("Mesh_Sentado")
+
+[node name="Sentado8" type="MeshInstance3D" parent="Visual/Pasajeros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.7, 0)
+visible = false
+material_override = SubResource("Mat_gente")
+mesh = SubResource("Mesh_Sentado")
+
+[node name="Sentado9" type="MeshInstance3D" parent="Visual/Pasajeros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.7, 2)
+visible = false
+material_override = SubResource("Mat_gente")
+mesh = SubResource("Mesh_Sentado")
+
+[node name="Sentado10" type="MeshInstance3D" parent="Visual/Pasajeros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 1.7, 4)
+visible = false
+material_override = SubResource("Mat_gente")
+mesh = SubResource("Mesh_Sentado")
+
+[node name="Carga" type="Node" parent="."]
+script = ExtResource("3_cont")

@@ -43,6 +43,12 @@ signal money_changed(money: int)
 ## El jugador compró (amount positivo) o vendió (negativo) en el mercado de una estación;
 ## `total` son los pesos que pagó o cobró (tarea 59). La emite Market.
 signal item_traded(station_id: StringName, item_id: StringName, amount: int, total: int)
+## Se abrieron las puertas de un coche en una estación (tarea 60b): pasajeros que bajaron, que
+## subieron y pesos que pagaron los sobrantes al subir. La emite PassengerCoach.
+signal passengers_exchanged(station_id: StringName, alighted: int, boarded: int, fare: int)
+## Cambió el coche de pasajeros que regala la ciudad (valores de PassengerTraffic.CoachState).
+## La emite GameState.
+signal coach_gift_changed(state: int)
 ## Una estación cambió de nivel de crecimiento (D79). La emite Station.set_level (y desde la
 ## tarea 57 el modelo de producción); cada Station escucha la suya y muestra sus nodos.
 signal station_level_changed(station_id: StringName, level: int)

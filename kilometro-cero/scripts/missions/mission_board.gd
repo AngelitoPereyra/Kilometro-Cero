@@ -13,6 +13,9 @@ extends RefCounted
 ##   estación a su nivel y con las previas cumplidas, se toman hablando con un poblador y al
 ##   cumplirse suman producción extra permanente (y pesos, que cobra GameState).
 ## Las entregas se aprueban en el tablero de la estación (StationBoard): nada se entrega solo.
+## - Pasajeros (tarea 60b): una principal de pasajeros (ItemData.PASSENGER_TAG) se entrega
+##   abriendo las puertas del coche en la estación (PassengerTraffic), no en el tablero. La de
+##   un especialista pide una primera carga de uno solo. Sus flujos van y vuelven (round_trip).
 
 ## Una misión nueva: una principal que nace (ya activa) o una secundaria que se puede conseguir.
 signal mission_available(mission: Mission)
@@ -174,16 +177,52 @@ func deliver(station_id: StringName, item_id: StringName, amount: int) -> int:
 ## El nombre de un objeto según los datos de las estaciones y de las misiones (el id si no lo
 ## encuentra).
 func name_of(item_id: StringName) -> String:
+	var item: ItemData = find_item(item_id)
+	return item.display_name if item != null else String(item_id)
+
+
+## El ItemData de un objeto según los datos de las estaciones y de las misiones, o null.
+func find_item(item_id: StringName) -> ItemData:
 	for station_id: StringName in production.get_station_ids():
 		var item: ItemData = production.get_data(station_id).find_item(item_id)
 		if item != null:
-			return item.display_name
+			return item
 	for mission: Mission in _missions.values():
 		if mission.data != null:
 			for entry: ItemAmount in mission.data.delivery + mission.data.reward_production:
 				if entry != null and entry.item != null and entry.item.id == item_id:
-					return entry.item.display_name
-	return String(item_id)
+					return entry.item
+	return null
+
+
+## Si el objeto es un pasajero (tarea 60b).
+func is_passenger(item_id: StringName) -> bool:
+	return ItemData.is_passenger(find_item(item_id))
+
+
+## La primera carga de una principal de `amount` por día: Mission.FIRST_DELIVERY_DAYS días de
+## consumo, o uno solo si es un especialista (D103, tarea 60b).
+func first_delivery(item_id: StringName, amount: int) -> int:
+	if ItemData.is_specialist(find_item(item_id)):
+		return amount
+	return amount * Mission.FIRST_DELIVERY_DAYS
+
+
+## Las principales activas de pasajeros que salen de una estación (su productor elegido).
+func get_passenger_missions_from(station_id: StringName) -> Array[Mission]:
+	var result: Array[Mission] = []
+	for mission: Mission in _missions.values():
+		if mission.main and mission.is_active() and is_passenger(mission.item_id) and find_source(mission) == station_id:
+			result.append(mission)
+	return result
+
+
+## Si alguna principal activa (de cualquier estación) espera este pasajero.
+func is_reserved_passenger(item_id: StringName) -> bool:
+	for mission: Mission in _missions.values():
+		if mission.main and mission.is_active() and mission.item_id == item_id and is_passenger(item_id):
+			return true
+	return false
 
 
 ## El nombre de una estación (el id si no la conoce).
@@ -196,6 +235,8 @@ func station_name(station_id: StringName) -> String:
 func get_title(mission: Mission) -> String:
 	if mission.data != null:
 		return mission.data.title
+	if is_passenger(mission.item_id):
+		return "Traer %d %s por día" % [mission.flow_amount, name_of(mission.item_id)]
 	return "Abastecer con %d %s por día" % [mission.flow_amount, name_of(mission.item_id)]
 
 
@@ -268,7 +309,12 @@ func get_pending_steps(mission: Mission) -> PackedStringArray:
 				steps.append("Despejar la zona (quedan %d)" % left)
 	var remaining: Dictionary[StringName, int] = mission.get_remaining()
 	for item_id: StringName in remaining:
-		steps.append("Entregar %d %s" % [remaining[item_id], name_of(item_id)])
+		if mission.main and is_passenger(item_id):
+			var source_id: StringName = find_source(mission)
+			if source_id != &"":
+				steps.append("Traer %d %s desde %s (abrí las puertas del coche en las dos estaciones)" % [remaining[item_id], name_of(item_id), station_name(source_id)])
+		else:
+			steps.append("Entregar %d %s" % [remaining[item_id], name_of(item_id)])
 	return steps
 
 
@@ -308,16 +354,18 @@ func _update_main_missions() -> void:
 			_missions.erase(mission.id)
 			mission_removed.emit(mission)
 			continue
-		if amount != mission.flow_amount:
+		var first: int = first_delivery(mission.item_id, amount)
+		if amount != mission.flow_amount or mission.required.get(mission.item_id, 0) != first:
 			mission.flow_amount = amount
-			mission.required = {mission.item_id: amount * Mission.FIRST_DELIVERY_DAYS}
-			mission.delivered[mission.item_id] = mini(mission.delivered.get(mission.item_id, 0), mission.required[mission.item_id])
+			mission.required = {mission.item_id: first}
+			mission.delivered[mission.item_id] = mini(mission.delivered.get(mission.item_id, 0), first)
 		needs[mission.station_id].erase(mission.item_id)
 	for station_id: StringName in needs:
 		for item_id: StringName in needs[station_id]:
 			var key: String = "%s:%s" % [station_id, item_id]
 			_main_counts[key] = int(_main_counts.get(key, 0)) + 1
 			var mission: Mission = Mission.create_main(station_id, item_id, needs[station_id][item_id])
+			mission.required = {item_id: first_delivery(item_id, mission.flow_amount)}
 			mission.id = StringName("%s:%d" % [mission.id, _main_counts[key]])
 			_missions[mission.id] = mission
 			mission_available.emit(mission)
@@ -362,7 +410,7 @@ func _is_ready(mission: Mission) -> bool:
 func _complete(mission: Mission) -> void:
 	mission.state = Mission.State.COMPLETED
 	if mission.main:
-		mission.flow = production.add_flow(find_source(mission), mission.station_id, mission.item_id, mission.flow_amount)
+		mission.flow = production.add_flow(find_source(mission), mission.station_id, mission.item_id, mission.flow_amount, is_passenger(mission.item_id))
 	elif mission.data != null:
 		for entry: ItemAmount in mission.data.reward_production:
 			if entry != null and entry.item != null:

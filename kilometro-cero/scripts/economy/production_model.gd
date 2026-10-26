@@ -157,12 +157,14 @@ func get_consumption(station_id: StringName) -> Dictionary[StringName, int]:
 ## Crea un flujo permanente de `amount` unidades por día. Devuelve null si los datos no sirven
 ## (estación desconocida, la misma estación, sin objeto o cantidad menor a 1). No exige que
 ## alcance la producción: si no alcanza, el flujo nuevo recibe lo que dejan los más viejos.
-func add_flow(from: StringName, to: StringName, item_id: StringName, amount: int) -> ProductionFlow:
+## `round_trip`: flujo de pasajeros que va y vuelve (tarea 60b).
+func add_flow(from: StringName, to: StringName, item_id: StringName, amount: int, round_trip: bool = false) -> ProductionFlow:
 	if not has_station(from) or not has_station(to) or from == to or item_id == &"" or amount < 1:
 		push_warning("ProductionModel: flujo inválido (%d %s de '%s' a '%s')." % [amount, item_id, from, to])
 		return null
 	var flow := ProductionFlow.new(from, to, item_id, amount)
 	flow.id = _next_flow_id
+	flow.round_trip = round_trip
 	_next_flow_id += 1
 	_flows.append(flow)
 	flow_added.emit(flow)

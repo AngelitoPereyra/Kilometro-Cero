@@ -1,7 +1,8 @@
 extends Node
 ## Estado de la partida. Es dueño del reloj del juego (D34), del modelo de producción
 ## (D79, tarea 57: lo avanza un día en cada día nuevo y reemite sus cambios de nivel), de las
-## misiones (D80, tarea 58), de los mercados (Economy, tarea 59) y del dinero (solo pesos, D96).
+## misiones (D80, tarea 58), de los mercados (Economy, tarea 59), de los pasajeros
+## (PassengerTraffic, tarea 60b) y del dinero (solo pesos, D96).
 ## Los demás datos entran cuando un sistema los necesite.
 
 ## Minutos reales que dura un día de juego (D34). Vivía en NeedsConfig, que se borró (D75).
@@ -19,6 +20,8 @@ var production: ProductionModel
 var missions: MissionBoard
 ## Stock y precios de los mercados (tarea 59). Se rehace con reset_production.
 var economy: Economy
+## Pasajeros: demanda, intercambios y el coche que regala la ciudad (tarea 60b).
+var passengers: PassengerTraffic
 ## Pesos del jugador (D96, sin trueque). Lo cobran las misiones y lo mueve el mercado.
 var money: int = 0
 
@@ -44,7 +47,8 @@ func _process(delta: float) -> void:
 		clock.advance(delta * _hours_per_second * time_scale)
 
 
-## Empieza un modelo de producción y un tablero de misiones vacíos (partida nueva, pruebas).
+## Empieza un modelo de producción, un tablero de misiones, mercados y pasajeros vacíos
+## (partida nueva, pruebas).
 ## Las estaciones y los pobladores de la escena tienen que volver a registrarse (Station y
 ## MissionGiver lo hacen en su _ready).
 func reset_production() -> void:
@@ -63,6 +67,8 @@ func reset_production() -> void:
 	missions.mission_started.connect(func(mission: Mission) -> void: EventBus.mission_started.emit(mission.id))
 	missions.mission_progressed.connect(func(mission: Mission) -> void: EventBus.mission_progressed.emit(mission.id))
 	missions.mission_completed.connect(_on_mission_completed)
+	passengers = PassengerTraffic.new(missions, economy)
+	passengers.coach_state_changed.connect(func(state: PassengerTraffic.CoachState) -> void: EventBus.coach_gift_changed.emit(state))
 
 
 ## Suma (o resta, con negativo) pesos y lo avisa por EventBus.money_changed.
@@ -78,6 +84,7 @@ func _on_day_started(day: int) -> void:
 	# mercado junta después lo que la producción no mandó por flujos.
 	production.advance_day()
 	economy.advance_day()
+	passengers.advance_day()
 	EventBus.day_started.emit(day)
 
 

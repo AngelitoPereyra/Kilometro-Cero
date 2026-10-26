@@ -15,6 +15,9 @@ var amount: int = 0
 ## Lo que entregó en el último día simulado (menos que `amount` si no alcanzó la producción,
 ## 0 si el camino estaba cortado).
 var last_delivered: int = 0
+## Flujo de pasajeros (tarea 60b): el tren va y vuelve con gente (a la ida los que llegan al
+## pueblo; a la vuelta estudiantes y compradores hacia la ciudad). Lo usa la tarea 61.
+var round_trip: bool = false
 
 
 func _init(new_from: StringName = &"", new_to: StringName = &"", new_item: StringName = &"", new_amount: int = 0) -> void:
@@ -26,7 +29,8 @@ func _init(new_from: StringName = &"", new_to: StringName = &"", new_item: Strin
 
 ## "10 log de maderera a pueblo" (para pruebas y avisos).
 func describe() -> String:
-	return "%d %s de %s a %s" % [amount, item_id, from_station, to_station]
+	var text: String = "%d %s de %s a %s" % [amount, item_id, from_station, to_station]
+	return text + ", ida y vuelta" if round_trip else text
 
 
 ## Para el guardado (tarea 65).
@@ -37,6 +41,7 @@ func to_dict() -> Dictionary:
 		"to": String(to_station),
 		"item": String(item_id),
 		"amount": amount,
+		"round_trip": round_trip,
 	}
 
 
@@ -45,4 +50,5 @@ static func from_dict(values: Dictionary) -> ProductionFlow:
 		StringName(values.get("from", "")), StringName(values.get("to", "")),
 		StringName(values.get("item", "")), int(values.get("amount", 0)))
 	flow.id = int(values.get("id", 0))
+	flow.round_trip = bool(values.get("round_trip", false))
 	return flow

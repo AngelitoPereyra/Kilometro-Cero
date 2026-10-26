@@ -66,6 +66,8 @@ func _definir_acciones() -> Dictionary:
 		# En la cabina W y S mueven la palanca y Espacio frena (D91): reusan las de arriba.
 		&"lights": [_tecla(KEY_L)],          # luces de la locomotora (D91)
 		&"horn": [_tecla(KEY_H)],            # bocina (D91)
+		&"doors": [_tecla(KEY_O)],           # puertas de los coches de pasajeros (tarea 60b)
+		&"camera_view": [_tecla(KEY_V)],     # cabina o cámara exterior del tren (tarea 60c)
 		&"use_tool": [_boton_mouse(MOUSE_BUTTON_LEFT)],  # golpear con la herramienta clave (D91, tarea 55)
 	}
 

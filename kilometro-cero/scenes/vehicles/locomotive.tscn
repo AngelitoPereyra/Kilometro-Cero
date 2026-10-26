@@ -4,6 +4,7 @@
 [ext_resource type="Resource" path="res://data/vehicles/locomotive.tres" id="2_data"]
 [ext_resource type="Script" path="res://scripts/vehicles/cab.gd" id="3_cab"]
 [ext_resource type="AudioStream" path="res://data/audio/horn.wav" id="4_horn"]
+[ext_resource type="Script" path="res://scripts/vehicles/cab_button.gd" id="5_btn"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_piso"]
 albedo_color = Color(0.3, 0.3, 0.32, 1)
@@ -192,6 +193,12 @@ size = Vector3(1, 0.03, 1)
 
 [sub_resource type="BoxShape3D" id="Shape_Pasarela"]
 size = Vector3(1, 0.03, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_botonera"]
+albedo_color = Color(0.2, 0.2, 0.22, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_Botonera"]
+size = Vector3(0.5, 0.04, 0.34)
 
 [node name="Locomotive" type="PathFollow3D"]
 script = ExtResource("1_veh")
@@ -436,6 +443,50 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 0.95, -0.35)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.22, 0)
 material_override = SubResource("Mat_baranda")
 mesh = SubResource("Mesh_Palanca")
+
+[node name="Botonera" type="Node3D" parent="Cab"]
+transform = Transform3D(0.906308, 0.242404, 0.346189, 0, 0.819152, -0.573576, -0.422618, 0.519837, 0.742404, -0.7, 1.1, -0.7)
+
+[node name="Panel" type="MeshInstance3D" parent="Cab/Botonera"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.03, 0)
+material_override = SubResource("Mat_botonera")
+mesh = SubResource("Mesh_Botonera")
+
+[node name="Freno" type="Area3D" parent="Cab/Botonera"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12, 0, 0.08)
+collision_layer = 8
+collision_mask = 0
+monitoring = false
+script = ExtResource("5_btn")
+control = &"brake"
+color = Color(0.8, 0.12, 0.1, 1)
+
+[node name="Luces" type="Area3D" parent="Cab/Botonera"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12, 0, -0.08)
+collision_layer = 8
+collision_mask = 0
+monitoring = false
+script = ExtResource("5_btn")
+control = &"lights"
+color = Color(0.95, 0.85, 0.2, 1)
+
+[node name="Bocina" type="Area3D" parent="Cab/Botonera"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12, 0, -0.08)
+collision_layer = 8
+collision_mask = 0
+monitoring = false
+script = ExtResource("5_btn")
+control = &"horn"
+color = Color(0.2, 0.4, 0.85, 1)
+
+[node name="Puertas" type="Area3D" parent="Cab/Botonera"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.12, 0, 0.08)
+collision_layer = 8
+collision_mask = 0
+monitoring = false
+script = ExtResource("5_btn")
+control = &"doors"
+color = Color(0.6, 0.3, 0.75, 1)
 
 [node name="Faro" type="SpotLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -5.1)
