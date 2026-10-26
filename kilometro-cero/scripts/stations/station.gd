@@ -51,6 +51,7 @@ const STOP_SPEED: float = 0.1
 var _level: int = 1
 var _vehicles: Array[Vehicle] = []
 var _player_inside: bool = false
+var _player: Player
 ## Cabezas de los trenes que ya avisaron que se detuvieron (hasta que vuelvan a moverse).
 var _stopped_heads: Array[Vehicle] = []
 
@@ -94,6 +95,8 @@ func _ready() -> void:
 			push_warning("Station %s: %s." % [name, problem])
 		# Si el modelo ya la conocía (escena recargada, partida guardada) manda su nivel.
 		_apply_level(GameState.production.add_station(data, _level))
+		# Nace la principal de lo que pide (tarea 58).
+		GameState.missions.refresh()
 	# Diferido: la red arma el grafo en su primer cuadro.
 	_check_network.call_deferred()
 
@@ -213,14 +216,25 @@ func get_trains_present() -> Array[Vehicle]:
 
 ## Si hay un tren detenido en la estación.
 func has_stopped_train() -> bool:
+	return not get_stopped_trains().is_empty()
+
+
+## Las cabezas de los trenes detenidos en la estación (tarea 58: el tablero entrega su carga).
+func get_stopped_trains() -> Array[Vehicle]:
+	var heads: Array[Vehicle] = []
 	for head: Vehicle in get_trains_present():
 		if absf(head.speed) < STOP_SPEED:
-			return true
-	return false
+			heads.append(head)
+	return heads
 
 
 func is_player_present() -> bool:
 	return _player_inside
+
+
+## El jugador si está en la zona, o null (tarea 58: el tablero entrega de su mochila).
+func get_present_player() -> Player:
+	return _player if _player_inside and is_instance_valid(_player) else null
 
 
 ## "Pueblo (pueblo, nivel 1 de 3)".
@@ -279,6 +293,7 @@ func _on_station_level_changed(station_id: StringName, new_level: int) -> void:
 
 func _on_body_entered(body: Node3D) -> void:
 	if body is Player:
+		_player = body
 		if not _player_inside:
 			_player_inside = true
 			player_entered.emit()

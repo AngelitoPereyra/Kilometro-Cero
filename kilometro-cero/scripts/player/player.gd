@@ -18,6 +18,8 @@ extends CharacterBody3D
 ## esconde y la cámara pasa a la de la cabina. Las teclas de manejo las lee la cabina.
 ## Herramientas clave (tarea 55, D83): el nodo KeyItems (hijo directo, opcional) guarda las que
 ## tiene; las usa el ToolUser con el clic izquierdo.
+## Interactuables (tarea 58): si F no entra a una cabina, usa el Interactable más cercano
+## (tablero de una estación, poblador).
 
 @export_range(0.5, 10.0, 0.1, "suffix:m/s") var walk_speed: float = 4.0
 @export_range(0.5, 15.0, 0.1, "suffix:m/s") var sprint_speed: float = 7.0
@@ -168,8 +170,8 @@ func _physics_process(delta: float) -> void:
 	if controls_enabled and Input.is_action_just_pressed(&"interact"):
 		if _cab != null:
 			exit_cab()
-		else:
-			try_enter_cab()
+		elif not try_enter_cab():
+			try_interact()
 	if _cab != null:
 		_stay_in_cab()
 		return
@@ -219,6 +221,14 @@ func try_enter_cab() -> bool:
 	_visual.visible = false
 	_cab.occupy(self)
 	return true
+
+
+## Usa el Interactable más cercano (tablero, poblador; tarea 58). Devuelve si usó alguno.
+func try_interact() -> bool:
+	if _cab != null or not controls_enabled:
+		return false
+	var target: Interactable = Interactable.find_nearest(get_tree(), global_position, self)
+	return target != null and target.interact(self)
 
 
 ## Sale de la cabina: queda parado en el puesto, con la 3ª persona mirando hacia donde

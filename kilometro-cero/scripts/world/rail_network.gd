@@ -220,8 +220,9 @@ func get_segment_length(segment_id: StringName) -> float:
 
 
 ## Los tramos para ir de `from` a `to` por el camino más corto sin pasar por tramos cortados,
-## en orden. Vacío si no hay camino (o si `from` y `to` son la misma estación).
-func find_route(from: StringName, to: StringName) -> Array[StringName]:
+## en orden. Vacío si no hay camino (o si `from` y `to` son la misma estación). Con
+## `through_cut` también pasa por los cortados (tarea 58: qué tramos habilitar para una conexión).
+func find_route(from: StringName, to: StringName, through_cut: bool = false) -> Array[StringName]:
 	_ensure_built()
 	var route: Array[StringName] = []
 	if from == to or not _stations.has(from) or not _stations.has(to):
@@ -242,7 +243,7 @@ func find_route(from: StringName, to: StringName) -> Array[StringName]:
 			break
 		done[station] = true
 		for segment_id: StringName in _stations[station]:
-			if is_cut(segment_id):
+			if is_cut(segment_id) and not through_cut:
 				continue
 			var next: StringName = other_end(segment_id, station)
 			if done.has(next):
@@ -261,6 +262,14 @@ func find_route(from: StringName, to: StringName) -> Array[StringName]:
 		route.push_front(segment_id)
 		cursor = other_end(segment_id, cursor)
 	return route
+
+
+## El largo total de una lista de tramos (por ejemplo, la que devuelve find_route).
+func get_route_length(route: Array[StringName]) -> float:
+	var total: float = 0.0
+	for segment_id: StringName in route:
+		total += get_segment_length(segment_id)
+	return total
 
 
 ## Si se puede ir de una estación a la otra sin pasar por tramos cortados.

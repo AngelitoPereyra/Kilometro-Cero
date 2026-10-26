@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/missions/mission_giver.gd" id="1_giver"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_poblador"]
+albedo_color = Color(0.55, 0.4, 0.3, 1)
+
+[sub_resource type="CapsuleMesh" id="Capsula"]
+radius = 0.3
+height = 1.7
+
+[sub_resource type="CylinderShape3D" id="Forma_poblador"]
+radius = 0.3
+height = 1.7
+
+[node name="Settler" type="Node3D"]
+script = ExtResource("1_giver")
+speaker = "Poblador"
+
+[node name="Cuerpo" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+
+[node name="Malla" type="MeshInstance3D" parent="Cuerpo"]
+material_override = SubResource("Mat_poblador")
+mesh = SubResource("Capsula")
+
+[node name="Forma" type="CollisionShape3D" parent="Cuerpo"]
+shape = SubResource("Forma_poblador")
+
+[node name="Globo" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 0)
+billboard = 1
+pixel_size = 0.004
+font_size = 28
+outline_size = 6
+autowrap_mode = 3
+width = 700.0
+vertical_alignment = 2
+text = "!"

@@ -174,6 +174,20 @@ func get_held_item() -> WorldItem:
 	return _held
 
 
+## Entrega lo que hay en la mano (tarea 58: el tablero de una estación lo consume al aprobar
+## una entrega). El objeto desaparece. Devuelve su pila, o null si la mano estaba vacía.
+func consume_held() -> ItemStack:
+	if _held == null:
+		return null
+	_cancel_place()
+	var item: WorldItem = _held
+	var stack: ItemStack = item.stack
+	_player.get_hands().release()
+	_held = null
+	item.queue_free()
+	return stack
+
+
 ## Recoge el objeto suelto más cercano al alcance; si no hay, saca una unidad del
 ## contenedor más cercano. Devuelve false (y avisa por `grab_failed`) si no pudo.
 func try_grab() -> bool:

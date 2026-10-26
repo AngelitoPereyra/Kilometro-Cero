@@ -14,6 +14,8 @@ extends RefCounted
 ## 4. Nada decrece: un día sin cubrir no suma ni resta (estancamiento).
 ## Lo que la producción no manda por flujos queda libre (get_free_production) para el mercado y
 ## las misiones (tareas 58 y 59).
+## Desde la tarea 58 una estación puede tener producción extra permanente (add_production_bonus),
+## la recompensa de las misiones secundarias (por ejemplo, reabrir una cantera vieja).
 
 ## Una estación subió (o se le cambió) de nivel.
 signal level_changed(station_id: StringName, level: int)
@@ -34,6 +36,8 @@ var _levels: Dictionary[StringName, int] = {}
 var _progress: Dictionary[StringName, int] = {}
 var _flows: Array[ProductionFlow] = []
 var _next_flow_id: int = 1
+# station_id -> (id de objeto -> unidades por día de más). Puede tener estaciones sin datos.
+var _bonus: Dictionary[StringName, Dictionary] = {}
 
 
 ## Registra una estación. Si el modelo ya la conocía (otra escena, un guardado) conserva su
@@ -71,6 +75,7 @@ func clear() -> void:
 	_progress.clear()
 	_flows.clear()
 	_next_flow_id = 1
+	_bonus.clear()
 
 
 func get_level(station_id: StringName) -> int:
@@ -107,10 +112,37 @@ func get_days_to_grow(station_id: StringName) -> int:
 	return data.get_days_to_grow(get_level(station_id))
 
 
-## Producción por día en su nivel actual (id de objeto -> unidades).
+## Producción por día en su nivel actual más la extra (id de objeto -> unidades).
 func get_production(station_id: StringName) -> Dictionary[StringName, int]:
 	var data: StationData = get_data(station_id)
-	return data.get_production(get_level(station_id)) if data != null else {}
+	if data == null:
+		return {}
+	var result: Dictionary[StringName, int] = data.get_production(get_level(station_id))
+	var bonus: Dictionary = _bonus.get(station_id, {})
+	for item_id: StringName in bonus:
+		result[item_id] = result.get(item_id, 0) + int(bonus[item_id])
+	return result
+
+
+## Suma producción permanente a una estación (tarea 58: recompensa de misiones secundarias).
+## Se acumula y se guarda. Devuelve false si la cantidad no sirve.
+func add_production_bonus(station_id: StringName, item_id: StringName, amount: int) -> bool:
+	if station_id == &"" or item_id == &"" or amount < 1:
+		push_warning("ProductionModel: producción extra inválida (%d %s a '%s')." % [amount, item_id, station_id])
+		return false
+	var bonus: Dictionary = _bonus.get(station_id, {})
+	bonus[item_id] = int(bonus.get(item_id, 0)) + amount
+	_bonus[station_id] = bonus
+	return true
+
+
+## La producción extra de una estación (id de objeto -> unidades por día).
+func get_production_bonus(station_id: StringName) -> Dictionary[StringName, int]:
+	var result: Dictionary[StringName, int] = {}
+	var bonus: Dictionary = _bonus.get(station_id, {})
+	for item_id: StringName in bonus:
+		result[item_id] = int(bonus[item_id])
+	return result
 
 
 ## Consumo por día en su nivel actual (lo cubierto más lo que pide para crecer).
@@ -176,9 +208,36 @@ func get_free_production(station_id: StringName) -> Dictionary[StringName, int]:
 	return free
 
 
+## Lo que los flujos le prometen por día a una estación, entreguen o no hoy (cortados o sin
+## producción suficiente también cuentan). Lo que el consumo pide por encima de esto es lo que
+## piden las misiones principales (tarea 58).
+func get_committed_supply(station_id: StringName) -> Dictionary[StringName, int]:
+	var result: Dictionary[StringName, int] = {}
+	for flow: ProductionFlow in get_flows_to(station_id):
+		result[flow.item_id] = result.get(flow.item_id, 0) + flow.amount
+	return result
+
+
+## El consumo que ningún flujo tiene comprometido (id de objeto -> unidades por día).
+func get_uncommitted_needs(station_id: StringName) -> Dictionary[StringName, int]:
+	var result: Dictionary[StringName, int] = {}
+	var committed: Dictionary[StringName, int] = get_committed_supply(station_id)
+	var consumption: Dictionary[StringName, int] = get_consumption(station_id)
+	for item_id: StringName in consumption:
+		var lacking: int = consumption[item_id] - committed.get(item_id, 0)
+		if lacking > 0:
+			result[item_id] = lacking
+	return result
+
+
+## Si dos estaciones están conectadas según connection_check (sin consulta, siempre).
+func are_connected(from: StringName, to: StringName) -> bool:
+	return not connection_check.is_valid() or bool(connection_check.call(from, to))
+
+
 ## Si el camino del flujo está abierto hoy.
 func is_flow_connected(flow: ProductionFlow) -> bool:
-	return not connection_check.is_valid() or bool(connection_check.call(flow.from_station, flow.to_station))
+	return are_connected(flow.from_station, flow.to_station)
 
 
 ## Lo que entregaría cada flujo si el día se simulara ahora: flow.id -> unidades.
@@ -261,19 +320,32 @@ func to_dict() -> Dictionary:
 	var flows: Array = []
 	for flow: ProductionFlow in _flows:
 		flows.append(flow.to_dict())
-	return {"levels": levels, "progress": progress, "flows": flows, "next_flow_id": _next_flow_id}
+	var bonus: Dictionary = {}
+	for station_id: StringName in _bonus:
+		var items: Dictionary = {}
+		for item_id: StringName in _bonus[station_id]:
+			items[String(item_id)] = _bonus[station_id][item_id]
+		bonus[String(station_id)] = items
+	return {"levels": levels, "progress": progress, "flows": flows, "next_flow_id": _next_flow_id, "bonus": bonus}
 
 
-## Carga niveles, días y flujos. Las estaciones (sus datos) se vuelven a registrar con
+## Carga niveles, días, flujos y producción extra. Las estaciones (sus datos) se vuelven a registrar con
 ## add_station, que respeta el nivel cargado.
 func load_dict(values: Dictionary) -> void:
 	_levels.clear()
 	_progress.clear()
 	_flows.clear()
+	_bonus.clear()
 	for key: String in values.get("levels", {}):
 		_levels[StringName(key)] = int(values["levels"][key])
 	for key: String in values.get("progress", {}):
 		_progress[StringName(key)] = int(values["progress"][key])
+	var saved_bonus: Dictionary = values.get("bonus", {})
+	for key: String in saved_bonus:
+		var items: Dictionary = {}
+		for item_key: String in saved_bonus[key]:
+			items[StringName(item_key)] = int(saved_bonus[key][item_key])
+		_bonus[StringName(key)] = items
 	for entry: Dictionary in values.get("flows", []):
 		_flows.append(ProductionFlow.from_dict(entry))
 	_next_flow_id = int(values.get("next_flow_id", 1))

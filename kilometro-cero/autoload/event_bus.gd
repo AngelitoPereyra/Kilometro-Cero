@@ -8,7 +8,7 @@ extends Node
 ##
 ## Señales con `ItemStack` (item_held, item_released, item_placed, item_stored,
 ## item_taken) se agregan en las tareas 11, 13 y 15, cuando esa clase exista.
-## contract_completed y event_triggered se agregan en las tareas 43 y 44.
+## event_triggered se agrega con los eventos especiales (tarea 71).
 
 # Estas señales se emiten desde otros scripts, no desde este: Godot avisaría
 # "señal declarada pero no usada" por cada una. El aviso no aplica a un bus.
@@ -27,8 +27,19 @@ signal key_item_obtained(item_id: StringName)
 ## Se despeja un obstáculo del tramo `segment_id` (tarea 55). El tramo se abre recién cuando
 ## no le queda ninguno: para eso, segment_state_changed.
 signal obstacle_cleared(segment_id: StringName)
-## Se entregan materiales al depósito de una estación.
+## Se entregan materiales en una estación para sus misiones (tarea 58). La emite StationBoard
+## al aprobar una entrega.
 signal contribution_delivered(station_id: StringName, item_id: StringName, amount: int)
+## Una misión nueva: una principal que nace (ya en curso) o una secundaria que ya se puede
+## conseguir (tarea 58). Las emite GameState desde GameState.missions.
+signal mission_available(mission_id: StringName)
+## Se tomó una secundaria (hablando con un poblador).
+signal mission_started(mission_id: StringName)
+## Se entregó algo para una misión.
+signal mission_progressed(mission_id: StringName)
+signal mission_completed(mission_id: StringName)
+## Cambió el dinero del jugador (GameState.money, D87).
+signal money_changed(money: int)
 ## Una estación cambió de nivel de crecimiento (D79). La emite Station.set_level (y desde la
 ## tarea 57 el modelo de producción); cada Station escucha la suya y muestra sus nodos.
 signal station_level_changed(station_id: StringName, level: int)

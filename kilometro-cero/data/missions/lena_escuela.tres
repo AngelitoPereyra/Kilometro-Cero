@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="MissionData" format=3 uid="uid://bfknmui87coko"]
+
+[ext_resource type="Script" uid="uid://ds0unwhb6wxu0" path="res://scripts/storage/item_amount.gd" id="1_hlas3"]
+[ext_resource type="Resource" path="res://data/items/log.tres" id="2_4ehlv"]
+[ext_resource type="Script" uid="uid://b8u25ow02tsrm" path="res://scripts/missions/mission_data.gd" id="3_0lobm"]
+
+[sub_resource type="Resource" id="Resource_5ywdx"]
+script = ExtResource("1_hlas3")
+item = ExtResource("2_4ehlv")
+amount = 5
+
+[resource]
+script = ExtResource("3_0lobm")
+id = &"lena_escuela"
+title = "Leña para la escuela"
+intro = "La escuela tenía la estufa más grande del pueblo: el tren traía la leña todos los inviernos. Desde que no pasa más, los chicos estudian con el sobretodo puesto. ¿Me traerías unos troncos?"
+outro = "¡Qué calorcito! Esta mañana vinieron todos los chicos. La maestra dice que es la primera vez en años."
+station_id = &"pueblo"
+delivery = Array[ExtResource("1_hlas3")]([SubResource("Resource_5ywdx")])
+reward_money = 150

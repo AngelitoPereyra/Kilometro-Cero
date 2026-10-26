@@ -1,0 +1,33 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/clearable.gd" id="1_clear"]
+[ext_resource type="Resource" path="res://data/items/crowbar.tres" id="2_bar"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_escombros"]
+albedo_color = Color(0.55, 0.45, 0.4, 1)
+roughness = 1.0
+
+[sub_resource type="BoxMesh" id="Mesh_escombros"]
+size = Vector3(1.6, 0.8, 1.2)
+
+[sub_resource type="BoxShape3D" id="Shape_escombros"]
+size = Vector3(1.6, 0.8, 1.2)
+
+[node name="Escombros" type="Node3D"]
+
+[node name="Cuerpo" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Cuerpo"]
+shape = SubResource("Shape_escombros")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Bloque" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(0.97, 0, 0.24, 0, 1, 0, -0.24, 0, 0.97, 0, 0.4, 0)
+material_override = SubResource("Mat_escombros")
+mesh = SubResource("Mesh_escombros")
+
+[node name="Clearable" type="Node" parent="."]
+script = ExtResource("1_clear")
+required_tool = ExtResource("2_bar")

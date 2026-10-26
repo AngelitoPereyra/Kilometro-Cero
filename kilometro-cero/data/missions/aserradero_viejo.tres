@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="MissionData" format=3 uid="uid://r0i34f757ws"]
+
+[ext_resource type="Script" uid="uid://ds0unwhb6wxu0" path="res://scripts/storage/item_amount.gd" id="1_iq81e"]
+[ext_resource type="Resource" path="res://data/items/log.tres" id="2_1y8vs"]
+[ext_resource type="Script" uid="uid://b8u25ow02tsrm" path="res://scripts/missions/mission_data.gd" id="3_jmlm2"]
+
+[sub_resource type="Resource" id="Resource_itnn7"]
+script = ExtResource("1_iq81e")
+item = ExtResource("2_1y8vs")
+amount = 15
+
+[resource]
+script = ExtResource("3_jmlm2")
+id = &"aserradero_viejo"
+title = "La vía al aserradero viejo"
+intro = "En los años buenos salían de acá tres trenes de rollizos por día. El aserradero del arroyo cortaba para media provincia. Cuando levantaron el ramal, el monte se tragó la vía. Si la volvés a abrir, el aserradero puede volver a trabajar."
+outro = "¿Escuchás? La sierra otra vez. Hacía treinta años que no se oía. Con el aserradero andando, la maderera va a poder mandar mucho más."
+station_id = &"maderera"
+kind = 1
+segment_id = &"m_a"
+reward_money = 300
+reward_production = Array[ExtResource("1_iq81e")]([SubResource("Resource_itnn7")])

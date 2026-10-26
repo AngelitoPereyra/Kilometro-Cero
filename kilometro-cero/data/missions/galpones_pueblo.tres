@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="MissionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="1_v2hvf"]
+[ext_resource type="Script" path="res://scripts/missions/mission_data.gd" id="2_n8vaw"]
+
+[resource]
+script = ExtResource("2_n8vaw")
+id = &"galpones_pueblo"
+title = "Los galpones del ferrocarril"
+intro = "Ahí, detrás del andén, estaban los galpones donde se cargaba el cereal. Cuando cerró el ramal se vinieron abajo y quedaron llenos de escombros. Ahora que el pueblo se mueve otra vez, nos harían falta."
+outro = "Mirá cómo quedaron. Mi abuelo trabajó acá cuarenta años. Ya hay gente preguntando para volver a guardar la cosecha."
+station_id = &"pueblo"
+kind = 2
+zone_group = &"escombros_pueblo"
+min_level = 2
+requires = Array[StringName]([&"lena_escuela"])
+reward_money = 400

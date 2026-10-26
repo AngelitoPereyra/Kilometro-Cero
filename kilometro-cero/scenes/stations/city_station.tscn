@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/stations/station.gd" id="1_st"]
+[ext_resource type="Script" path="res://scripts/stations/station_board.gd" id="3_tab"]
 [ext_resource type="Resource" path="res://data/stations/ciudad.tres" id="2_st"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_anden"]
@@ -63,6 +64,15 @@ size = Vector3(6, 18, 6)
 [sub_resource type="BoxMesh" id="Box_13"]
 size = Vector3(10, 0.1, 10)
 
+[sub_resource type="StandardMaterial3D" id="Mat_tablero"]
+albedo_color = Color(0.15, 0.3, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="Box_tablero"]
+size = Vector3(2.6, 1.8, 0.1)
+
+[sub_resource type="BoxMesh" id="Box_pata"]
+size = Vector3(0.1, 0.9, 0.1)
+
 [node name="CityStation" type="Node3D"]
 script = ExtResource("1_st")
 data = ExtResource("2_st")
@@ -93,6 +103,32 @@ billboard = 1
 font_size = 96
 outline_size = 16
 text = "Estación"
+
+[node name="Tablero" type="Node3D" parent="."]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -6.5, 0.6, 12)
+script = ExtResource("3_tab")
+
+[node name="Panel" type="MeshInstance3D" parent="Tablero"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+material_override = SubResource("Mat_tablero")
+mesh = SubResource("Box_tablero")
+
+[node name="PataIzquierda" type="MeshInstance3D" parent="Tablero"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.45, 0)
+mesh = SubResource("Box_pata")
+
+[node name="PataDerecha" type="MeshInstance3D" parent="Tablero"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.45, 0)
+mesh = SubResource("Box_pata")
+
+[node name="Texto" type="Label3D" parent="Tablero"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0.06)
+pixel_size = 0.004
+font_size = 20
+outline_size = 4
+autowrap_mode = 3
+width = 620.0
+text = "Tablero"
 
 [node name="Zona" type="Area3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2.4, 0)

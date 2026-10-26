@@ -1,7 +1,8 @@
 extends Node
-## Estado de la partida. Es dueño del reloj del juego (D34) y del modelo de producción
-## (D79, tarea 57): lo avanza un día en cada día nuevo y reemite sus cambios de nivel.
-## Los demás datos (dinero) entran cuando un sistema los necesite.
+## Estado de la partida. Es dueño del reloj del juego (D34), del modelo de producción
+## (D79, tarea 57: lo avanza un día en cada día nuevo y reemite sus cambios de nivel), de las
+## misiones (D80, tarea 58) y del dinero (solo pesos, D87).
+## Los demás datos entran cuando un sistema los necesite.
 
 ## Minutos reales que dura un día de juego (D34). Vivía en NeedsConfig, que se borró (D75).
 const DAY_LENGTH_MINUTES: float = 24.0
@@ -14,6 +15,10 @@ var clock_running: bool = true
 var time_scale: float = 1.0
 ## Niveles de las estaciones y flujos permanentes. Cada Station se registra al empezar.
 var production: ProductionModel
+## Misiones principales y secundarias (tarea 58). Se rehace con reset_production.
+var missions: MissionBoard
+## Pesos del jugador (D87, sin trueque). Lo cobran las misiones; el mercado llega en la 59.
+var money: int = 0
 
 var _hours_per_second: float = 0.0
 
@@ -25,6 +30,11 @@ func _ready() -> void:
 	clock.time_advanced.connect(_on_time_advanced)
 	reset_production()
 	EventBus.station_level_changed.connect(_on_station_level_changed)
+	# La red y los obstáculos cambian lo que piden las misiones (tramos y zonas).
+	EventBus.segment_state_changed.connect(func(_segment_id: StringName, _state: int) -> void: _refresh_missions.call_deferred())
+	EventBus.obstacle_cleared.connect(func(_segment_id: StringName) -> void: _refresh_missions.call_deferred())
+	# Un golpe puede terminar de despejar algo de una zona (misiones de despejar zona).
+	EventBus.tool_used.connect(func(_tool_id: StringName) -> void: _refresh_missions.call_deferred())
 
 
 func _process(delta: float) -> void:
@@ -32,14 +42,32 @@ func _process(delta: float) -> void:
 		clock.advance(delta * _hours_per_second * time_scale)
 
 
-## Empieza un modelo de producción vacío (partida nueva, pruebas). Las estaciones de la escena
-## tienen que volver a registrarse (Station lo hace en su _ready).
+## Empieza un modelo de producción y un tablero de misiones vacíos (partida nueva, pruebas).
+## Las estaciones y los pobladores de la escena tienen que volver a registrarse (Station y
+## MissionGiver lo hacen en su _ready).
 func reset_production() -> void:
 	if production != null and production.level_changed.is_connected(_on_production_level_changed):
 		production.level_changed.disconnect(_on_production_level_changed)
 	production = ProductionModel.new()
 	production.connection_check = _are_connected
 	production.level_changed.connect(_on_production_level_changed)
+	missions = MissionBoard.new(production)
+	missions.route_finder = _find_route
+	missions.route_length = _route_length
+	missions.segment_check = _is_segment_open
+	missions.zone_count = _count_zone
+	missions.mission_available.connect(func(mission: Mission) -> void: EventBus.mission_available.emit(mission.id))
+	missions.mission_started.connect(func(mission: Mission) -> void: EventBus.mission_started.emit(mission.id))
+	missions.mission_progressed.connect(func(mission: Mission) -> void: EventBus.mission_progressed.emit(mission.id))
+	missions.mission_completed.connect(_on_mission_completed)
+
+
+## Suma (o resta, con negativo) pesos y lo avisa por EventBus.money_changed.
+func add_money(amount: int) -> void:
+	if amount == 0:
+		return
+	money += amount
+	EventBus.money_changed.emit(money)
 
 
 func _on_day_started(day: int) -> void:
@@ -54,6 +82,52 @@ func _are_connected(from: StringName, to: StringName) -> bool:
 	return network == null or network.are_connected(from, to)
 
 
+# Para las misiones: el camino también por los cortados; null si no hay. Sin red, todo a un paso.
+func _find_route(from: StringName, to: StringName) -> Variant:
+	var network: RailNetwork = RailNetwork.find_in(get_tree())
+	if network == null:
+		return [] as Array[StringName]
+	if not network.has_station(from) or not network.has_station(to):
+		return null
+	var route: Array[StringName] = network.find_route(from, to, true)
+	if route.is_empty():
+		return null
+	return route
+
+
+func _route_length(route: Array) -> float:
+	var network: RailNetwork = RailNetwork.find_in(get_tree())
+	if network == null:
+		return float(route.size())
+	var segments: Array[StringName] = []
+	segments.assign(route)
+	return network.get_route_length(segments)
+
+
+func _is_segment_open(segment_id: StringName) -> bool:
+	var network: RailNetwork = RailNetwork.find_in(get_tree())
+	return network != null and network.has_segment(segment_id) and not network.is_cut(segment_id)
+
+
+# Lo que queda en un grupo, sin contar lo que se está borrando.
+func _count_zone(group: StringName) -> int:
+	var left: int = 0
+	for node: Node in get_tree().get_nodes_in_group(group):
+		if not node.is_queued_for_deletion():
+			left += 1
+	return left
+
+
+func _refresh_missions() -> void:
+	missions.refresh()
+
+
+func _on_mission_completed(mission: Mission) -> void:
+	if mission.data != null:
+		add_money(mission.data.reward_money)
+	EventBus.mission_completed.emit(mission.id)
+
+
 func _on_production_level_changed(station_id: StringName, level: int) -> void:
 	EventBus.station_level_changed.emit(station_id, level)
 
@@ -61,6 +135,7 @@ func _on_production_level_changed(station_id: StringName, level: int) -> void:
 # Un nivel cambiado desde la escena (Station.set_level) se copia al modelo sin reavisarlo.
 func _on_station_level_changed(station_id: StringName, level: int) -> void:
 	production.set_level(station_id, level, false)
+	missions.refresh()
 
 
 func _on_time_advanced(hours: float) -> void:
