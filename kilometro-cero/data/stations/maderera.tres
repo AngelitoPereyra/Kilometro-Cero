@@ -7,7 +7,8 @@
 
 [sub_resource type="Resource" id="Resource_jrdya"]
 script = ExtResource("1_dn0ey")
-description = "Aserradero que produce troncos."
+market = true
+description = "Aserradero que produce troncos y los vende en su mercado."
 
 [sub_resource type="Resource" id="Resource_qus52"]
 script = ExtResource("2_qifbp")

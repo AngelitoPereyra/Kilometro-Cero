@@ -6,6 +6,7 @@ extends Interactable
 ## entregar. Nada se descarga solo: F en el tablero aprueba la entrega, que saca de los vagones
 ## de los trenes detenidos en la estación, de la mano y de la mochila del jugador solo lo que
 ## piden las misiones (en ese orden; de la mano, solo si se entrega todo lo que sostiene).
+## Lo que hay al alcance lo junta StationGoods (tarea 59, lo comparte con el mercado).
 
 ## Se aprobó una entrega: id de objeto -> unidades entregadas.
 signal delivered(amounts: Dictionary[StringName, int])
@@ -51,28 +52,14 @@ func get_station() -> Station:
 
 
 func get_prompt() -> String:
-	var plan: Dictionary[StringName, int] = get_delivery_plan(_player_or(null))
+	var plan: Dictionary[StringName, int] = get_delivery_plan()
 	return "Entregar " + _amounts_text(plan) if not plan.is_empty() else "Mirar el tablero"
 
 
 ## Lo que hay para entregar ahora: vagones de los trenes detenidos, la mano y la mochila del
 ## jugador (id de objeto -> unidades). `player` null: el que esté en la zona de la estación.
 func get_available(player: Player = null) -> Dictionary[StringName, int]:
-	var available: Dictionary[StringName, int] = {}
-	for cargo: StorageContainer in _get_cargos():
-		for index: int in cargo.get_stack_count():
-			var stack: ItemStack = cargo.peek(index)
-			available[stack.item.id] = available.get(stack.item.id, 0) + stack.quantity
-	var held: ItemStack = _get_held(player)
-	if held != null:
-		available[held.item.id] = available.get(held.item.id, 0) + held.quantity
-	var backpack: Inventory = _get_backpack(player)
-	if backpack != null:
-		for slot: int in backpack.get_slot_count():
-			var stack: ItemStack = backpack.peek(slot)
-			if stack != null:
-				available[stack.item.id] = available.get(stack.item.id, 0) + stack.quantity
-	return available
+	return StationGoods.new(_station, player).get_available()
 
 
 ## Lo que aceptarían las misiones de lo disponible (lo que entregaría F ahora).
@@ -89,16 +76,17 @@ func deliver(player: Player = null) -> Dictionary[StringName, int]:
 	if _station == null:
 		return result
 	var station_id: StringName = _station.get_station_id()
-	var plan: Dictionary[StringName, int] = get_delivery_plan(player)
+	var goods := StationGoods.new(_station, player)
+	var plan: Dictionary[StringName, int] = GameState.missions.plan_delivery(station_id, goods.get_available())
 	for item_id: StringName in plan:
-		var taken: int = _take(item_id, plan[item_id], player)
+		var taken: int = goods.take(item_id, plan[item_id])
 		if taken <= 0:
 			continue
 		var accepted: int = GameState.missions.deliver(station_id, item_id, taken)
 		if accepted < taken:
 			# No debería pasar (el plan es de recién), pero nada se pierde: vuelve a la mochila
 			# o al primer vagón que lo acepte.
-			_give_back(item_id, taken - accepted, player)
+			_give_back(goods, item_id, taken - accepted)
 		if accepted > 0:
 			result[item_id] = accepted
 			EventBus.contribution_delivered.emit(station_id, item_id, accepted)
@@ -178,87 +166,10 @@ func _find_station() -> Station:
 	return null
 
 
-func _player_or(player: Player) -> Player:
-	if player != null:
-		return player
-	return _station.get_present_player() if _station != null else null
-
-
-func _get_backpack(player: Player) -> Inventory:
-	var who: Player = _player_or(player)
-	return who.get_backpack() if who != null else null
-
-
-# Lo que el jugador tiene en la mano, si lo sostiene su Grabber (si no, no se puede entregar).
-func _get_held(player: Player) -> ItemStack:
-	var grabber: Grabber = _get_grabber(player)
-	var item: WorldItem = grabber.get_held_item() if grabber != null else null
-	return item.stack if item != null else null
-
-
-func _get_grabber(player: Player) -> Grabber:
-	var who: Player = _player_or(player)
-	if who == null:
-		return null
-	for child: Node in who.get_children():
-		if child is Grabber:
-			return child
-	return null
-
-
-# Las cargas de los vagones de los trenes detenidos en la estación.
-func _get_cargos() -> Array[StorageContainer]:
-	var cargos: Array[StorageContainer] = []
-	if _station == null:
-		return cargos
-	for head: Vehicle in _station.get_stopped_trains():
-		for vehicle: Vehicle in head.get_train():
-			var wagon := vehicle as Wagon
-			if wagon != null and wagon.get_cargo() != null:
-				cargos.append(wagon.get_cargo())
-	return cargos
-
-
-# Saca hasta `amount` del objeto: vagones, mano (solo entera) y mochila, en ese orden.
-func _take(item_id: StringName, amount: int, player: Player) -> int:
-	var taken: int = 0
-	for cargo: StorageContainer in _get_cargos():
-		for index: int in range(cargo.get_stack_count() - 1, -1, -1):
-			if taken >= amount:
-				return taken
-			if cargo.peek(index).item.id == item_id:
-				var stack: ItemStack = cargo.take(index, amount - taken)
-				taken += stack.quantity if stack != null else 0
-	var held: ItemStack = _get_held(player)
-	if held != null and held.item.id == item_id and held.quantity <= amount - taken:
-		var consumed: ItemStack = _get_grabber(player).consume_held()
-		taken += consumed.quantity if consumed != null else 0
-	var backpack: Inventory = _get_backpack(player)
-	if backpack != null:
-		for slot: int in backpack.get_slot_count():
-			if taken >= amount:
-				break
-			var current: ItemStack = backpack.peek(slot)
-			if current != null and current.item.id == item_id:
-				var stack: ItemStack = backpack.take(slot, amount - taken)
-				taken += stack.quantity if stack != null else 0
-	return taken
-
-
-func _give_back(item_id: StringName, amount: int, player: Player) -> void:
-	var item: ItemData = null
-	if _station != null and _station.data != null:
+func _give_back(goods: StationGoods, item_id: StringName, amount: int) -> void:
+	var item: ItemData = goods.find_item(item_id)
+	if item == null and _station.data != null:
 		item = _station.data.find_item(item_id)
-	if item == null:
-		push_warning("StationBoard: no se pudieron devolver %d %s." % [amount, item_id])
-		return
-	var leftover: ItemStack = ItemStack.new(item, amount)
-	for cargo: StorageContainer in _get_cargos():
-		leftover = cargo.try_store(leftover)
-		if leftover == null:
-			return
-	var backpack: Inventory = _get_backpack(player)
-	if backpack != null:
-		leftover = backpack.try_store(leftover)
-	if leftover != null:
-		push_warning("StationBoard: no se pudieron devolver %d %s." % [leftover.quantity, item_id])
+	var stored: int = goods.store(item, amount)
+	if stored < amount:
+		push_warning("StationBoard: no se pudieron devolver %d %s." % [amount - stored, item_id])

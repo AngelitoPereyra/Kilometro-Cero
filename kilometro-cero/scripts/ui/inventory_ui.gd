@@ -80,6 +80,9 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	# En _input y no en _unhandled_input: un botón con foco se quedaría con el TAB.
 	if event.is_action_pressed(&"inventory"):
+		# Con otra ventana abierta (el mercado apaga los controles) no se abre encima.
+		if not _open and not player.controls_enabled:
+			return
 		set_open(not _open)
 		get_viewport().set_input_as_handled()
 	elif _open and event.is_action_pressed(&"ui_cancel"):

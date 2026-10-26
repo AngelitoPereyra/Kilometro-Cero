@@ -95,6 +95,8 @@ func _ready() -> void:
 			push_warning("Station %s: %s." % [name, problem])
 		# Si el modelo ya la conocía (escena recargada, partida guardada) manda su nivel.
 		_apply_level(GameState.production.add_station(data, _level))
+		# Su mercado: los objetos que conoce y, si es nueva, el stock lleno (tarea 59).
+		GameState.economy.add_station(data)
 		# Nace la principal de lo que pide (tarea 58).
 		GameState.missions.refresh()
 	# Diferido: la red arma el grafo en su primer cuadro.

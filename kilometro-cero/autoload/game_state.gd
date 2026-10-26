@@ -1,7 +1,7 @@
 extends Node
 ## Estado de la partida. Es dueño del reloj del juego (D34), del modelo de producción
 ## (D79, tarea 57: lo avanza un día en cada día nuevo y reemite sus cambios de nivel), de las
-## misiones (D80, tarea 58) y del dinero (solo pesos, D87).
+## misiones (D80, tarea 58), de los mercados (Economy, tarea 59) y del dinero (solo pesos, D96).
 ## Los demás datos entran cuando un sistema los necesite.
 
 ## Minutos reales que dura un día de juego (D34). Vivía en NeedsConfig, que se borró (D75).
@@ -17,7 +17,9 @@ var time_scale: float = 1.0
 var production: ProductionModel
 ## Misiones principales y secundarias (tarea 58). Se rehace con reset_production.
 var missions: MissionBoard
-## Pesos del jugador (D87, sin trueque). Lo cobran las misiones; el mercado llega en la 59.
+## Stock y precios de los mercados (tarea 59). Se rehace con reset_production.
+var economy: Economy
+## Pesos del jugador (D96, sin trueque). Lo cobran las misiones y lo mueve el mercado.
 var money: int = 0
 
 var _hours_per_second: float = 0.0
@@ -51,6 +53,7 @@ func reset_production() -> void:
 	production = ProductionModel.new()
 	production.connection_check = _are_connected
 	production.level_changed.connect(_on_production_level_changed)
+	economy = Economy.new(production)
 	missions = MissionBoard.new(production)
 	missions.route_finder = _find_route
 	missions.route_length = _route_length
@@ -71,8 +74,10 @@ func add_money(amount: int) -> void:
 
 
 func _on_day_started(day: int) -> void:
-	# Primero el modelo, así quien escucha day_started ya ve los niveles del día nuevo.
+	# Primero el modelo, así quien escucha day_started ya ve los niveles del día nuevo. El
+	# mercado junta después lo que la producción no mandó por flujos.
 	production.advance_day()
+	economy.advance_day()
 	EventBus.day_started.emit(day)
 
 
@@ -125,6 +130,10 @@ func _refresh_missions() -> void:
 func _on_mission_completed(mission: Mission) -> void:
 	if mission.data != null:
 		add_money(mission.data.reward_money)
+		# La producción extra puede ser de algo nuevo: el mercado tiene que conocerlo.
+		for entry: ItemAmount in mission.data.reward_production:
+			if entry != null:
+				economy.register_item(entry.item)
 	EventBus.mission_completed.emit(mission.id)
 
 

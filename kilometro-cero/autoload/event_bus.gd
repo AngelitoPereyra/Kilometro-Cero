@@ -38,8 +38,11 @@ signal mission_started(mission_id: StringName)
 ## Se entregó algo para una misión.
 signal mission_progressed(mission_id: StringName)
 signal mission_completed(mission_id: StringName)
-## Cambió el dinero del jugador (GameState.money, D87).
+## Cambió el dinero del jugador (GameState.money, D96).
 signal money_changed(money: int)
+## El jugador compró (amount positivo) o vendió (negativo) en el mercado de una estación;
+## `total` son los pesos que pagó o cobró (tarea 59). La emite Market.
+signal item_traded(station_id: StringName, item_id: StringName, amount: int, total: int)
 ## Una estación cambió de nivel de crecimiento (D79). La emite Station.set_level (y desde la
 ## tarea 57 el modelo de producción); cada Station escucha la suya y muestra sus nodos.
 signal station_level_changed(station_id: StringName, level: int)
