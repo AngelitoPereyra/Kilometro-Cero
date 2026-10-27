@@ -33,6 +33,14 @@ extends Node
 ## entrada para el tren del jugador (RailNetwork.set_entry_closed): es como si estuviera
 ## cortado hasta que el automático lo deja. En la vía doble no hace falta reservar: cada uno va
 ## por la suya.
+## Bloques de la vía doble (tarea 61e.3): cada vía de un tramo doble se parte en bloques de más o
+## menos `block_length`, con un cartel de bloque (RailSignal.Kind.BLOCK) al principio de cada uno
+## (el primero empieza en el cartel de salida). Un cartel está en rojo si hay algo en su bloque (un
+## vehículo o un automático lejos del jugador) y en amarillo si el próximo (o la entrada a la
+## estación de llegada) está en rojo. En el rojo frena cualquier tren (RailNetwork.set_block_stops),
+## así dos trenes van por la misma vía uno atrás del otro: un automático sale apenas se libera el
+## primer bloque, y lejos del jugador tampoco pasa un cartel en rojo. El cartel de salida a la línea
+## también se pone en amarillo, en la vía simple si la entrada de la otra punta está en rojo.
 ## Vías de estación (tarea 61b): donde la estación tiene vías propias, el viaje pasa por ellas
 ## (AutoTrainRun.station_piece), el tren para centrado en su vía y mueve los cambios solo
 ## (Vehicle.switch_chooser). Donde no (escenas de antes), la estación sigue siendo un punto y
@@ -78,6 +86,13 @@ const BLOCKED_TIME: float = 2.0
 const SIGNAL_OFFSET: float = 8.0
 const SIGNAL_SIDE: float = 3.0
 const ARRIVING_SUFFIX: String = "|llegada"
+## Lo que dice un automático parado ante un cartel de bloque en rojo (tarea 61e.3).
+const SIGNAL_WAIT: String = "esperando cartel en verde"
+## Un automático que llega a una estación por el tramo (_arriving_auto): ninguno, todavía antes
+## del cartel de entrada o ya pasado.
+const ARRIVING_NONE: int = 0
+const ARRIVING_BEFORE: int = 1
+const ARRIVING_PAST: int = 2
 ## Carteles de vía de estación (D117): metros que se aparta una vía de la recta para quedar del otro
 ## lado de la división, cuánto más allá va el cartel, dónde va si ninguna se aparta y al costado.
 const TRACK_FOULING_LATERAL: float = 3.5
@@ -109,6 +124,9 @@ const LABEL_RANGE: float = 80.0
 ## Más lejos que esto, vuelve a ser solo un número.
 @export_range(10.0, 1500.0, 1.0, "suffix:m") var despawn_distance: float = 160.0
 @export var signals_enabled: bool = true
+## Largo de cada bloque de la vía doble (tarea 61e.3): entre carteles de bloque. Las vías más cortas
+## que esto (sin contar la salida y la llegada) quedan en un solo bloque.
+@export_range(20.0, 2000.0, 1.0, "suffix:m") var block_length: float = 400.0
 
 var _runs: Array[AutoTrainRun] = []
 # run.id -> Array[Vehicle], de la locomotora hacia atrás.
@@ -125,6 +143,8 @@ var _maneuvers: Dictionary = {}
 var _signals: Dictionary = {}
 # "@estación/Vía|A" o "|B" -> RailSignal de vía de estación (D117).
 var _track_signals: Dictionary = {}
+# "tramo|estación de donde sale la vía|n" -> RailSignal: los carteles de bloque (tarea 61e.3).
+var _block_signals: Dictionary = {}
 # run.id -> segundos trabado
 var _blocked: Dictionary = {}
 var _signature: String = ""
@@ -616,15 +636,18 @@ func _check_sections(network: RailNetwork, run: AutoTrainRun, pieces: Array[Stri
 			if path != null and (_path_has_foreign(path, own) or network.is_track_reserved(path)):
 				return "vía ocupada"
 			continue
-		var double: bool = network.is_double(piece)
-		if not double:
+		if network.is_double(piece):
+			# En la vía doble solo importa la de su sentido y en ella el primer bloque: los que
+			# siguen los cuida su cartel (tarea 61e.3).
+			var track: TrackSegment = network.track_leaving(piece, entry)
+			if track != null and _block_busy(network, track, 0, run, true):
+				return "vía ocupada"
+		else:
 			var holder: int = get_token_holder(piece)
 			if holder != 0 and holder != run.id:
 				return "esperando vía libre"
-		# En la vía doble solo importa la de su sentido.
-		var track: TrackSegment = network.track_leaving(piece, entry) if double else null
-		if _has_foreign_vehicle(network, piece, run, track):
-			return "vía ocupada"
+			if _has_foreign_vehicle(network, piece, run):
+				return "vía ocupada"
 		var next_entry: StringName = network.other_end(piece, entry)
 		# Otro automático parado en una estación del medio sin vías propias tapa la vía.
 		if next_entry != run.leg_to() and _parked_run_at(next_entry, piece, run) != null:
@@ -713,15 +736,13 @@ func _release_tokens(run: AutoTrainRun, keep: StringName = &"") -> void:
 			_tokens.erase(section)
 
 
-# Hay en el tramo (o solo en su vía `only`) un vehículo que no es de este tren (el del jugador,
-# uno suelto u otro automático). Sin `run`, cualquier vehículo.
-func _has_foreign_vehicle(network: RailNetwork, segment_id: StringName, run: AutoTrainRun, only: TrackSegment = null) -> bool:
+# Hay en el tramo un vehículo que no es de este tren (el del jugador, uno suelto u otro
+# automático). Sin `run`, cualquier vehículo.
+func _has_foreign_vehicle(network: RailNetwork, segment_id: StringName, run: AutoTrainRun) -> bool:
 	var own: Array[Vehicle] = []
 	if run != null:
 		own = get_train(run)
 	for track: TrackSegment in network.get_tracks(segment_id):
-		if only != null and track != only:
-			continue
 		if _path_has_foreign(track.get_track_path(), own):
 			return true
 	return false
@@ -806,6 +827,8 @@ func _ensure_signals(network: RailNetwork, segment_id: StringName) -> void:
 			# La cara de adelante la leen los que salen de la estación: mira hacia la estación.
 			signal_node.face_towards(-into)
 			_signals[key] = signal_node
+	if double:
+		_ensure_block_signals(network, segment_id)
 
 
 static func _line_key(segment_id: StringName, station_id: StringName, arriving: bool) -> String:
@@ -948,14 +971,25 @@ func _update_signals() -> void:
 		if signal_node == null:
 			continue
 		var entry: RailSignal.Aspect = _entry_aspect(network, signal_node.segment_id, signal_node.station_id)
+		var double: bool = network.is_double(signal_node.segment_id)
+		if double == key.ends_with(ARRIVING_SUFFIX):
+			# Con el cambio trabado por una palanca, el jugador pidió entrar ahí (a una vía ocupada, para
+			# enganchar): entra con precaución aunque esté en rojo.
+			var asked: TrackSwitch = _entry_switch(network, signal_node.segment_id, signal_node.station_id)
+			_set_entry_stop(network, signal_node.segment_id, signal_node.station_id, entry == RailSignal.Aspect.RED and not (asked != null and asked.is_locked()))
 		if key.ends_with(ARRIVING_SUFFIX):
 			# Vía doble, la que llega: adelante es contramano.
 			signal_node.set_aspects(RailSignal.Aspect.RED, entry)
 			continue
 		var state: Array = _signal_state(network, signal_node.segment_id, signal_node.station_id)
-		var back: RailSignal.Aspect = RailSignal.Aspect.RED if network.is_double(signal_node.segment_id) else entry
-		signal_node.set_aspects(RailSignal.Aspect.GREEN if state[0] else RailSignal.Aspect.RED, back)
+		var back: RailSignal.Aspect = RailSignal.Aspect.RED if double else entry
+		var front: RailSignal.Aspect = _clear_aspect(network, signal_node.segment_id, signal_node.station_id) if state[0] else RailSignal.Aspect.RED
+		signal_node.set_aspects(front, back)
 		network.set_entry_closed(signal_node.segment_id, signal_node.station_id, state[1])
+	for segment_id: StringName in network.get_segment_ids():
+		if network.is_double(segment_id):
+			for way: TrackSegment in network.get_tracks(segment_id):
+				_update_way(network, way)
 	for key: String in _track_signals:
 		var track_signal: RailSignal = _track_signals[key] if is_instance_valid(_track_signals[key]) else null
 		if track_signal == null or not is_instance_valid(track_signal.station_track):
@@ -970,8 +1004,12 @@ func _update_signals() -> void:
 # la que lleva el cambio está libre. Un automático que viene hacia la estación ya tiene su vía
 # reservada: verde para él. Sin vías de estación, rojo si hay un automático parado en esa punta.
 func _entry_aspect(network: RailNetwork, segment_id: StringName, station: StringName) -> RailSignal.Aspect:
-	if _auto_arriving(network, segment_id, station):
-		return RailSignal.Aspect.GREEN
+	match _arriving_auto(network, segment_id, station):
+		ARRIVING_BEFORE:
+			return RailSignal.Aspect.GREEN
+		ARRIVING_PAST:
+			# Ya pasó el cartel: detrás de él vuelve al rojo (tarea 61e.3).
+			return RailSignal.Aspect.RED
 	if not network.has_station_tracks(station):
 		return RailSignal.Aspect.RED if _parked_run_at(station, segment_id, null) != null else RailSignal.Aspect.GREEN
 	var target: Path3D = _entry_target(network, segment_id, station)
@@ -981,6 +1019,17 @@ func _entry_aspect(network: RailNetwork, segment_id: StringName, station: String
 	if section != &"" and get_token_holder(section) != 0:
 		return RailSignal.Aspect.RED
 	return RailSignal.Aspect.RED if _path_has_foreign(target, []) else RailSignal.Aspect.GREEN
+
+
+# El cambio que encuentra un tren que llega a `station` por el tramo, o null.
+func _entry_switch(network: RailNetwork, segment_id: StringName, station: StringName) -> TrackSwitch:
+	for track: TrackSegment in network.get_tracks(segment_id):
+		if track.to_station != station and not (track.from_station == station and not network.is_double(segment_id)):
+			continue
+		var path: Path3D = track.get_track_path()
+		if path != null:
+			return network.find_switch(path, track.to_station == station)
+	return null
 
 
 # La vía de estación a la que lleva el cambio para un tren que llega por el tramo, o null.
@@ -1000,17 +1049,38 @@ func _entry_target(network: RailNetwork, segment_id: StringName, station: String
 	return null
 
 
-# Si un automático en viaje va por el tramo hacia `station` y todavía no llegó a la punta.
-func _auto_arriving(network: RailNetwork, segment_id: StringName, station: StringName) -> bool:
+# Dónde frena el tren del jugador ante la entrada en rojo a `station` desde el tramo (tarea 61e.3):
+# en el cartel de línea de esa punta, yendo hacia la estación (en la vía doble, por la vía que
+# llega). Los automáticos no lo miran: entran con su vía reservada.
+func _set_entry_stop(network: RailNetwork, segment_id: StringName, station: StringName, red: bool) -> void:
+	for track: TrackSegment in network.get_tracks(segment_id):
+		var path: Path3D = track.get_track_path()
+		if path == null or path.curve == null:
+			continue
+		var length: float = path.curve.get_baked_length()
+		if track.to_station == station:
+			network.set_exit_stop(path, true, length - SIGNAL_OFFSET if red else -1.0)
+		elif track.from_station == station and not network.is_double(segment_id):
+			network.set_exit_stop(path, false, SIGNAL_OFFSET if red else -1.0)
+
+
+# Un automático que va por el tramo hacia `station` y todavía no llegó a la punta: ARRIVING_BEFORE si
+# su punta todavía no pasó el cartel de entrada, ARRIVING_PAST si ya lo pasó; si no, ARRIVING_NONE.
+func _arriving_auto(network: RailNetwork, segment_id: StringName, station: StringName) -> int:
+	var found: int = ARRIVING_NONE
 	for run: AutoTrainRun in _runs:
 		if not run.is_moving():
 			continue
 		for index: int in run.leg.size():
 			if run.leg[index] != segment_id or run.segment_entry(index, network.other_end) == station:
 				continue
-			if run.position < run.segment_start(index) + run.leg_lengths[index]:
-				return true
-	return false
+			var end: float = run.segment_start(index) + run.leg_lengths[index]
+			if run.position >= end:
+				continue
+			if run.position + run.lead_offset() > end - SIGNAL_OFFSET:
+				return ARRIVING_PAST
+			found = ARRIVING_BEFORE
+	return found
 
 
 # La salida de una vía de estación por una punta (la cara de adelante de su cartel): verde si se
@@ -1130,21 +1200,27 @@ static func _vehicles_on(path: Path3D) -> Array[Vehicle]:
 # - Vía simple reservada por un automático: verde del lado por donde él entra (mientras no
 #   entró) y rojo del otro; el tren del jugador no entra por ninguno de los dos.
 # - Un automático dentro (de verdad o lejos, como un número) o parado en una punta (estación sin
-#   vías propias): rojo y cerrado. En la vía doble, solo la vía de su sentido.
+#   vías propias): rojo y cerrado.
 # - Un vehículo cualquiera dentro (el del jugador, uno suelto): rojo, pero solo avisa.
+# - Vía doble (tarea 61e.3): rojo si hay algo en el primer bloque de la vía de su sentido, sin
+#   cerrar (el tren del jugador frena en el cartel); los bloques que siguen tienen su cartel.
 func _signal_state(network: RailNetwork, segment_id: StringName, station: StringName) -> Array:
 	var double: bool = network.is_double(segment_id)
-	var way: TrackSegment = network.track_leaving(segment_id, station) if double else null
-	if _auto_inside(network, segment_id, way):
+	if not double and _auto_inside(segment_id):
 		return [false, true]
 	for track: TrackSegment in network.get_tracks(segment_id):
 		for end_station: StringName in [track.from_station, track.to_station]:
 			if _parked_run_at(end_station, segment_id, null) != null:
 				return [false, true]
-	var holder: AutoTrainRun = get_run(get_token_holder(segment_id)) if not double else null
+	if double:
+		# Vía doble (tarea 61e.3): la salida mira el primer bloque de la vía de su sentido; los que
+		# siguen tienen su cartel, así que el tren del jugador puede ir atrás de un automático.
+		var way: TrackSegment = network.track_leaving(segment_id, station)
+		return [way != null and not _block_busy(network, way, 0), false]
+	var holder: AutoTrainRun = get_run(get_token_holder(segment_id))
 	if holder != null:
 		return [_entry_of(network, holder, segment_id) == station and not _has_foreign_vehicle(network, segment_id, holder), true]
-	if _has_foreign_vehicle(network, segment_id, null, way):
+	if _has_foreign_vehicle(network, segment_id, null):
 		return [false, false]
 	return [true, false]
 
@@ -1157,9 +1233,9 @@ func _entry_of(network: RailNetwork, run: AutoTrainRun, segment_id: StringName) 
 	return &""
 
 
-# Si algún automático en viaje ocupa el tramo (o, con `way`, esa vía de la vía doble): de verdad,
-# con un vehículo en la curva, o lejos, por su posición en el viaje.
-func _auto_inside(network: RailNetwork, segment_id: StringName, way: TrackSegment) -> bool:
+# Si algún automático en viaje ocupa el tramo: de verdad, con un vehículo en la curva, o lejos,
+# por su posición en el viaje.
+func _auto_inside(segment_id: StringName) -> bool:
 	for run: AutoTrainRun in _runs:
 		if not run.is_moving():
 			continue
@@ -1168,12 +1244,208 @@ func _auto_inside(network: RailNetwork, segment_id: StringName, way: TrackSegmen
 		for index: int in run.leg.size():
 			if run.leg[index] != segment_id:
 				continue
-			if way != null and network.track_leaving(segment_id, run.segment_entry(index, network.other_end)) != way:
-				continue
 			var start: float = run.segment_start(index)
 			if high > start and low < start + run.leg_lengths[index]:
 				return true
 	return false
+
+
+# --- Bloques de la vía doble (tarea 61e.3) ---
+
+## Dónde empieza cada bloque de una vía de vía doble de largo `length` (avances de su curva): el
+## primero en el cartel de salida (SIGNAL_OFFSET) y los otros parejos, cada `block` más o menos,
+## sin contar la salida y la llegada. El último llega hasta el final de la vía.
+static func block_starts(length: float, block: float) -> PackedFloat64Array:
+	var starts := PackedFloat64Array([SIGNAL_OFFSET])
+	var usable: float = length - SIGNAL_OFFSET * 2.0
+	if usable <= 0.0 or block <= 0.0:
+		return starts
+	var count: int = maxi(1, roundi(usable / block))
+	for index: int in range(1, count):
+		starts.append(SIGNAL_OFFSET + usable * float(index) / float(count))
+	return starts
+
+
+## El cartel de bloque `index` (1 es el primero después de la salida) de la vía que sale de
+## `station_id` en el tramo, o null.
+func get_block_signal(segment_id: StringName, station_id: StringName, index: int) -> RailSignal:
+	var found: Variant = _block_signals.get("%s|%s|%d" % [segment_id, station_id, index])
+	return found if is_instance_valid(found) else null
+
+
+static func _block_key(way: TrackSegment, index: int) -> String:
+	return "%s|%s|%d" % [way.segment_id, way.from_station, index]
+
+
+# Los carteles de bloque de las dos vías de un tramo doble, al principio de cada bloque menos el
+# primero (ese lo marca el cartel de salida).
+func _ensure_block_signals(network: RailNetwork, segment_id: StringName) -> void:
+	for way: TrackSegment in network.get_tracks(segment_id):
+		var path: Path3D = way.get_track_path()
+		if path == null or path.curve == null or not path.is_inside_tree():
+			continue
+		var starts: PackedFloat64Array = block_starts(path.curve.get_baked_length(), block_length)
+		for index: int in range(1, starts.size()):
+			var key: String = _block_key(way, index)
+			if _block_signals.has(key) and is_instance_valid(_block_signals[key]):
+				continue
+			_block_signals[key] = _make_block_signal(network, way, index, starts[index])
+
+
+func _make_block_signal(network: RailNetwork, way: TrackSegment, index: int, at: float) -> RailSignal:
+	var path: Path3D = way.get_track_path()
+	var length: float = path.curve.get_baked_length()
+	var point: Vector3 = path.global_transform * path.curve.sample_baked(at)
+	var ahead: Vector3 = path.global_transform * path.curve.sample_baked(minf(at + 1.0, length))
+	var behind_point: Vector3 = path.global_transform * path.curve.sample_baked(maxf(at - 1.0, 0.0))
+	var tangent: Vector3 = (ahead - behind_point).normalized()
+	# A la derecha del tren que lo lee; si la otra vía queda de ese lado, en el medio de las dos.
+	var side: Vector3 = tangent.cross(Vector3.UP).normalized()
+	var gap: float = SIGNAL_SIDE
+	for other: TrackSegment in network.get_tracks(way.segment_id):
+		var other_path: Path3D = other.get_track_path()
+		if other == way or other_path == null or other_path.curve == null:
+			continue
+		var near: Vector3 = other_path.global_transform * other_path.curve.get_closest_point(other_path.global_transform.affine_inverse() * point)
+		var across: float = (near - point).dot(side)
+		if across > 0.0:
+			gap = minf(gap, across * 0.5)
+	var signal_node := RailSignal.new()
+	signal_node.name = "Bloque_%s_%s_%d" % [way.segment_id, way.from_station, index]
+	signal_node.kind = RailSignal.Kind.BLOCK
+	signal_node.segment_id = way.segment_id
+	signal_node.station_id = way.from_station
+	signal_node.block_index = index
+	signal_node.track_offset = at
+	add_child(signal_node)
+	signal_node.global_position = point + side * gap
+	# La cara de adelante la leen los que vienen por la vía en su sentido.
+	signal_node.face_towards(-tangent)
+	return signal_node
+
+
+# Si entre `low` y `high` (avances de su curva) de la vía `way` hay un vehículo o un automático
+# lejos del jugador. Sin contar el tren de `except`.
+func _way_busy(network: RailNetwork, way: TrackSegment, low: float, high: float, except: AutoTrainRun = null) -> bool:
+	var own: Array[Vehicle] = []
+	if except != null:
+		own = get_train(except)
+	var path: Path3D = way.get_track_path()
+	if path != null:
+		for child: Node in path.get_children():
+			var vehicle := child as Vehicle
+			if vehicle == null or vehicle.data == null or vehicle.is_queued_for_deletion() or own.has(vehicle):
+				continue
+			var half: float = vehicle.data.length * 0.5
+			if vehicle.progress + half > low and vehicle.progress - half < high:
+				return true
+	var length: float = way.get_length()
+	for run: AutoTrainRun in _runs:
+		if run == except or not run.is_moving() or is_spawned(run):
+			continue
+		for index: int in run.leg.size():
+			if run.leg[index] != way.segment_id or network.track_leaving(way.segment_id, run.segment_entry(index, network.other_end)) != way:
+				continue
+			var scale: float = run.leg_lengths[index] / length if length > 0.0 else 1.0
+			var start: float = run.segment_start(index)
+			var tail: float = (run.position - run.trail_offset() - start) / scale
+			var head: float = (run.position + run.lead_offset() - start) / scale
+			if head > low and tail < high:
+				return true
+	return false
+
+
+# Si el bloque `index` de la vía está ocupado. Con `from_start`, el primero se cuenta desde el
+# principio de la vía y no desde el cartel de salida (para salir hace falta toda la punta libre).
+func _block_busy(network: RailNetwork, way: TrackSegment, index: int, except: AutoTrainRun = null, from_start: bool = false) -> bool:
+	var length: float = way.get_length()
+	var starts: PackedFloat64Array = block_starts(length, block_length)
+	if index < 0 or index >= starts.size():
+		return false
+	var low: float = 0.0 if from_start and index == 0 else starts[index]
+	var high: float = starts[index + 1] if index + 1 < starts.size() else length
+	return _way_busy(network, way, low, high, except)
+
+
+# El cartel del bloque `index` de la vía, sabiendo qué bloques están ocupados: rojo si el suyo;
+# amarillo si el que sigue (o, en el último, la entrada a la estación de llegada); si no, verde.
+func _block_aspect(network: RailNetwork, way: TrackSegment, busy: Array[bool], index: int) -> RailSignal.Aspect:
+	if busy[index]:
+		return RailSignal.Aspect.RED
+	var next_red: bool = busy[index + 1] if index + 1 < busy.size() \
+			else _entry_aspect(network, way.segment_id, way.to_station) == RailSignal.Aspect.RED
+	return RailSignal.Aspect.YELLOW if next_red else RailSignal.Aspect.GREEN
+
+
+func _busy_blocks(network: RailNetwork, way: TrackSegment) -> Array[bool]:
+	var busy: Array[bool] = []
+	for index: int in block_starts(way.get_length(), block_length).size():
+		busy.append(_block_busy(network, way, index))
+	return busy
+
+
+# La salida a la línea que deja pasar: amarillo si el próximo cartel está en rojo (en la vía doble,
+# el del segundo bloque o la entrada de la otra punta; en la simple, la entrada de la otra punta).
+func _clear_aspect(network: RailNetwork, segment_id: StringName, station: StringName) -> RailSignal.Aspect:
+	if network.is_double(segment_id):
+		var way: TrackSegment = network.track_leaving(segment_id, station)
+		if way == null:
+			return RailSignal.Aspect.GREEN
+		var busy: Array[bool] = _busy_blocks(network, way)
+		busy[0] = false
+		return _block_aspect(network, way, busy, 0)
+	var far_red: bool = _entry_aspect(network, segment_id, network.other_end(segment_id, station)) == RailSignal.Aspect.RED
+	return RailSignal.Aspect.YELLOW if far_red else RailSignal.Aspect.GREEN
+
+
+# Prende los carteles de bloque de una vía y anota en la red dónde frenan los trenes: la salida a la
+# línea si su bloque está ocupado y cada cartel de bloque en rojo.
+func _update_way(network: RailNetwork, way: TrackSegment) -> void:
+	var path: Path3D = way.get_track_path()
+	if path == null or path.curve == null:
+		return
+	var starts: PackedFloat64Array = block_starts(path.curve.get_baked_length(), block_length)
+	var busy: Array[bool] = _busy_blocks(network, way)
+	var stops := PackedFloat64Array()
+	# En la salida, solo si el rojo es por el primer bloque (si es por un automático parado en una
+	# estación sin vías propias, el tren del jugador ya no entra: RailNetwork.set_entry_closed).
+	if get_signal(way.segment_id, way.from_station) != null and busy[0]:
+		stops.append(SIGNAL_OFFSET)
+	for index: int in range(1, starts.size()):
+		var block_signal: RailSignal = get_block_signal(way.segment_id, way.from_station, index)
+		if block_signal == null:
+			continue
+		var aspect: RailSignal.Aspect = _block_aspect(network, way, busy, index)
+		block_signal.set_aspects(aspect, RailSignal.Aspect.RED)
+		if aspect == RailSignal.Aspect.RED:
+			stops.append(starts[index])
+	network.set_block_stops(path, true, stops)
+
+
+# Hasta dónde puede llegar el centro de la locomotora por los carteles de bloque en rojo de la vía
+# doble: SIGNAL_STOP_MARGIN antes del primero que tiene adelante; INF si no hay ninguno.
+func _block_limit(network: RailNetwork, run: AutoTrainRun) -> float:
+	var lead: float = run.lead_offset()
+	var front_tip: float = run.position + lead
+	for index: int in run.leg.size():
+		var piece: StringName = run.leg[index]
+		var start: float = run.segment_start(index)
+		if AutoTrainRun.is_station_piece(piece) or start + run.leg_lengths[index] < front_tip - 0.05 or not network.is_double(piece):
+			continue
+		var way: TrackSegment = network.track_leaving(piece, run.segment_entry(index, network.other_end))
+		var path: Path3D = way.get_track_path() if way != null else null
+		if path == null:
+			continue
+		var length: float = way.get_length()
+		var scale: float = run.leg_lengths[index] / length if length > 0.0 else 1.0
+		var first: float = INF
+		for stop: float in network.get_block_stops(path, true):
+			var at: float = start + stop * scale
+			if at >= front_tip - 0.05:
+				first = minf(first, at)
+		if first < INF:
+			return first - Vehicle.SIGNAL_STOP_MARGIN - lead
+	return INF
 
 
 # --- Lejos del jugador: solo un número ---
@@ -1203,7 +1475,7 @@ func _abstract_limit(run: AutoTrainRun) -> float:
 		var near_tip: float = at - vehicle.data.length * 0.5
 		if near_tip >= front_tip - 0.01:
 			limit = minf(limit, near_tip - Vehicle.COUPLING_GAP - lead)
-	return limit
+	return minf(limit, _block_limit(network, run))
 
 
 # Coordenada sobre el viaje del centro de un vehículo que está en una vía del viaje (la de su
@@ -1535,7 +1807,14 @@ func _drive(run: AutoTrainRun, delta: float) -> void:
 		_on_arrived(run)
 		return
 	var stopping: float = moving * moving / (2.0 * loco.data.braking) + 0.3
-	if left <= stopping:
+	var network: RailNetwork = _network()
+	# Un cartel de bloque en rojo adelante (tarea 61e.3): frena antes, como en la llegada.
+	var held: bool = network != null and _block_limit(network, run) - run.position <= stopping
+	if held:
+		run.waiting = SIGNAL_WAIT
+	elif run.waiting == SIGNAL_WAIT:
+		run.waiting = ""
+	if left <= stopping or held:
 		loco.throttle = 0.0
 		loco.brake = 1.0
 	else:

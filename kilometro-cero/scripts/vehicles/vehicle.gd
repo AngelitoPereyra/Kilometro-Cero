@@ -19,7 +19,8 @@ extends PathFollow3D
 ## vuelve a preguntar. Con el tren quieto y algo acoplado atrás, el Enganche (Coupler, F) lo suelta.
 ## Carteles en rojo (tarea 61e.2, D117): un tren que no es automático frena SIGNAL_STOP_MARGIN antes
 ## de la salida en rojo de una vía de estación (RailNetwork.get_exit_stop), para adelante y para
-## atrás, como frena en un tope.
+## atrás, como frena en un tope. Los carteles de bloque en rojo de la vía doble (tarea 61e.3,
+## RailNetwork.get_block_stops) frenan a cualquier tren, también a los automáticos.
 
 signal coupled(rear_vehicle: Vehicle)
 signal uncoupled(rear_vehicle: Vehicle)
@@ -350,8 +351,8 @@ func _advance(distance: float) -> void:
 				lowest = limit
 				blocker_behind = other
 
-	if network != null and not automatic:
-		var limits: Vector2 = _signal_limits(network, behind, ahead)
+	if network != null:
+		var limits: Vector2 = _signal_limits(network, behind, ahead, automatic)
 		highest = minf(highest, limits.y)
 		if limits.x > lowest:
 			lowest = limits.x
@@ -379,9 +380,10 @@ func _advance(distance: float) -> void:
 		_use_own_way_on_spares(network, _length_behind(train), ahead)
 
 
-# Hasta dónde puede ir la cabeza por los carteles en rojo (tarea 61e.2): x, lo más atrás; y, lo más
-# adelante. Solo cuentan los que están por delante de la punta del tren en ese sentido.
-func _signal_limits(network: RailNetwork, behind: float, ahead: float) -> Vector2:
+# Hasta dónde puede ir la cabeza por los carteles en rojo (tareas 61e.2 y 61e.3): x, lo más atrás;
+# y, lo más adelante. Solo cuentan los que están por delante de la punta del tren en ese sentido.
+# Con `only_blocks` (los automáticos), solo los de bloque.
+func _signal_limits(network: RailNetwork, behind: float, ahead: float, only_blocks: bool) -> Vector2:
 	var limits := Vector2(-INF, INF)
 	var front_at: float = _route.head + ahead
 	var tail_at: float = _route.head - behind
@@ -389,17 +391,26 @@ func _signal_limits(network: RailNetwork, behind: float, ahead: float) -> Vector
 		var path: Path3D = _route.get_path(index)
 		var dir: int = _route.get_dir(index)
 		# Para adelante sale por la punta hacia donde va el pedazo; para atrás, por la otra.
-		var forward_stop: float = network.get_exit_stop(path, dir > 0)
-		if forward_stop >= 0.0:
+		for forward_stop: float in _stops_toward(network, path, dir > 0, only_blocks):
 			var forward_at: float = _route.coordinate_of(path, forward_stop)
 			if forward_at >= front_at - 0.05:
 				limits.y = minf(limits.y, forward_at - SIGNAL_STOP_MARGIN - ahead)
-		var backward_stop: float = network.get_exit_stop(path, dir < 0)
-		if backward_stop >= 0.0:
+		for backward_stop: float in _stops_toward(network, path, dir < 0, only_blocks):
 			var backward_at: float = _route.coordinate_of(path, backward_stop)
 			if backward_at <= tail_at + 0.05:
 				limits.x = maxf(limits.x, backward_at + SIGNAL_STOP_MARGIN + behind)
 	return limits
+
+
+# Los carteles en rojo de `path` yendo hacia esa punta: los de bloque y, si no es `only_blocks`, la
+# salida de la vía de estación.
+static func _stops_toward(network: RailNetwork, path: Path3D, at_end: bool, only_blocks: bool) -> PackedFloat64Array:
+	var stops: PackedFloat64Array = network.get_block_stops(path, at_end)
+	if not only_blocks:
+		var exit_stop: float = network.get_exit_stop(path, at_end)
+		if exit_stop >= 0.0:
+			stops.append(exit_stop)
+	return stops
 
 
 # Los pedazos de ruta que se guardan por si el tren vuelve (adelante o atrás de él) se olvidan

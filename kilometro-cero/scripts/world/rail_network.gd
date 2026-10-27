@@ -34,6 +34,8 @@ extends Node
 ## tren del jugador frena ahí (Vehicle). Palanca madre (MotherLever): junto a la aguja de cada
 ## cambio, elige a qué vía se entra por esa punta y reserva esa vía (reserve_track): queda bloqueada
 ## en sus dos puntas hasta que un tren termina de pasar el cambio para entrar.
+## Bloques de la vía doble (tarea 61e.3): AutoTrains anota los carteles de bloque en rojo de cada vía
+## (set_block_stops) y ahí frena cualquier tren, también los automáticos.
 
 ## Grupo del nodo RailNetwork, para que los vehículos lo encuentren sin apuntarlo (D42).
 const GROUP: StringName = &"rail_network"
@@ -79,6 +81,8 @@ var _choosing: bool = false
 var _closed_entries: Dictionary = {}
 # "curva:punta" de una vía de estación -> avance de la curva donde frena el tren del jugador.
 var _exit_stops: Dictionary = {}
+# "curva:punta" -> PackedFloat64Array: carteles de bloque en rojo de la vía doble (tarea 61e.3).
+var _block_stops: Dictionary = {}
 # "curva:punta" -> [Path3D, bool]: vías reservadas por una palanca madre para entrar por esa punta.
 var _reservations: Dictionary = {}
 # Las palancas madre (se rehacen con los cambios).
@@ -680,6 +684,25 @@ func get_exit_stop(path: Path3D, at_end: bool) -> float:
 	if _exit_stops.is_empty():
 		return -1.0
 	return float(_exit_stops.get(_end_key(path, at_end), -1.0))
+
+
+## Los carteles de bloque en rojo de una vía de vía doble (tarea 61e.3) que encuentra un tren que
+## va hacia esa punta de `path` (sus avances). Ahí frena cualquier tren, también los automáticos.
+## Vacío, la vía queda sin topes.
+func set_block_stops(path: Path3D, at_end: bool, stops: PackedFloat64Array) -> void:
+	var key: String = _end_key(path, at_end)
+	if stops.is_empty():
+		_block_stops.erase(key)
+	else:
+		_block_stops[key] = stops.duplicate()
+
+
+## Los avances de los carteles de bloque en rojo yendo hacia esa punta (una copia).
+func get_block_stops(path: Path3D, at_end: bool) -> PackedFloat64Array:
+	if _block_stops.is_empty() or not _block_stops.has(_end_key(path, at_end)):
+		return PackedFloat64Array()
+	var stops: PackedFloat64Array = _block_stops[_end_key(path, at_end)]
+	return stops.duplicate()
 
 
 ## Cierra (semáforo en rojo) o abre la entrada del tramo desde una estación. Al cerrarla, los

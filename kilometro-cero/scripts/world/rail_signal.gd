@@ -13,12 +13,18 @@ extends Node3D
 ## - De vía de estación (TRACK): en cada vía de la estación, pasando el cambio de cada punta (del
 ##   otro lado de la división). Adelante, la salida por esa punta: el cambio puesto para esta vía
 ##   y lo que sigue libre. Atrás, para el que entra: si esta vía está libre.
+## - De bloque (BLOCK, tarea 61e.3): en la vía doble larga, carteles intermedios cada
+##   AutoTrains.block_length más o menos, que parten cada vía en bloques. Adelante, para el que va
+##   en el sentido de la vía: rojo si hay algo en el bloque que sigue. Atrás, siempre rojo
+##   (contramano). En el rojo frena cualquier tren, también los automáticos.
+## Amarillo (tarea 61e.3): en los de línea y de bloque, "el próximo cartel está en rojo". Deja
+## pasar como el verde.
 ## Si el rojo de una salida de línea es por un automático, para el tren del jugador es un tramo
 ## cortado en ese sentido (no entra hasta que se ponga verde); si es por otro vehículo, solo
 ## avisa. En la salida en rojo de una vía de estación el tren del jugador frena (tarea 61e.2); al
 ## lado de ese cartel está la palanca de la vía (TrackLever) para pedir la salida.
 
-enum Kind { LINE, TRACK }
+enum Kind { LINE, TRACK, BLOCK }
 enum Aspect { RED, YELLOW, GREEN }
 
 const POST_HEIGHT: float = 3.0
@@ -27,14 +33,17 @@ const LAMP_RADIUS: float = 0.17
 const LAMP_DEPTH: float = 0.04
 
 var kind: Kind = Kind.LINE
-## Cartel de línea: el tramo y la estación de esa punta.
+## Cartel de línea: el tramo y la estación de esa punta. De bloque: el tramo y la estación de
+## donde sale su vía.
 var segment_id: StringName
 var station_id: StringName
+## Cartel de bloque: cuál es, contando desde la salida de la estación (el cartel de salida es el 0).
+var block_index: int = 0
 ## Cartel de vía de estación: la vía y la punta (true: el final de su curva).
 var station_track: StationTrack
 var at_end: bool = false
-## Cartel de vía de estación: el avance de su curva donde está (ahí frena el tren del jugador si la
-## salida está en rojo, tarea 61e.2).
+## Cartel de vía de estación o de bloque: el avance de su curva donde está (ahí frena el tren si
+## está en rojo, tareas 61e.2 y 61e.3).
 var track_offset: float = 0.0
 ## La cara de adelante.
 var front: Aspect = Aspect.GREEN
