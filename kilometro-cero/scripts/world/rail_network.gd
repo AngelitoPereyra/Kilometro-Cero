@@ -16,7 +16,7 @@ extends Node
 ## al grafo) sino las vías de una estación. Debajo del grafo la red arma la capa física: une las
 ## puntas de vía que se tocan (a menos de JOIN_DISTANCE y mirando para lados opuestos) cuando una
 ## de las dos es de estación, y donde una punta sigue por dos o más vías hay un cambio
-## (TrackSwitch) con su palanca (SwitchLever). Los vehículos preguntan por dónde seguir con
+## (TrackSwitch). Los vehículos preguntan por dónde seguir con
 ## next_piece. Donde no hay vías de estación (escenas viejas) sigue mandando next_track.
 ## Vía doble en una estación (tarea 61b.4): las dos vías del tramo se juntan en la punta de la
 ## estación (las dibuja así quien arma la escena). Ahí cada vía es la aguja de un cambio hacia las
@@ -24,6 +24,16 @@ extends Node
 ## Entradas cerradas (tarea 61b, D114): un semáforo en rojo cierra la entrada de un tramo desde
 ## una estación (set_entry_closed). Para el tren del jugador es como un tramo cortado en ese
 ## sentido: no entra. Los automáticos no lo miran (entran solo con su reserva, ver AutoTrains).
+## Paso por las vías de estación (tarea 61e.2, D117): cada punta de estación se maneja sola. La
+## palanca de cada vía que no es la principal (TrackLever) pide el paso con request_route, para salir
+## o para entrar por esa punta: pone los cambios de esa punta para la vía y los traba hasta que un
+## tren los termina de pasar; ahí vuelven a la principal (su posición normal). La principal no tiene
+## palanca: un tren sale de ella talonando el cambio si ninguna otra vía lo trabó. Sin pedirlo, el
+## tren del jugador no talona un cambio puesto para otra vía (salvo StationTrack.trails_freely).
+## Mientras el cartel de una salida está en rojo, AutoTrains anota dónde está (set_exit_stop) y el
+## tren del jugador frena ahí (Vehicle). Palanca madre (MotherLever): junto a la aguja de cada
+## cambio, elige a qué vía se entra por esa punta y reserva esa vía (reserve_track): queda bloqueada
+## en sus dos puntas hasta que un tren termina de pasar el cambio para entrar.
 
 ## Grupo del nodo RailNetwork, para que los vehículos lo encuentren sin apuntarlo (D42).
 const GROUP: StringName = &"rail_network"
@@ -31,14 +41,15 @@ const GROUP: StringName = &"rail_network"
 const JOIN_DISTANCE: float = 1.0
 ## Coseno mínimo entre una punta y la opuesta de la otra vía: tienen que seguir derecho.
 const JOIN_ALIGNMENT: float = 0.9
-## Dónde va la palanca de un cambio: metros hacia atrás de la aguja y al costado de la vía.
+## Dónde va la palanca madre de un cambio: metros hacia atrás de la aguja y al costado de la vía.
 const LEVER_BACK: float = 3.0
 const LEVER_SIDE: float = 3.0
 
 ## Se movió un cambio (con la palanca o un automático).
 signal switch_changed(track_switch: TrackSwitch)
 
-## Si la red pone una palanca junto a cada cambio (las pruebas sin jugador pueden apagarlas).
+## Si hay palancas: la madre de cada cambio (MotherLever, la pone la red) y las de vía (TrackLever,
+## las pone AutoTrains junto a cada cartel de vía). Las pruebas sin jugador pueden apagarlas.
 @export var levers_enabled: bool = true
 
 # segment_id -> Array[TrackSegment] (una vía, o dos si es doble).
@@ -66,6 +77,12 @@ var _next_switch_id: int = 1
 var _choosing: bool = false
 # "tramo|estación" -> true: entradas cerradas por un semáforo en rojo.
 var _closed_entries: Dictionary = {}
+# "curva:punta" de una vía de estación -> avance de la curva donde frena el tren del jugador.
+var _exit_stops: Dictionary = {}
+# "curva:punta" -> [Path3D, bool]: vías reservadas por una palanca madre para entrar por esa punta.
+var _reservations: Dictionary = {}
+# Las palancas madre (se rehacen con los cambios).
+var _mother_levers: Array[Node] = []
 
 
 func _enter_tree() -> void:
@@ -75,6 +92,38 @@ func _enter_tree() -> void:
 func _ready() -> void:
 	# Diferido: las vías que están después en la escena todavía pueden no estar listas.
 	rebuild.call_deferred()
+
+
+func _physics_process(_delta: float) -> void:
+	update_locks()
+
+
+## Suelta los pasos pedidos cuyo tren ya terminó de pasar el cambio (TrackSwitch.update_lock) y
+## vuelve esos cambios a la principal. Va en cada cuadro de física; las pruebas que mueven trenes sin
+## esperar cuadros lo llaman a mano.
+func update_locks() -> void:
+	var released: Array = []
+	for track_switch: TrackSwitch in _switches:
+		if track_switch.locked_path == null:
+			continue
+		if not track_switch.is_locked():
+			# La vía que lo había pedido ya no existe.
+			track_switch.unlock()
+			continue
+		var path: Path3D = track_switch.locked_path
+		var at_end: bool = track_switch.locked_at_end
+		track_switch.update_lock()
+		if not track_switch.is_locked():
+			released.append([path, at_end, track_switch])
+	for item: Array in released:
+		# Pasó el tren: se sueltan los otros cambios de ese paso (vía doble) y vuelven a la principal.
+		_release_route(item[0], item[1])
+		_to_normal(item[2])
+	# Una reserva cuyo cambio se soltó por otro lado (un automático lo movió) se pierde.
+	for key: String in _reservations.keys():
+		var reserved: Array = _reservations[key]
+		if not is_instance_valid(reserved[0]) or not is_route_requested(reserved[0], reserved[1]):
+			_reservations.erase(key)
 
 
 ## El RailNetwork de la escena, o null si no hay.
@@ -114,10 +163,8 @@ func clear() -> void:
 	_station_tracks.clear()
 	_links.clear()
 	_switch_at.clear()
-	for track_switch: TrackSwitch in _switches:
-		if is_instance_valid(track_switch.lever):
-			track_switch.lever.queue_free()
 	_switches.clear()
+	_free_mother_levers()
 
 
 ## Suma una vía al grafo. Sin `segment_id` o sin sus dos estaciones queda afuera.
@@ -500,9 +547,11 @@ func next_piece(path: Path3D, at_end: bool, vehicle: Vehicle = null, prefer: Arr
 			chosen = options[_choose(_switch_at[key], vehicle, prefer)]
 		elif options.size() > 1:
 			chosen = _way_for(options, prefer)
-			_trail(path, at_end, chosen)
+			if not _trail(path, at_end, chosen, vehicle):
+				return []
 		elif options.size() == 1:
-			_trail(path, at_end, chosen)
+			if not _trail(path, at_end, chosen, vehicle):
+				return []
 		var next: TrackSegment = track_of(chosen[0])
 		if next != null and next.is_cut():
 			return []
@@ -519,6 +568,118 @@ func next_piece(path: Path3D, at_end: bool, vehicle: Vehicle = null, prefer: Arr
 	if following == null or following.get_track_path() == null or not may_enter(vehicle, following, station):
 		return []
 	return [following.get_track_path(), following.from_station != station]
+
+
+## Los cambios por donde pasa el paso de la vía `path` en esa punta (de talón al salir, de punta al
+## entrar): uno, o en la vía doble el de cada vía del tramo.
+func route_switches(path: Path3D, at_end: bool) -> Array[TrackSwitch]:
+	var list: Array[TrackSwitch] = []
+	for link: Array in get_links(path, at_end):
+		var track_switch: TrackSwitch = find_switch(link[0], link[1])
+		if track_switch != null and track_switch.option_index(path) >= 0 and not list.has(track_switch):
+			list.append(track_switch)
+	return list
+
+
+## Pide el paso por la vía `path` en su final (`at_end`) o su principio, como la palanca de esa vía
+## (D117): sirve para salir por ahí y para que entre por ahí un tren que llega. Pone los cambios de
+## esa punta para la vía y los traba hasta que un tren los termina de pasar. Devuelve "" si quedó
+## pedido o por qué no.
+func request_route(path: Path3D, at_end: bool) -> String:
+	var switches: Array[TrackSwitch] = route_switches(path, at_end)
+	if switches.is_empty():
+		return "Esta vía no tiene cambio en esta punta"
+	if is_route_requested(path, at_end):
+		return ""
+	if is_reserved(path, not at_end):
+		return "Vía reservada desde la otra punta"
+	for track_switch: TrackSwitch in switches:
+		if track_switch.is_locked() and not _locked_for(track_switch, path, at_end):
+			return "Trabado: paso pedido desde la %s" % track_switch.option_label(track_switch.option_index(track_switch.locked_path))
+		if track_switch.is_fouled():
+			return "Hay un vehículo encima del cambio"
+	for track_switch: TrackSwitch in switches:
+		track_switch.set_state(track_switch.option_index(path))
+		track_switch.lock_for(path, at_end)
+	return ""
+
+
+## Suelta el paso pedido desde esa vía (si lo había) y los cambios vuelven a la principal.
+func cancel_route(path: Path3D, at_end: bool) -> void:
+	_release_route(path, at_end)
+
+
+## Reserva la vía `path` para entrar por esa punta, como la palanca madre (D117): pide el paso
+## (request_route) y además la vía queda bloqueada en sus dos puntas hasta que un tren termina de
+## pasar el cambio. Devuelve "" si quedó reservada o por qué no.
+func reserve_track(path: Path3D, at_end: bool) -> String:
+	if is_route_requested(path, not at_end):
+		return "La vía tiene paso pedido en la otra punta"
+	var problem: String = request_route(path, at_end)
+	if problem == "":
+		_reservations[_end_key(path, at_end)] = [path, at_end]
+	return problem
+
+
+## Si la vía está reservada por una palanca madre para entrar por esa punta.
+func is_reserved(path: Path3D, at_end: bool) -> bool:
+	return _reservations.has(_end_key(path, at_end))
+
+
+## Si la vía está reservada por una palanca madre en alguna de sus puntas (bloqueada en las dos).
+func is_track_reserved(path: Path3D) -> bool:
+	return is_reserved(path, false) or is_reserved(path, true)
+
+
+func is_route_requested(path: Path3D, at_end: bool) -> bool:
+	var switches: Array[TrackSwitch] = route_switches(path, at_end)
+	if switches.is_empty():
+		return false
+	for track_switch: TrackSwitch in switches:
+		if not _locked_for(track_switch, path, at_end):
+			return false
+	return true
+
+
+# Si el cambio está trabado por el paso de esa vía en esa punta.
+static func _locked_for(track_switch: TrackSwitch, path: Path3D, at_end: bool) -> bool:
+	return track_switch.is_locked() and track_switch.locked_path == path and track_switch.locked_at_end == at_end
+
+
+# Suelta los cambios trabados por el paso de esa vía y los vuelve a la principal (su posición normal).
+func _release_route(path: Path3D, at_end: bool) -> void:
+	_reservations.erase(_end_key(path, at_end))
+	for track_switch: TrackSwitch in route_switches(path, at_end):
+		if _locked_for(track_switch, path, at_end):
+			track_switch.unlock()
+			_to_normal(track_switch)
+
+
+# Vuelve el cambio a la principal (o a la línea) si está suelto y libre.
+func _to_normal(track_switch: TrackSwitch) -> void:
+	if track_switch.is_locked() or track_switch.is_main_option(track_switch.state):
+		return
+	for index: int in track_switch.option_count():
+		if track_switch.is_main_option(index):
+			track_switch.set_state(index)
+			return
+
+
+## Dónde frena el tren del jugador antes de salir de `path` por esa punta (el avance del cartel en
+## rojo); `stop` negativo la abre.
+func set_exit_stop(path: Path3D, at_end: bool, stop: float) -> void:
+	var key: String = _end_key(path, at_end)
+	if stop < 0.0:
+		_exit_stops.erase(key)
+	else:
+		_exit_stops[key] = stop
+
+
+## El avance donde frena el tren del jugador antes de salir por esa punta, o -1 si está abierta.
+func get_exit_stop(path: Path3D, at_end: bool) -> float:
+	if _exit_stops.is_empty():
+		return -1.0
+	return float(_exit_stops.get(_end_key(path, at_end), -1.0))
 
 
 ## Cierra (semáforo en rojo) o abre la entrada del tramo desde una estación. Al cerrarla, los
@@ -582,10 +743,9 @@ func _on_track_state_changed(value: TrackSegment.State, track: TrackSegment) -> 
 func _build_links() -> void:
 	_links.clear()
 	_switch_at.clear()
-	for track_switch: TrackSwitch in _switches:
-		if is_instance_valid(track_switch.lever):
-			track_switch.lever.queue_free()
 	_switches.clear()
+	_free_mother_levers()
+	_reservations.clear()
 	var ends: Array = []
 	var tracks: Array[TrackSegment] = []
 	for segment_id: StringName in _tracks:
@@ -616,6 +776,8 @@ func _build_links() -> void:
 		var key: String = _end_key(info.path, info.at_end)
 		if _links.has(key) and (_links[key] as Array).size() > 1 and not _is_way_choice(_links[key]):
 			_make_switch(info)
+	if levers_enabled and is_inside_tree():
+		_make_mother_levers()
 
 
 func _add_link(from: Dictionary, to: Dictionary) -> void:
@@ -665,13 +827,35 @@ func _make_switch(toe: Dictionary) -> void:
 	track_switch.state_changed.connect(_on_switch_state_changed.bind(track_switch, key))
 	_switches.append(track_switch)
 	_switch_at[key] = track_switch
-	if levers_enabled and is_inside_tree():
-		var lever := SwitchLever.new()
-		lever.name = "Palanca%d" % track_switch.id
+
+
+# Una palanca madre junto a la aguja de cada cambio. En la vía doble los dos cambios de una punta
+# llevan a las mismas vías: una sola palanca (pide el paso en los dos).
+func _make_mother_levers() -> void:
+	var done: Array = []
+	for track_switch: TrackSwitch in _switches:
+		var targets: Array = []
+		for index: int in track_switch.option_count():
+			# La vía y su punta: las dos puntas de una estación llevan a las mismas vías.
+			targets.append("%d:%s" % [track_switch.get_option_path(index).get_instance_id(), track_switch.options[index][1]])
+		targets.sort()
+		if done.has(targets):
+			continue
+		done.append(targets)
+		var lever := MotherLever.new()
+		lever.name = "PalancaMadre%d" % track_switch.id
+		lever.network = self
+		lever.track_switch = track_switch
 		add_child(lever)
 		lever.global_position = _lever_position(track_switch)
-		lever.track_switch = track_switch
-		track_switch.lever = lever
+		_mother_levers.append(lever)
+
+
+func _free_mother_levers() -> void:
+	for lever: Node in _mother_levers:
+		if is_instance_valid(lever):
+			lever.queue_free()
+	_mother_levers.clear()
 
 
 # Al costado de la vía, unos metros antes de la aguja y del lado contrario a donde se abren las vías.
@@ -708,18 +892,29 @@ func _choose(track_switch: TrackSwitch, vehicle: Vehicle, prefer: Array) -> int:
 	return track_switch.state
 
 
-# Un tren que pasa un cambio de talón (desde una de sus vías hacia la aguja) lo deja puesto hacia
-# la vía de donde viene, como pasa al talonar una aguja: así, si vuelve, vuelve por la misma.
-func _trail(path: Path3D, at_end: bool, toe: Array) -> void:
+# Un tren que pasa un cambio de talón (desde una de sus vías hacia la aguja). Si el cambio está
+# puesto para otra vía, el tren del jugador no pasa (D117: hay que pedir la salida), salvo desde una
+# vía que sale talonando (StationTrack.trails_freely); los automáticos y esas vías lo dejan puesto
+# hacia la vía de donde vienen, como al talonar una aguja de resorte. Devuelve si puede pasar.
+func _trail(path: Path3D, at_end: bool, toe: Array, vehicle: Vehicle) -> bool:
 	var track_switch: TrackSwitch = _switch_at.get(_end_key(toe[0], toe[1])) as TrackSwitch
 	if track_switch == null:
-		return
+		return true
 	for index: int in track_switch.option_count():
 		if track_switch.get_option_path(index) == path and bool(track_switch.options[index][1]) == at_end:
+			if index == track_switch.state:
+				return true
+			var station_track := track_of(path) as StationTrack
+			# La principal sale sola si ninguna otra vía pidió el paso (D117: la principal manda).
+			var free: bool = station_track != null and (station_track.trails_freely() \
+					or (station_track.is_main() and not track_switch.is_locked()))
+			if vehicle != null and not vehicle.get_head().automatic and not free:
+				return false
 			_choosing = true
 			track_switch.set_state(index, true)
 			_choosing = false
-			return
+			return true
+	return true
 
 
 func _on_switch_state_changed(state: int, track_switch: TrackSwitch, key: String) -> void:

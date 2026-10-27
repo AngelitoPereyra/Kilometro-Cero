@@ -17,6 +17,9 @@ extends PathFollow3D
 ## ruta sigue por donde marca cada cambio (RailNetwork.next_piece); un tren con switch_chooser
 ## (los automáticos) elige él. Al moverse un cambio, el tren olvida lo que todavía no pisó y
 ## vuelve a preguntar. Con el tren quieto y algo acoplado atrás, el Enganche (Coupler, F) lo suelta.
+## Carteles en rojo (tarea 61e.2, D117): un tren que no es automático frena SIGNAL_STOP_MARGIN antes
+## de la salida en rojo de una vía de estación (RailNetwork.get_exit_stop), para adelante y para
+## atrás, como frena en un tope.
 
 signal coupled(rear_vehicle: Vehicle)
 signal uncoupled(rear_vehicle: Vehicle)
@@ -32,6 +35,8 @@ const GANGWAY_NODE: StringName = &"Pasarela"
 ## Cuánto antes de llegar al final de su curva el tren ya mira el tramo que sigue (y lo que hay
 ## en él), para frenar a tiempo ante un vehículo parado del otro lado de la estación.
 const LOOKAHEAD: float = 30.0
+## Cuántos metros antes de un cartel en rojo queda la punta del tren (tarea 61e.2).
+const SIGNAL_STOP_MARGIN: float = 1.0
 ## Las partes del modelo que gira model_yaw: lo que se ve, lo que choca y el faro.
 const MODEL_PARTS: Array[NodePath] = [^"Visual", ^"CuerpoFisico", ^"Faro", ^"FaroLampara"]
 
@@ -345,6 +350,13 @@ func _advance(distance: float) -> void:
 				lowest = limit
 				blocker_behind = other
 
+	if network != null and not automatic:
+		var limits: Vector2 = _signal_limits(network, behind, ahead)
+		highest = minf(highest, limits.y)
+		if limits.x > lowest:
+			lowest = limits.x
+			blocker_behind = null
+
 	var current: float = _route.head
 	var target: float = current + distance
 	if distance < 0.0 and target <= lowest:
@@ -365,6 +377,29 @@ func _advance(distance: float) -> void:
 	_drop_cut_spares(tail_at, _route.head + ahead)
 	if network != null:
 		_use_own_way_on_spares(network, _length_behind(train), ahead)
+
+
+# Hasta dónde puede ir la cabeza por los carteles en rojo (tarea 61e.2): x, lo más atrás; y, lo más
+# adelante. Solo cuentan los que están por delante de la punta del tren en ese sentido.
+func _signal_limits(network: RailNetwork, behind: float, ahead: float) -> Vector2:
+	var limits := Vector2(-INF, INF)
+	var front_at: float = _route.head + ahead
+	var tail_at: float = _route.head - behind
+	for index: int in _route.get_piece_count():
+		var path: Path3D = _route.get_path(index)
+		var dir: int = _route.get_dir(index)
+		# Para adelante sale por la punta hacia donde va el pedazo; para atrás, por la otra.
+		var forward_stop: float = network.get_exit_stop(path, dir > 0)
+		if forward_stop >= 0.0:
+			var forward_at: float = _route.coordinate_of(path, forward_stop)
+			if forward_at >= front_at - 0.05:
+				limits.y = minf(limits.y, forward_at - SIGNAL_STOP_MARGIN - ahead)
+		var backward_stop: float = network.get_exit_stop(path, dir < 0)
+		if backward_stop >= 0.0:
+			var backward_at: float = _route.coordinate_of(path, backward_stop)
+			if backward_at <= tail_at + 0.05:
+				limits.x = maxf(limits.x, backward_at + SIGNAL_STOP_MARGIN + behind)
+	return limits
 
 
 # Los pedazos de ruta que se guardan por si el tren vuelve (adelante o atrás de él) se olvidan

@@ -18,6 +18,11 @@ signal enabled_changed(enabled: bool)
 @export var display_name: String = ""
 ## La estación. Vacío: la del Station que la contiene.
 @export var station_id: StringName
+## Cambio de resorte a la salida (tarea 61e.2, D117): el tren del jugador sale sin pedir la salida
+## con la palanca de la vía y talona el cambio aunque esté puesto para otra (un desvío de carga
+## especial, por ejemplo). Apagado, como en una estación con enclavamiento. Las colas de maniobras
+## salen siempre así (no tienen cartel ni palanca).
+@export var spring_exit: bool = false
 @export var enabled: bool = true:
 	set(value):
 		if value == enabled:
@@ -47,6 +52,11 @@ func get_station_id() -> StringName:
 
 func is_main() -> bool:
 	return role == Role.MAIN
+
+
+## Si un tren sale de esta vía talonando el cambio sin pedir la salida (spring_exit, o la cola).
+func trails_freely() -> bool:
+	return spring_exit or role == Role.HEADSHUNT
 
 
 ## Texto para los carteles: "vía principal", "vía de cruce 2", "vía de carga".

@@ -19,6 +19,16 @@ extends Node
 ## llegada, espera en su estación. Carteles de señal (RailSignal, D117): en cada punta de cada
 ## tramo hay un cartel de línea (salida a la línea y entrada a la estación) y en cada vía de
 ## estación, pasando el cambio, uno con su salida y su entrada; todos los prende este nodo.
+## Paso por las vías de estación (tarea 61e.2, D117): cada punta de la estación se maneja sola.
+## Junto al cartel de cada vía que no es la principal hay una palanca (TrackLever) para pedir el paso
+## (entrar o salir por esa punta); sin pedirlo (o sin StationTrack.spring_exit) su salida queda en
+## rojo para el tren del jugador, que frena en el cartel (RailNetwork.set_exit_stop). La principal
+## no pide: sale en verde si ninguna otra vía trabó el cambio y lo que sigue está libre. La palanca
+## madre de cada cambio (RailNetwork) reserva una vía para entrar: queda bloqueada en sus dos puntas
+## (entradas en rojo) y ningún automático la elige. La
+## principal manda: mientras por ella va un tren hacia esa punta (o un automático va a salir por
+## ahí), las otras vías no salen a la línea por esa punta. La maniobra de vuelta reserva el tramo
+## al que se asoma recién cuando va a salir a él.
 ## La salida de un tramo está en rojo mientras está ocupado; un tramo reservado además cierra su
 ## entrada para el tren del jugador (RailNetwork.set_entry_closed): es como si estuviera
 ## cortado hasta que el automático lo deja. En la vía doble no hace falta reservar: cada uno va
@@ -74,6 +84,10 @@ const TRACK_FOULING_LATERAL: float = 3.5
 const TRACK_SIGNAL_MARGIN: float = 12.0
 const TRACK_SIGNAL_DEFAULT: float = 15.0
 const TRACK_SIGNAL_SIDE: float = 2.5
+## Cuántos metros hacia el cambio, desde el cartel de vía, va su palanca (tarea 61e.2).
+const TRACK_LEVER_AHEAD: float = 2.0
+## Por encima de esta velocidad (m/s) un tren en la principal la ocupa (tarea 61e.2).
+const MAIN_BUSY_SPEED: float = 0.1
 ## Horas antes de su salida que un tren reserva su viaje (15 minutos, D114).
 const RESERVE_AHEAD_HOURS: float = 0.25
 ## Lejos del jugador, cuánto tarda en dar la vuelta (horas de juego).
@@ -573,10 +587,12 @@ func _pick_track(run: AutoTrainRun, options: Array, strict: bool) -> Array:
 			if (option[0] as StationTrack).role == role:
 				ordered.append(option)
 	var own: Array[Vehicle] = get_train(run)
+	var network: RailNetwork = _network()
 	for option: Array in ordered:
 		var station_track: StationTrack = option[0]
 		var holder: int = get_token_holder(_section_of(station_track))
-		if (holder == 0 or holder == run.id) and not _path_has_foreign(station_track.get_track_path(), own):
+		var reserved: bool = network != null and network.is_track_reserved(station_track.get_track_path())
+		if (holder == 0 or holder == run.id) and not reserved and not _path_has_foreign(station_track.get_track_path(), own):
 			return option
 	if strict or ordered.is_empty():
 		return []
@@ -597,7 +613,7 @@ func _check_sections(network: RailNetwork, run: AutoTrainRun, pieces: Array[Stri
 			if holder != 0 and holder != run.id:
 				return "esperando vía libre en %s" % _station_name(AutoTrainRun.piece_station(piece))
 			var path: Path3D = _station_track_path(network, piece)
-			if path != null and _path_has_foreign(path, own):
+			if path != null and (_path_has_foreign(path, own) or network.is_track_reserved(path)):
 				return "vía ocupada"
 			continue
 		var double: bool = network.is_double(piece)
@@ -821,8 +837,11 @@ func _ensure_track_signals(network: RailNetwork) -> void:
 	for key: String in _track_signals.keys():
 		if wanted.has(key):
 			continue
-		if is_instance_valid(_track_signals[key]):
-			(_track_signals[key] as Node).queue_free()
+		var old_signal: RailSignal = _track_signals[key] if is_instance_valid(_track_signals[key]) else null
+		if old_signal != null:
+			if is_instance_valid(old_signal.station_track) and old_signal.station_track.get_track_path() != null:
+				network.set_exit_stop(old_signal.station_track.get_track_path(), old_signal.at_end, -1.0)
+			old_signal.queue_free()
 		_track_signals.erase(key)
 
 
@@ -852,10 +871,21 @@ func _make_track_signal(network: RailNetwork, station_track: StationTrack, at_en
 	signal_node.station_track = station_track
 	signal_node.at_end = at_end
 	signal_node.station_id = station_track.get_station_id()
+	signal_node.track_offset = at
 	add_child(signal_node)
 	signal_node.global_position = point + side * TRACK_SIGNAL_SIDE
 	# La cara de adelante la lee el tren de esta vía que va hacia la punta.
 	signal_node.face_towards(-toward_end)
+	if network.levers_enabled and not station_track.is_main():
+		var lever := TrackLever.new()
+		lever.name = "Palanca"
+		lever.network = network
+		lever.station_track = station_track
+		lever.at_end = at_end
+		lever.signal_node = signal_node
+		signal_node.add_child(lever)
+		# El cartel mira hacia adentro de la estación (+Z): el cambio queda hacia -Z.
+		lever.position = Vector3(0.0, 0.0, -TRACK_LEVER_AHEAD)
 	return signal_node
 
 
@@ -931,6 +961,9 @@ func _update_signals() -> void:
 		if track_signal == null or not is_instance_valid(track_signal.station_track):
 			continue
 		track_signal.set_aspects(_track_exit_aspect(network, track_signal.station_track, track_signal.at_end), _track_entry_aspect(track_signal.station_track))
+		var track_path: Path3D = track_signal.station_track.get_track_path()
+		if track_path != null:
+			network.set_exit_stop(track_path, track_signal.at_end, -1.0 if track_signal.clear else track_signal.track_offset)
 
 
 # La entrada a `station` desde el tramo (la cara de atrás del cartel de línea): verde si la vía a
@@ -980,23 +1013,35 @@ func _auto_arriving(network: RailNetwork, segment_id: StringName, station: Strin
 	return false
 
 
-# La salida de una vía de estación por una punta (la cara de adelante de su cartel): verde si el
-# cambio está puesto para esta vía y lo que sigue está libre (el tramo, con la salida de su cartel
-# de línea en verde y sin reserva de otro; la cola de maniobras, sin nadie). Un automático que sale
-# por ahí con su viaje reservado la tiene en verde.
+# La salida de una vía de estación por una punta (la cara de adelante de su cartel): verde si se
+# pidió el paso con su palanca (el cambio puesto y trabado para esta vía; con spring_exit no hace
+# falta; la principal no pide: le alcanza con que ninguna otra vía haya trabado el cambio) y lo que
+# sigue está libre (el tramo, con la salida de su cartel de línea en verde y sin reserva de otro; la
+# cola de maniobras, sin nadie). Hacia la línea, si no es la principal, además la principal no
+# tiene que necesitar esa punta (D117: la principal manda). Un automático que sale por ahí con su
+# viaje reservado la tiene en verde; si la vía la reservó otro automático, rojo.
 func _track_exit_aspect(network: RailNetwork, station_track: StationTrack, at_end: bool) -> RailSignal.Aspect:
 	var path: Path3D = station_track.get_track_path()
 	var holder: AutoTrainRun = get_run(get_token_holder(_section_of(station_track)))
 	if holder != null and (holder.is_moving() or _has_trip_reserved(holder)) and _leaves_through(network, holder, path, at_end):
 		return RailSignal.Aspect.GREEN
+	if holder != null:
+		# La tiene un automático (parado, llegando o maniobrando): no es una salida para otro.
+		return RailSignal.Aspect.RED
 	var exit: Array = network.get_exit(path, at_end)
 	if exit.is_empty():
 		return RailSignal.Aspect.RED
 	var track_switch: TrackSwitch = network.find_switch(exit[0], exit[1])
-	if track_switch != null and track_switch.get_option_path(track_switch.state) != path:
-		return RailSignal.Aspect.RED
+	if track_switch != null and not station_track.trails_freely():
+		if station_track.is_main():
+			if track_switch.is_locked():
+				return RailSignal.Aspect.RED
+		elif not network.is_route_requested(path, at_end):
+			return RailSignal.Aspect.RED
 	var beyond: TrackSegment = RailNetwork.track_of(exit[0])
 	if beyond != null and not (beyond is StationTrack):
+		if not station_track.is_main() and track_switch != null and _main_busy(network, track_switch, _vehicles_on(path)):
+			return RailSignal.Aspect.RED
 		# Un tramo reservado es del automático que lo reservó (por su vía, ya contestado arriba).
 		if not network.is_double(beyond.segment_id) and get_token_holder(beyond.segment_id) != 0:
 			return RailSignal.Aspect.RED
@@ -1006,9 +1051,13 @@ func _track_exit_aspect(network: RailNetwork, station_track: StationTrack, at_en
 
 
 # La entrada a una vía de estación (la cara de atrás de su cartel): verde si está libre. Si la
-# tiene un automático que está llegando o pasando, verde para él.
+# tiene un automático que está llegando o pasando, verde para él. Reservada por una palanca madre,
+# rojo en las dos puntas (bloqueada).
 func _track_entry_aspect(station_track: StationTrack) -> RailSignal.Aspect:
 	var path: Path3D = station_track.get_track_path()
+	var network: RailNetwork = _network()
+	if network != null and network.is_track_reserved(path):
+		return RailSignal.Aspect.RED
 	var holder_id: int = get_token_holder(_section_of(station_track))
 	if holder_id != 0:
 		var run: AutoTrainRun = get_run(holder_id)
@@ -1018,8 +1067,38 @@ func _track_entry_aspect(station_track: StationTrack) -> RailSignal.Aspect:
 	return RailSignal.Aspect.RED if _path_has_foreign(path, []) else RailSignal.Aspect.GREEN
 
 
+# Si la principal necesita la punta del cambio `track_switch` (D117, cada punta de la estación se
+# maneja sola): un automático que va a salir de la principal por ahí, o cualquier tren que anda por
+# la principal hacia esa punta. No cuentan los trenes de `own` (el que quiere salir).
+func _main_busy(network: RailNetwork, track_switch: TrackSwitch, own: Array[Vehicle]) -> bool:
+	var own_heads: Array[Vehicle] = []
+	for vehicle: Vehicle in own:
+		own_heads.append(vehicle.get_head())
+	for index: int in track_switch.option_count():
+		var main_track := track_switch.get_option_track(index) as StationTrack
+		if main_track == null or not main_track.is_main():
+			continue
+		var path: Path3D = track_switch.get_option_path(index)
+		# La punta de la principal que da a este cambio.
+		var main_end: bool = bool(track_switch.options[index][1])
+		var holder: AutoTrainRun = get_run(get_token_holder(_section_of(main_track)))
+		if holder != null and (holder.is_moving() or _has_trip_reserved(holder)) and _leaves_through(network, holder, path, main_end):
+			return true
+		for vehicle: Vehicle in _vehicles_on(path):
+			if own_heads.has(vehicle.get_head()):
+				continue
+			# Avance por segundo sobre la curva: positivo, hacia su final.
+			var along: float = vehicle.get_head().speed * float(vehicle.get_curve_direction())
+			if (along if main_end else -along) > MAIN_BUSY_SPEED:
+				return true
+	return false
+
+
 # Si un tren parado ya reservó su próximo viaje: tiene algo más que la vía donde está.
 func _has_trip_reserved(run: AutoTrainRun) -> bool:
+	if _maneuvers.has(run.id):
+		# Lo que reservó la maniobra no es su viaje.
+		return false
 	for index: int in range(1, run.leg.size()):
 		var section: StringName = AutoTrainRun.piece_section(run.leg[index])
 		if section != &"" and get_token_holder(section) == run.id:
@@ -1212,13 +1291,23 @@ func _update_spawns() -> void:
 	for run: AutoTrainRun in _runs:
 		var train: Array[Vehicle] = get_train(run)
 		if not train.is_empty():
-			var far: bool = observer == null or (observer as Vector3).distance_to(train[0].global_position) > despawn_distance
+			# Lejos es todo el tren: en la vuelta la locomotora se aleja de los vagones (cola, mesa).
+			var far: bool = observer == null or _nearest_distance(observer as Vector3, train) > despawn_distance
 			if far and not _player_aboard(train):
 				_despawn(run)
 		elif observer != null:
 			var spot: Variant = _world_position(run)
 			if spot != null and (observer as Vector3).distance_to(spot) <= spawn_distance:
 				_spawn(run)
+
+
+# Lo más cerca de `observer` que está un vehículo del tren (en la vuelta, los vagones esperan
+# desenganchados mientras la locomotora se aleja).
+static func _nearest_distance(observer: Vector3, train: Array[Vehicle]) -> float:
+	var nearest: float = INF
+	for vehicle: Vehicle in train:
+		nearest = minf(nearest, observer.distance_to(vehicle.global_position))
+	return nearest
 
 
 func _player_aboard(train: Array[Vehicle]) -> bool:
@@ -1603,10 +1692,17 @@ func _start_maneuver(run: AutoTrainRun) -> bool:
 		if _path_is_free(network, run, candidate.get_track_path(), train):
 			other = candidate
 			break
-	if other == null or not _path_is_free(network, run, beyond_far, train) or not _path_is_free(network, run, beyond_near, train):
+	# El tramo al que se asoma del lado cercano se reserva recién cuando va a salir a él (D117: cada
+	# punta de la estación se maneja sola; mientras tanto el otro lado queda libre).
+	var near_is_line: bool = not (RailNetwork.track_of(beyond_near) is StationTrack)
+	if other == null or not _path_is_free(network, run, beyond_far, train) \
+			or (not near_is_line and not _path_is_free(network, run, beyond_near, train)):
 		return false
 	var taken: Array[StringName] = []
-	for path: Path3D in [other.get_track_path(), beyond_far, beyond_near]:
+	var first_paths: Array[Path3D] = [other.get_track_path(), beyond_far]
+	if not near_is_line:
+		first_paths.append(beyond_near)
+	for path: Path3D in first_paths:
 		var section: StringName = _section_of_path(network, path)
 		if section != &"" and get_token_holder(section) == 0:
 			_tokens[section] = run.id
@@ -1626,7 +1722,8 @@ func _start_maneuver(run: AutoTrainRun) -> bool:
 		steps.append({"kind": "couple", "sign": 1.0, "choose": [plan["track"]]})
 	loco.uncouple_rear()
 	loco.forget_route_ahead()
-	_maneuvers[run.id] = {"steps": steps, "index": 0, "time": 0.0, "table": table, "track": plan["track"], "taken": taken, "yaw": loco.model_yaw}
+	_maneuvers[run.id] = {"steps": steps, "index": 0, "time": 0.0, "table": table, "track": plan["track"], "taken": taken,
+			"yaw": loco.model_yaw, "pending": beyond_near if near_is_line else null}
 	loco.switch_chooser = _maneuver_chooser.bind(steps[0]["choose"])
 	run.waiting = "dando la vuelta"
 	_update_signals()
@@ -1678,6 +1775,12 @@ func _drive_maneuver(run: AutoTrainRun, loco: Vehicle, delta: float) -> void:
 	var done: bool = false
 	match String(current["kind"]):
 		"move":
+			if not _take_pending(run, maneuver, current["path"]):
+				# Espera a que se libere el tramo al que tiene que asomarse.
+				loco.throttle = 0.0
+				loco.brake = 1.0
+				run.waiting = "esperando vía libre para dar la vuelta"
+				return
 			var on_path: bool = loco.get_parent() == current["path"]
 			var left: float = INF
 			if on_path:
@@ -1722,6 +1825,24 @@ func _drive_maneuver(run: AutoTrainRun, loco: Vehicle, delta: float) -> void:
 	loco.switch_chooser = _maneuver_chooser.bind(steps[int(maneuver["index"])]["choose"]) if steps[int(maneuver["index"])].has("choose") else _maneuver_chooser.bind([])
 	# La ruta guarda por dónde vino: que vuelva a preguntar en los cambios.
 	loco.forget_route_ahead()
+
+
+# Si la maniobra ya puede ir a `path`: si es el tramo que dejó para después, lo reserva si está libre.
+func _take_pending(run: AutoTrainRun, maneuver: Dictionary, path: Path3D) -> bool:
+	var pending: Variant = maneuver.get("pending")
+	if pending == null or pending != path:
+		return true
+	var network: RailNetwork = _network()
+	if network == null or not _path_is_free(network, run, path, get_train(run)):
+		return false
+	var section: StringName = _section_of_path(network, path)
+	if section != &"" and get_token_holder(section) == 0:
+		_tokens[section] = run.id
+		(maneuver["taken"] as Array).append(section)
+	maneuver["pending"] = null
+	run.waiting = "dando la vuelta"
+	_update_signals()
+	return true
 
 
 # La locomotora llegó al otro lado del tren: engancha los vagones (del más cercano al más lejano).

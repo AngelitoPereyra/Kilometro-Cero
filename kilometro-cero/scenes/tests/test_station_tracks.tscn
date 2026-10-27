@@ -11,6 +11,7 @@
 [ext_resource type="PackedScene" path="res://scenes/stations/city_station.tscn" id="9_vst"]
 [ext_resource type="PackedScene" path="res://scenes/stations/town_station.tscn" id="10_vst"]
 [ext_resource type="PackedScene" path="res://scenes/stations/freight_station.tscn" id="11_vst"]
+[ext_resource type="Script" path="res://scripts/vehicles/auto_trains.gd" id="12_vst"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_vst"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -71,6 +72,9 @@ shape = SubResource("BoxShape3D_piso")
 
 [node name="RailNetwork" type="Node" parent="."]
 script = ExtResource("5_vst")
+
+[node name="TrenesAutomaticos" type="Node" parent="."]
+script = ExtResource("12_vst")
 
 [node name="Ciudad" parent="." instance=ExtResource("9_vst")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 300)

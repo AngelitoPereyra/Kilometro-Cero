@@ -3,11 +3,18 @@ extends RefCounted
 ## Un cambio de vía (tarea 61b, D113): una punta de vía (la del lado de la aguja) que sigue por
 ## dos o más vías. Lo arma RailNetwork donde se tocan las puntas; no es un nodo. Un tren que llega
 ## por la aguja sigue por la vía que marca `state`; uno que llega desde una de las otras vías pasa
-## siempre (como un cambio de resorte). La palanca (SwitchLever) lo mueve con F; los automáticos lo
-## mueven solos al pasar (Vehicle.switch_chooser).
+## solo si está puesto para su vía (salvo los automáticos y las vías con StationTrack.spring_exit,
+## que lo talonan como un cambio de resorte; la principal también, si nadie lo trabó). Los
+## automáticos lo mueven solos al pasar (Vehicle.switch_chooser).
+## Traba (tarea 61e.2, D117): la palanca de una vía pide el paso por ella (RailNetwork.request_route)
+## y deja el cambio puesto y trabado; trabado no se mueve sin `force`. Se suelta cuando un tren
+## terminó de pasar el cambio (update_lock; la red lo vuelve a la principal), o si un automático lo
+## mueve para su camino.
 ## Lógica sin escena salvo is_fouled, que mira los vehículos del árbol.
 
 signal state_changed(state: int)
+## Se trabó o se soltó.
+signal lock_changed(locked: bool)
 
 ## Cuánto más allá del medio vehículo tiene que estar un vehículo para que se pueda mover el cambio.
 const FOULING_MARGIN: float = 1.0
@@ -24,7 +31,12 @@ var toe_at_end: bool
 var options: Array = []
 var state: int = 0
 var station_id: StringName
-var lever: SwitchLever
+## La vía que pidió el paso (y su punta: true el final de su curva); null si no está trabado.
+var locked_path: Path3D
+var locked_at_end: bool = false
+
+# Ya pasó un tren por encima desde que se trabó.
+var _lock_crossed: bool = false
 
 
 func option_count() -> int:
@@ -63,8 +75,11 @@ func set_state(index: int, force: bool = false) -> bool:
 		return false
 	if index == state:
 		return true
-	if not force and is_fouled():
+	if not force and (is_locked() or is_fouled()):
 		return false
+	if is_locked():
+		# Un automático lo movió para su camino: la salida pedida se pierde.
+		unlock()
 	state = index
 	state_changed.emit(state)
 	return true
@@ -101,3 +116,42 @@ func _station_name(station: StringName) -> String:
 		if node != null:
 			return node.get_display_name()
 	return String(station)
+
+
+## La salida que lleva a la curva `path`, o -1.
+func option_index(path: Path3D) -> int:
+	for index: int in options.size():
+		if get_option_path(index) == path:
+			return index
+	return -1
+
+
+func is_locked() -> bool:
+	return locked_path != null and is_instance_valid(locked_path)
+
+
+## Lo traba para la salida pedida desde `path` (por su final si `at_end`).
+func lock_for(path: Path3D, at_end: bool) -> void:
+	locked_path = path
+	locked_at_end = at_end
+	_lock_crossed = false
+	lock_changed.emit(true)
+
+
+func unlock() -> void:
+	var had_lock: bool = is_locked()
+	locked_path = null
+	_lock_crossed = false
+	if had_lock:
+		lock_changed.emit(false)
+
+
+## Suelta la traba cuando un tren terminó de pasar el cambio. Lo llama la red seguido.
+func update_lock() -> void:
+	if not is_locked():
+		unlock()
+		return
+	if is_fouled():
+		_lock_crossed = true
+	elif _lock_crossed:
+		unlock()

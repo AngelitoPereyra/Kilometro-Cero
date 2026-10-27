@@ -1,16 +1,18 @@
 extends Node3D
 ## Prueba de la tarea 61b.1 (D112, D113): vías de estación (StationTracks, StationTrack), cambios
-## (TrackSwitch) con palanca (SwitchLever) y desacople con F (Coupler).
+## (TrackSwitch), palancas de vía (TrackLever, tarea 61e.2) y desacople con F (Coupler).
 ## ciudad (3 vías de 6, crece con los flujos) --(c_p)-- pueblo (principal y cruce, andén isla)
 ## --(p_m)-- maderera (principal, cruce y carga). Corre el tren paso a paso (sin esperar cuadros):
-## pasa el pueblo por la principal, vuelve marcha atrás por la de cruce y cambia de vía con la
-## palanca mientras se acerca.
+## pasa el pueblo por la principal (sale sola, sin palanca), vuelve marcha atrás por la de cruce
+## pidiendo el paso en cada punta (para entrar y para salir; el cambio vuelve solo a la principal) y
+## cambia de vía con la palanca mientras se acerca.
 ## Al terminar se puede jugar: la locomotora con una plataforma, antes del pueblo, mirando hacia él.
 
-const CONTROLES: String = "WASD: caminar · F: cabina, palanca de un cambio o enganche (desacoplar con el tren quieto)\nEn cada punta de estación hay una palanca: el cartel dice a qué vía lleva. Para acoplar, tocá la plataforma con la cola (marcha atrás)."
+const CONTROLES: String = "WASD: caminar · F: cabina, palanca de vía o enganche (desacoplar con el tren quieto)\nJunto a cada aguja, la palanca madre elige a qué vía entrás (la reserva). Para salir de una vía de cruce, la palanca junto a su cartel. La principal sale sola si nadie pidió paso.\nPara acoplar, tocá la plataforma con la cola (marcha atrás)."
 const PASO_S: float = 1.0 / 60.0
 
 @onready var _network: RailNetwork = $RailNetwork
+@onready var _trains: AutoTrains = $TrenesAutomaticos
 @onready var _cp: Path3D = $CiudadPueblo
 @onready var _pm: Path3D = $PuebloMaderera
 @onready var _loco: Vehicle = $CiudadPueblo/Locomotive
@@ -91,17 +93,31 @@ func _probar_vias() -> void:
 	_comprobar(_network.get_links(pueblo[0].get_track_path(), true).size() == 1, "Del lado de las vías de la estación, cada punta sigue por una sola vía")
 	var avisos: PackedStringArray = _network.validate()
 	_comprobar(avisos.is_empty(), "La red no tiene avisos (los tramos llegan a las puntas) %s" % str(avisos))
-	_comprobar(en_pueblo.lever != null and en_pueblo.lever.global_position.distance_to(en_pueblo.point) < 6.0, "Cada cambio tiene su palanca junto a la aguja")
+	_trains._update_signals()
+	var cruce: Path3D = pueblo[1].get_track_path()
+	_comprobar(_palanca(cruce, false) != null and _palanca(cruce, true) != null, "La vía de cruce tiene una palanca en cada punta, junto a su cartel")
+	_comprobar(_trains.get_track_signal(pueblo[0], true) != null and _palanca(pueblo[0].get_track_path(), true) == null, "La principal tiene cartel pero no palanca")
+	var madre := _network.get_node_or_null("PalancaMadre%d" % en_pueblo.id) as MotherLever
+	_comprobar(madre != null and madre.global_position.distance_to(en_pueblo.point) < 6.0, "Cada cambio tiene su palanca madre junto a la aguja")
 
 
 func _probar_palanca() -> void:
 	var cambio: TrackSwitch = _network.find_switch(_cp, true)
-	var palanca: SwitchLever = cambio.lever
-	_comprobar(palanca.get_prompt() == "Mover el cambio a la vía de cruce", "La palanca dice a dónde lo va a mover: \"%s\"" % palanca.get_prompt())
-	_comprobar(palanca.interact(_player) and cambio.get_option_track(cambio.state) is StationTrack \
-			and (cambio.get_option_track(cambio.state) as StationTrack).role == StationTrack.Role.SIDING, "Con F el cambio pasa a la vía de cruce")
+	var palanca: TrackLever = _palanca(_cruce(&"pueblo").get_track_path(), true)
+	if palanca == null:
+		return
+	_comprobar(palanca.get_prompt() == "Pedir paso por la vía de cruce", "La palanca dice qué hace: \"%s\"" % palanca.get_prompt())
+	_comprobar(palanca.interact(_player) and (cambio.get_option_track(cambio.state) as StationTrack).role == StationTrack.Role.SIDING \
+			and cambio.is_locked(), "Con F el cambio pasa a la vía de cruce y queda trabado")
 	palanca.interact(_player)
-	_comprobar(cambio.is_main_option(cambio.state), "Con F otra vez vuelve a la principal")
+	_comprobar(cambio.is_main_option(cambio.state) and not cambio.is_locked(), "Con F otra vez se cancela y el cambio vuelve a la principal")
+	var madre := _network.get_node_or_null("PalancaMadre%d" % cambio.id) as MotherLever
+	if madre == null:
+		return
+	_comprobar(madre.interact(_player) and (cambio.get_option_track(cambio.state) as StationTrack).role == StationTrack.Role.SIDING \
+			and _network.is_track_reserved(_cruce(&"pueblo").get_track_path()), "La palanca madre reserva la vía de cruce para entrar")
+	madre.interact(_player)
+	_comprobar(cambio.is_main_option(cambio.state) and not cambio.is_locked(), "Con F otra vez vuelve a la principal")
 
 
 func _probar_tren() -> void:
@@ -112,21 +128,28 @@ func _probar_tren() -> void:
 	_comprobar(pisadas.has("Principal") and not pisadas.has("Cruce1"), "Con los cambios en la principal, el tren cruza el pueblo por la principal")
 	_comprobar(_loco.get_parent() == _pm and _flatcar.get_parent() == _pm, "Del otro lado sigue por el tramo p_m (cambio tomado de talón)")
 	_frenar()
-	# 2. Vuelve marcha atrás por la vía de cruce.
-	_comprobar(cambio_a.cycle(), "El cambio de la otra punta se mueve con el tren lejos")
-	pisadas = _manejar(-1.0, func() -> bool: return _loco.get_parent() == _cp and _flatcar.get_parent() == _cp, 40.0)
+	# 2. Vuelve marcha atrás por la vía de cruce: pide el paso en la punta A para entrar y en la B
+	# para salir (tarea 61e.2). Cada vez que el tren termina de pasar, el cambio vuelve a la principal.
+	var cruce: Path3D = _cruce(&"pueblo").get_track_path()
+	_comprobar(_network.request_route(cruce, false) == "" and cambio_a.get_option_path(cambio_a.state) == cruce, "Con el tren lejos, pide el paso por la vía de cruce en la punta A (para entrar)")
+	_trains._update_signals()
+	pisadas = _manejar(-1.0, func() -> bool: return _flatcar.get_parent() == cruce and _flatcar.global_position.distance_to(cambio_b.point) < 60.0, 40.0)
+	_frenar()
 	_comprobar(pisadas.has("Cruce1") and not pisadas.has("Principal"), "Marcha atrás entra por la vía de cruce, como marca el cambio")
+	_comprobar(not cambio_a.is_locked() and cambio_a.is_main_option(cambio_a.state), "Al terminar de entrar, el cambio de la punta A se soltó y volvió a la principal")
+	_comprobar(_network.next_piece(cruce, true, _flatcar).is_empty(), "Sin pedir el paso en la punta B, el tren no talona el cambio puesto para la principal")
+	_comprobar(_network.request_route(cruce, true) == "" and cambio_b.get_option_path(cambio_b.state) == cruce and cambio_b.is_locked(), "Pide el paso en la punta B (para salir): el cambio queda puesto hacia ella y trabado")
+	_trains._update_signals()
+	pisadas = _manejar(-1.0, func() -> bool: return _loco.get_parent() == _cp and _loco.global_position.distance_to(cambio_b.point) > 20.0, 40.0)
 	_comprobar(_loco.get_parent() == _cp, "Y sale al tramo c_p por la otra punta")
 	_frenar()
-	_comprobar(not cambio_b.is_main_option(cambio_b.state), "Al salir de talón desde la vía de cruce, el cambio quedó puesto hacia ella")
-	cambio_a.cycle()
-	# 3. Se aleja, le ponen la principal y se acerca: a 25 m le mueven el cambio y vuelve a preguntar.
+	_comprobar(not cambio_b.is_locked() and cambio_b.is_main_option(cambio_b.state), "Al terminar de pasar se suelta solo y el cambio vuelve a la principal")
+	# 3. Se aleja y se acerca: a 25 m le piden el paso por la vía de cruce y vuelve a preguntar.
 	_manejar(-1.0, func() -> bool: return _loco.global_position.distance_to(cambio_b.point) > 60.0, 30.0)
 	_frenar()
-	_comprobar(cambio_b.lever.interact(_player) and cambio_b.is_main_option(cambio_b.state), "Con la palanca vuelve a la principal")
 	_manejar(1.0, func() -> bool: return _loco.global_position.distance_to(cambio_b.point) < 25.0, 30.0)
 	_comprobar(_loco.get_route().has_path(_principal(&"pueblo").get_track_path()), "A menos de 30 m ya sumó la principal a su camino")
-	_comprobar(cambio_b.set_state(1 - cambio_b.state), "Con el tren a 25 m el cambio se puede mover")
+	_comprobar(_palanca(cruce, true).interact(_player) and cambio_b.get_option_path(cambio_b.state) == cruce, "Con el tren a 25 m, la palanca de la vía de cruce mueve el cambio")
 	_comprobar(not _loco.get_route().has_path(_principal(&"pueblo").get_track_path()), "Al moverse el cambio, el tren olvida la principal")
 	# Las lambdas copian las variables locales: el diccionario se comparte.
 	var visto: Dictionary = {"encima": false}
@@ -188,6 +211,7 @@ func _manejar(acelerador: float, listo: Callable, maximo: float) -> Dictionary:
 	var tiempo: float = 0.0
 	while tiempo < maximo and not listo.call():
 		_loco.simulate(PASO_S)
+		_network.update_locks()
 		tiempo += PASO_S
 		pisadas[String(_loco.get_parent().name)] = true
 		pisadas[String(_flatcar.get_parent().name)] = true
@@ -207,6 +231,18 @@ func _frenar() -> void:
 func _principal(station: StringName) -> StationTrack:
 	for via: StationTrack in _network.get_station_tracks(station):
 		if via.is_main():
+			return via
+	return null
+
+
+func _palanca(path: Path3D, at_end: bool) -> TrackLever:
+	var cartel: RailSignal = _trains.get_track_signal(RailNetwork.track_of(path) as StationTrack, at_end)
+	return cartel.get_node_or_null(^"Palanca") as TrackLever if cartel != null else null
+
+
+func _cruce(station: StringName) -> StationTrack:
+	for via: StationTrack in _network.get_station_tracks(station):
+		if via.role == StationTrack.Role.SIDING:
 			return via
 	return null
 

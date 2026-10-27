@@ -15,8 +15,8 @@ extends Node3D
 ##   y lo que sigue libre. Atrás, para el que entra: si esta vía está libre.
 ## Si el rojo de una salida de línea es por un automático, para el tren del jugador es un tramo
 ## cortado en ese sentido (no entra hasta que se ponga verde); si es por otro vehículo, solo
-## avisa. Los carteles de las vías de estación por ahora solo avisan (la tarea 61e.2 suma las
-## palancas de cada vía y el enclavamiento).
+## avisa. En la salida en rojo de una vía de estación el tren del jugador frena (tarea 61e.2); al
+## lado de ese cartel está la palanca de la vía (TrackLever) para pedir la salida.
 
 enum Kind { LINE, TRACK }
 enum Aspect { RED, YELLOW, GREEN }
@@ -33,6 +33,9 @@ var station_id: StringName
 ## Cartel de vía de estación: la vía y la punta (true: el final de su curva).
 var station_track: StationTrack
 var at_end: bool = false
+## Cartel de vía de estación: el avance de su curva donde está (ahí frena el tren del jugador si la
+## salida está en rojo, tarea 61e.2).
+var track_offset: float = 0.0
 ## La cara de adelante.
 var front: Aspect = Aspect.GREEN
 ## La cara de atrás.
