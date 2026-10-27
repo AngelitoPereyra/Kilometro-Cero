@@ -12,7 +12,8 @@ extends Node3D
 ## de los que entran (la ciudad). Las de carga están siempre.
 ## En juego, en cada punta donde no llega ningún tramo pone una cola de maniobras (tarea 61b.3):
 ## una vía corta hacia afuera para que la locomotora pueda pasar de una vía a otra y rodear su
-## tren; con `turntable`, al final de la cola hay una mesa giratoria para dar vuelta la locomotora.
+## tren; con `turntable`, al final de la cola hay una mesa giratoria para dar vuelta la locomotora,
+## con su palanca (TurntableLever) para que el jugador gire la suya (tarea 61e).
 ## Si en juego ningún tramo llega a sus puntas (escenas armadas antes de la 61b), se apaga sola
 ## (también el AndenIsla de la plantilla) y la estación sigue siendo un punto, con un aviso. Es @tool para ver las vías en el editor; lo
 ## generado no se guarda en la escena.
@@ -243,6 +244,16 @@ func _add_headshunt(at_b: bool) -> void:
 	add_child(table)
 	table.position = Vector3(main_offset, 0.02, side * (half_length + headshunt_length - TURNTABLE_RADIUS))
 	_turntables[track.get_track_path()] = table
+	# La palanca para que el jugador gire su locomotora (tarea 61e).
+	var lever := TurntableLever.new()
+	lever.name = "PalancaMesa%s" % ("B" if at_b else "A")
+	lever.set_meta(&"station_tracks", true)
+	lever.table = table
+	lever.headshunt = track.get_track_path()
+	lever.radius = TURNTABLE_RADIUS
+	lever.spot = turntable_spot(track.get_track_path())
+	add_child(lever)
+	lever.position = Vector3(main_offset + TURNTABLE_RADIUS + 1.5, 0.0, table.position.z)
 
 
 # Recta para la principal; para las otras, curva en S desde la aguja de cada punta.
