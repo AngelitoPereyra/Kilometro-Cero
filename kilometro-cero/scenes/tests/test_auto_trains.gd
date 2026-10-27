@@ -234,7 +234,7 @@ func _probar_escena() -> void:
 	_check(otro != null and not is_equal_approx(otro.out_hour, run.out_hour), "La conexión nueva tiene su propio tren y otro horario")
 	GameState.clock.time_of_day = 9.5
 	_trains.step(0.0)
-	_check(otro != null and otro.state == AutoTrainRun.State.AT_HOME and otro.waiting == "esperando el bastón", "Sin el bastón, el otro tren espera")
+	_check(otro != null and otro.state == AutoTrainRun.State.AT_HOME and otro.waiting == "esperando vía libre", "Sin la reserva del tramo, el otro tren espera vía libre")
 
 	# Lejos: avanza sin nodos y no pasa por encima de un tren parado en la vía.
 	var parado: Vehicle = _poner_locomotora(_pm, 150.0)
@@ -258,7 +258,9 @@ func _probar_escena() -> void:
 	_trains.sync_flows()
 	_check(_trains.get_runs().size() == 1 and _trains.get_token_holder(&"p_m") == 0, "Al borrar su flujo el tren se va y no queda nadie con el bastón")
 
-	# Cerca: aparece de verdad, parado en el pueblo.
+	# Cerca: aparece de verdad, parado en el pueblo. Que no desaparezca al llegar a la maderera
+	# (a 200 m del jugador): si no, depende de cuántos cuadros pasen.
+	_trains.despawn_distance = 600.0
 	_player.global_position = _pueblo.global_position + Vector3(-6.0, 0.7, 0.0)
 	await _esperar_fisica(3)
 	_trains._update_spawns()

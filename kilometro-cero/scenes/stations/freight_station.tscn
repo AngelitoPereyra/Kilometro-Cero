@@ -12,6 +12,7 @@
 [ext_resource type="AudioStream" path="res://data/audio/ambient_birds.wav" id="10_paj"]
 [ext_resource type="AudioStream" path="res://data/audio/ambient_town.wav" id="11_gen"]
 [ext_resource type="AudioStream" path="res://data/audio/ambient_music.wav" id="12_mus"]
+[ext_resource type="Script" path="res://scripts/world/station_tracks.gd" id="61b_vias"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_anden"]
 albedo_color = Color(0.55, 0.45, 0.35, 1)
@@ -183,3 +184,12 @@ unit_size = 15.0
 max_distance = 70.0
 script = ExtResource("7_amb")
 loudness = 1.0
+
+[node name="Vias" type="Node3D" parent="."]
+script = ExtResource("61b_vias")
+half_length = 70.0
+main_offset = 7.0
+siding_offsets = PackedFloat32Array(14)
+freight_offsets = PackedFloat32Array(0)
+base_track_count = 2
+turntable = true

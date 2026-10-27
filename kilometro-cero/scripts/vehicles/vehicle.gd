@@ -13,6 +13,10 @@ extends PathFollow3D
 ## escena, le pregunta por dónde sigue y se cambia de Path3D. El tren se ubica sobre una
 ## TrainRoute (las curvas que ocupa), así puede quedar repartido entre dos tramos. A un tramo
 ## cortado no entra: se frena con la punta en el final de su curva, como en un tope.
+## Cambios de vía (tarea 61b): donde la red une puntas de vía (estaciones con vías propias), la
+## ruta sigue por donde marca cada cambio (RailNetwork.next_piece); un tren con switch_chooser
+## (los automáticos) elige él. Al moverse un cambio, el tren olvida lo que todavía no pisó y
+## vuelve a preguntar. Con el tren quieto y algo acoplado atrás, el Enganche (Coupler, F) lo suelta.
 
 signal coupled(rear_vehicle: Vehicle)
 signal uncoupled(rear_vehicle: Vehicle)
@@ -28,6 +32,8 @@ const GANGWAY_NODE: StringName = &"Pasarela"
 ## Cuánto antes de llegar al final de su curva el tren ya mira el tramo que sigue (y lo que hay
 ## en él), para frenar a tiempo ante un vehículo parado del otro lado de la estación.
 const LOOKAHEAD: float = 30.0
+## Las partes del modelo que gira model_yaw: lo que se ve, lo que choca y el faro.
+const MODEL_PARTS: Array[NodePath] = [^"Visual", ^"CuerpoFisico", ^"Faro", ^"FaroLampara"]
 
 @export var data: VehicleData
 ## Tramo que recorre. Si queda vacío, se usa el TrackSegment que cuelga del mismo Path3D:
@@ -57,10 +63,27 @@ var rear: Vehicle
 var destination: StringName
 ## Es parte de un tren automático (tarea 61, D110): no se acopla con trenes que no lo son
 ## (tampoco al tocarlos con la cola) y su cabina no se usa. Lo pone AutoTrains.
-var automatic: bool = false
+var automatic: bool = false:
+	set(value):
+		automatic = value
+		if _coupler != null:
+			_coupler.visible = not automatic
+## Elige la salida en los cambios (tarea 61b): func(TrackSwitch) -> int, el índice de la salida o
+## -1 para seguir la palanca. Lo pone AutoTrains en la cabeza de sus trenes; vale el de la cabeza.
+var switch_chooser: Callable
+## Giro del modelo (lo que se ve y choca) sobre su eje, en radianes (tarea 61b): PI es una
+## locomotora que va "de culata" sin dejar de ser la cabeza del tren; la mesa giratoria lo anima.
+var model_yaw: float = 0.0:
+	set(value):
+		model_yaw = value
+		_apply_model_yaw()
 
 # Las curvas que ocupa el tren, si este vehículo lo encabeza.
 var _route: TrainRoute
+# Transform original de cada parte del modelo que gira con model_yaw.
+var _model_bases: Dictionary = {}
+# El enganche de la cola, para desacoplar con F (tarea 61b).
+var _coupler: Coupler
 
 
 func _ready() -> void:
@@ -84,6 +107,11 @@ func _ready() -> void:
 		set_physics_process(false)
 		return
 	_update_gangway()
+	_coupler = Coupler.new()
+	_coupler.name = "Enganche"
+	_coupler.position = Vector3(0.0, 1.0, data.length * 0.5 + COUPLING_GAP * 0.5)
+	_coupler.visible = not automatic
+	add_child(_coupler)
 	if couple_on_start:
 		# Diferido: los demás vehículos de la escena todavía pueden no estar listos.
 		_couple_to_vehicle_ahead.call_deferred()
@@ -160,6 +188,30 @@ func uncouple_rear() -> Vehicle:
 	_update_gangway()
 	uncoupled.emit(old_rear)
 	return old_rear
+
+
+func _apply_model_yaw() -> void:
+	for part_path: NodePath in MODEL_PARTS:
+		var part := get_node_or_null(part_path) as Node3D
+		if part == null:
+			continue
+		if not _model_bases.has(part_path):
+			_model_bases[part_path] = part.transform
+		part.transform = Transform3D(Basis(Vector3.UP, model_yaw), Vector3.ZERO) * (_model_bases[part_path] as Transform3D)
+
+
+## Olvida los pedazos de ruta en los que el tren todavía no entró, adelante y atrás (tarea 61b):
+## al moverse un cambio, el tren vuelve a preguntar por dónde sigue. Solo la cabeza.
+func forget_route_ahead() -> void:
+	if front != null or _route == null or data == null:
+		return
+	_sync_route()
+	var ahead: float = data.length * 0.5
+	var behind: float = _length_behind(get_train())
+	while _route.get_piece_count() > 1 and _route.piece_start(_route.get_piece_count() - 1) >= _route.head + ahead:
+		_route.drop_front()
+	while _route.get_piece_count() > 1 and _route.piece_start(1) <= _route.head - behind:
+		_route.drop_back()
 
 
 ## El vehículo que encabeza el tren de este (él mismo si va adelante).
@@ -340,8 +392,8 @@ func _use_own_way_on_spares(network: RailNetwork, behind: float, ahead: float) -
 	var count: int = _route.get_piece_count()
 	if count < 2:
 		return
-	# Atrás: el pedazo 0, si el tren ya salió entero de él.
-	if _route.piece_start(1) <= _route.head - behind:
+	# Atrás: el pedazo 0, si el tren ya salió entero de él (y no lo une un cambio: tarea 61b).
+	if _route.piece_start(1) <= _route.head - behind and not network.has_links(_route.get_path(1), _route.get_dir(1) < 0):
 		var next_track: TrackSegment = RailNetwork.track_of(_route.get_path(1))
 		var spare: TrackSegment = RailNetwork.track_of(_route.get_path(0))
 		if next_track != null and spare != null:
@@ -351,7 +403,7 @@ func _use_own_way_on_spares(network: RailNetwork, behind: float, ahead: float) -
 				_route.replace_piece(0, own.get_track_path(), -1 if own.from_station == station else 1)
 	# Adelante: el último pedazo, si el tren todavía no entró a él.
 	var last: int = _route.get_piece_count() - 1
-	if _route.piece_start(last) >= _route.head + ahead:
+	if _route.piece_start(last) >= _route.head + ahead and not network.has_links(_route.get_path(last - 1), _route.get_dir(last - 1) > 0):
 		var prev_track: TrackSegment = RailNetwork.track_of(_route.get_path(last - 1))
 		var spare: TrackSegment = RailNetwork.track_of(_route.get_path(last))
 		if prev_track != null and spare != null:
@@ -420,12 +472,20 @@ func _extend_front(network: RailNetwork, needed: float) -> void:
 		if _route.get_length() >= needed:
 			return
 		var last: int = _route.get_piece_count() - 1
+		var leaving_end: bool = _route.get_dir(last) > 0
+		if network.has_links(_route.get_path(last), leaving_end):
+			# Capa física (tarea 61b): sigue por donde marca el cambio.
+			var step: Array = network.next_piece(_route.get_path(last), leaving_end, self)
+			if step.is_empty() or step[0] == null or _route.has_path(step[0]):
+				return
+			_route.push_front(step[0], -1 if step[1] else 1)
+			continue
 		var track: TrackSegment = RailNetwork.track_of(_route.get_path(last))
 		if track == null:
 			return
 		var station: StringName = track.to_station if _route.get_dir(last) > 0 else track.from_station
 		var next: TrackSegment = network.next_track(track, station, get_head().destination)
-		if next == null or next.get_track_path() == null or _route.has_path(next.get_track_path()):
+		if next == null or next.get_track_path() == null or _route.has_path(next.get_track_path()) or not network.may_enter(self, next, station):
 			return
 		# Si sale de la estación por el principio de la curva, el frente mira hacia su final.
 		_route.push_front(next.get_track_path(), 1 if next.from_station == station else -1)
@@ -438,12 +498,29 @@ func _extend_back(network: RailNetwork, needed: float, train: Array[Vehicle]) ->
 	for _i: int in 8:
 		if missing <= 0.0:
 			return
+		var leaving_end: bool = _route.get_dir(0) < 0
+		if network.has_links(_route.get_path(0), leaving_end):
+			# Capa física (tarea 61b): primero la vía donde ya hay un vehículo del tren.
+			var own: Array = []
+			for vehicle: Vehicle in train:
+				own.append(vehicle.get_parent())
+			var step: Array = network.next_piece(_route.get_path(0), leaving_end, self, own)
+			if step.is_empty() or step[0] == null or _route.has_path(step[0]):
+				return
+			var length_before: float = _route.get_length()
+			_route.push_back(step[0], 1 if step[1] else -1)
+			missing -= _route.get_length() - length_before
+			continue
 		var track: TrackSegment = RailNetwork.track_of(_route.get_path(0))
 		if track == null:
 			return
 		var station: StringName = track.from_station if _route.get_dir(0) > 0 else track.to_station
 		var next: TrackSegment = _track_behind(network, track, station, train)
 		if next == null or next.get_track_path() == null or _route.has_path(next.get_track_path()):
+			return
+		# A un tramo con la entrada cerrada (semáforo en rojo) no se entra, salvo que ya haya ahí
+		# un vehículo de este tren.
+		if not network.may_enter(self, next, station) and not train.any(func(vehicle: Vehicle) -> bool: return vehicle.get_parent() == next.get_track_path()):
 			return
 		var before: float = _route.get_length()
 		# La cola sale de la estación: si entra por el principio de la curva, el frente mira

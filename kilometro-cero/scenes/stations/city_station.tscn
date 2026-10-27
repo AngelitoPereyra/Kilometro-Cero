@@ -16,6 +16,7 @@
 [ext_resource type="PackedScene" path="res://scenes/vehicles/passenger_coach.tscn" id="14_coc"]
 [ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="15_ia"]
 [ext_resource type="Resource" path="res://data/items/log.tres" id="16_log"]
+[ext_resource type="Script" path="res://scripts/world/station_tracks.gd" id="61b_vias"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_anden"]
 albedo_color = Color(0.75, 0.75, 0.72, 1)
@@ -117,6 +118,12 @@ size = Vector3(3, 2.6, 10)
 
 [sub_resource type="BoxMesh" id="Box_taco"]
 size = Vector3(0.8, 0.6, 0.8)
+
+[sub_resource type="BoxMesh" id="Box_isla"]
+size = Vector3(3, 0.6, 40)
+
+[sub_resource type="BoxShape3D" id="Shape_isla"]
+size = Vector3(3, 0.6, 40)
 
 [node name="CityStation" type="Node3D"]
 script = ExtResource("1_st")
@@ -415,3 +422,21 @@ text = "Taller"
 
 [node name="Salida" type="Marker3D" parent="Taller"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 2)
+
+[node name="Vias" type="Node3D" parent="."]
+script = ExtResource("61b_vias")
+half_length = 100.0
+siding_offsets = PackedFloat32Array(7, 14, 21, 28, 35)
+base_track_count = 3
+grow_with_flows = true
+turntable = true
+
+[node name="AndenIsla" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 0.3, 0)
+
+[node name="Malla" type="MeshInstance3D" parent="AndenIsla"]
+material_override = SubResource("Mat_anden")
+mesh = SubResource("Box_isla")
+
+[node name="Forma" type="CollisionShape3D" parent="AndenIsla"]
+shape = SubResource("Shape_isla")

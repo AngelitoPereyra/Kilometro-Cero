@@ -3,14 +3,19 @@ extends RefCounted
 ## El viaje de un tren automático (D81, D110, tarea 61): un tren por conexión entre dos
 ## estaciones (`home` y `away`), que lleva los flujos permanentes de esa conexión en los dos
 ## sentidos. Va y vuelve según su horario: sale de `home` a `out_hour` y vuelve de `away` a
-## `back_hour`; si llega tarde, sale apenas puede. A la ida va con la locomotora adelante y a la
-## vuelta marcha atrás (empujando), hasta que haya cómo dar la vuelta.
+## `back_hour`; si llega tarde, sale apenas puede. Sale con la locomotora adelante; al llegar,
+## si la estación tiene vías propias, la locomotora rodea el tren (tarea 61b.3, D115) y vuelve
+## adelante (`loco_leads`); si no, vuelve marcha atrás, empujando, como antes.
 ## Lógica pura: no conoce la escena. Quien lo maneja (AutoTrains) le da el camino al salir y lo
 ## hace avanzar: lejos del jugador con advance() (solo un número), cerca copiando la posición
 ## del tren de verdad con set_position(). La entrega de los flujos la sigue haciendo el
 ## ProductionModel una vez por día (D95): el tren es solo cómo se ve el flujo.
 ## Posiciones en metros sobre el tramo de viaje ("leg"): 0 en la estación de salida. La posición
 ## es la del centro de la locomotora.
+## Vías de estación (tarea 61b, D112, D114): en una estación con vías propias, el viaje también
+## pasa por ellas. Esos pedazos del viaje se escriben "@estación/vía/f" (o "/r"): la vía por su
+## nombre de nodo (Principal, Cruce1, Carga1) y si se la recorre hacia el final de su curva (f) o
+## hacia el principio (r). Ahí el tren para centrado en la vía y no en la punta.
 
 enum State { AT_HOME, OUTBOUND, AT_AWAY, INBOUND }
 
@@ -48,6 +53,14 @@ var waiting: String = ""
 ## Largo de la locomotora y del tren detrás del centro de la locomotora.
 var loco_length: float = 10.0
 var behind: float = 0.0
+## Si en el viaje actual (o el próximo, parado) la locomotora va adelante; si no, empuja.
+var loco_leads: bool = true
+## Si la locomotora va "de culata" (dio la vuelta al tren sin mesa giratoria): solo cómo se ve.
+var loco_flipped: bool = false
+## Parado: todavía tiene que rodear el tren para volver con la locomotora adelante.
+var needs_turn: bool = false
+## Lejos del jugador la vuelta es una espera: hasta qué hora (absoluta), o -1.
+var turn_until: float = -1.0
 
 
 ## Una hora del día que vuelve cada día: la primera vez que llega en `after` o después.
@@ -97,14 +110,50 @@ func cargo_dir() -> int:
 	return 1 if is_outbound() else -1
 
 
-## Del centro de la locomotora a la punta que va adelante, y a la de atrás. A la ida va
-## adelante la locomotora; a la vuelta, los vagones.
+## Del centro de la locomotora a la punta que va adelante, y a la de atrás: adelante va la
+## locomotora o, si empuja, los vagones.
 func lead_offset() -> float:
-	return loco_length * 0.5 if is_outbound() else behind
+	return loco_length * 0.5 if loco_leads else behind
 
 
 func trail_offset() -> float:
-	return behind if is_outbound() else loco_length * 0.5
+	return behind if loco_leads else loco_length * 0.5
+
+
+## Si un pedazo del viaje es una vía de estación ("@pueblo/Cruce1/f") y no un tramo.
+static func is_station_piece(piece: StringName) -> bool:
+	return String(piece).begins_with("@")
+
+
+## El pedazo de viaje de una vía de estación (`forward`: hacia el final de su curva).
+static func station_piece(station: StringName, track_name: String, forward: bool) -> StringName:
+	return StringName("@%s/%s/%s" % [station, track_name, "f" if forward else "r"])
+
+
+static func piece_station(piece: StringName) -> StringName:
+	return StringName(String(piece).substr(1).get_slice("/", 0))
+
+
+static func piece_track_name(piece: StringName) -> String:
+	return String(piece).get_slice("/", 1)
+
+
+static func piece_forward(piece: StringName) -> bool:
+	return String(piece).get_slice("/", 2) == "f"
+
+
+## Lo que se reserva de un pedazo: el tramo, o la vía de estación sin el sentido ("@pueblo/Cruce1").
+static func piece_section(piece: StringName) -> StringName:
+	if not is_station_piece(piece):
+		return piece
+	return StringName("@%s/%s" % [piece_station(piece), piece_track_name(piece)])
+
+
+## El mismo pedazo recorrido al revés.
+static func flip_piece(piece: StringName) -> StringName:
+	if not is_station_piece(piece):
+		return piece
+	return station_piece(piece_station(piece), piece_track_name(piece), not piece_forward(piece))
 
 
 func get_leg_length() -> float:
@@ -114,14 +163,22 @@ func get_leg_length() -> float:
 	return total
 
 
-## Donde queda la locomotora parada en la estación de salida: la cola a STOP_MARGIN de ella.
+## Donde queda la locomotora parada en la estación de salida: la cola a STOP_MARGIN de ella o,
+## en una vía de estación, el tren centrado en la vía.
 func start_position() -> float:
+	if not leg.is_empty() and is_station_piece(leg[0]):
+		return minf(maxf(leg_lengths[0] * 0.5 - (lead_offset() - trail_offset()) * 0.5, STOP_MARGIN + trail_offset()), leg_lengths[0] - STOP_MARGIN - lead_offset())
 	return STOP_MARGIN + trail_offset()
 
 
-## Donde para en la estación de llegada: la punta a STOP_MARGIN de ella.
+## Donde para en la estación de llegada: la punta a STOP_MARGIN de ella o, en una vía de
+## estación, el tren centrado en la vía.
 func stop_position() -> float:
-	return get_leg_length() - STOP_MARGIN - lead_offset()
+	var total: float = get_leg_length()
+	if not leg.is_empty() and is_station_piece(leg.back()):
+		var piece: float = leg_lengths.back()
+		return maxf(minf(total - piece * 0.5 - (lead_offset() - trail_offset()) * 0.5, total - STOP_MARGIN - lead_offset()), total - piece + STOP_MARGIN + trail_offset())
+	return total - STOP_MARGIN - lead_offset()
 
 
 func remaining() -> float:
@@ -181,9 +238,14 @@ func arrive(now: float) -> void:
 		state = State.AT_HOME
 		due = next_occurrence(out_hour, after)
 	waiting = ""
+	# El viaje siguiente va para el otro lado: la locomotora queda atrás hasta que dé la vuelta.
+	loco_leads = not loco_leads
 	# Parado, la posición queda donde arranca el próximo viaje (el tramo de vuelta mide igual).
 	leg.reverse()
 	leg_lengths.reverse()
+	# Las vías de estación se recorren al revés.
+	for index: int in leg.size():
+		leg[index] = flip_piece(leg[index])
 	position = start_position()
 
 
@@ -210,11 +272,13 @@ func segment_start(index: int) -> float:
 
 ## La estación de donde sale el tramo `index` del viaje: la de salida para el primero, después
 ## la del otro extremo del anterior (la da `other_end`, func(segment_id, station) -> station).
+## Una vía de estación no cambia de estación.
 func segment_entry(index: int, other_end: Callable) -> StringName:
 	# Parado, `leg` ya está dado vuelta para el próximo viaje: sale de leg_from() igual.
 	var station: StringName = leg_from()
 	for i: int in mini(index, leg.size()):
-		station = other_end.call(leg[i], station)
+		if not is_station_piece(leg[i]):
+			station = other_end.call(leg[i], station)
 	return station
 
 
@@ -233,6 +297,7 @@ func to_dict() -> Dictionary:
 		"position": position, "out_hour": out_hour, "back_hour": back_hour,
 		"leg": leg.map(func(segment_id: StringName) -> String: return String(segment_id)),
 		"leg_lengths": leg_lengths.duplicate(),
+		"loco_leads": loco_leads, "loco_flipped": loco_flipped, "needs_turn": needs_turn,
 	}
 
 
@@ -242,6 +307,10 @@ func load_dict(values: Dictionary) -> void:
 	position = float(values.get("position", 0.0))
 	out_hour = float(values.get("out_hour", out_hour))
 	back_hour = float(values.get("back_hour", back_hour))
+	loco_leads = bool(values.get("loco_leads", is_outbound()))
+	loco_flipped = bool(values.get("loco_flipped", false))
+	needs_turn = bool(values.get("needs_turn", false))
+	turn_until = -1.0
 	leg.clear()
 	for segment_id: Variant in values.get("leg", []):
 		leg.append(StringName(segment_id))

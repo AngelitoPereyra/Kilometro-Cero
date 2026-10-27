@@ -1,9 +1,11 @@
 class_name RailSignal
 extends Node3D
-## Semáforo de bosquejo (tarea 61, D110, D111) a la entrada de un tramo de vía simple: rojo
-## mientras el tramo está ocupado (un automático tiene el bastón, hay un vehículo o un
-## automático quedó parado en una punta), verde si está libre. Solo avisa: el tren del jugador puede entrar igual, y si se cruzan de
-## frente los dos frenan y el automático espera a que el otro retroceda.
+## Semáforo de bosquejo (tareas 61 y 61b, D110, D114) a la entrada de un tramo desde una estación:
+## va por sentido. En la vía simple hay uno en cada punta; en la doble, uno a la entrada de cada
+## vía. Lo pone AutoTrains según quién va por el tramo: verde del lado por donde entra el
+## automático que lo reservó y rojo del otro; rojo en las dos puntas mientras haya un tren
+## adentro. Si el rojo es por un automático, para el tren del jugador es un tramo cortado en ese
+## sentido (no entra hasta que se ponga verde); si es por otro vehículo, solo avisa.
 ## Lo crea AutoTrains al lado de la vía; arma sus mallas solo.
 
 const POST_HEIGHT: float = 3.2

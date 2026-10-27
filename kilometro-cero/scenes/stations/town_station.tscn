@@ -13,6 +13,7 @@
 [ext_resource type="AudioStream" path="res://data/audio/ambient_town.wav" id="11_gen"]
 [ext_resource type="AudioStream" path="res://data/audio/ambient_music.wav" id="12_mus"]
 [ext_resource type="Script" path="res://scripts/stations/arrival_building.gd" id="13_esc"]
+[ext_resource type="Script" path="res://scripts/world/station_tracks.gd" id="61b_vias"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_anden"]
 albedo_color = Color(0.8, 0.75, 0.6, 1)
@@ -97,6 +98,12 @@ size = Vector3(0.1, 4, 0.1)
 
 [sub_resource type="BoxMesh" id="Box_bandera"]
 size = Vector3(0.05, 0.6, 1)
+
+[sub_resource type="BoxMesh" id="Box_isla"]
+size = Vector3(3, 0.6, 20)
+
+[sub_resource type="BoxShape3D" id="Shape_isla"]
+size = Vector3(3, 0.6, 20)
 
 [node name="TownStation" type="Node3D"]
 script = ExtResource("1_st")
@@ -321,3 +328,19 @@ mesh = SubResource("Box_mastil")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3.6, 0.5)
 material_override = SubResource("Mat_bandera")
 mesh = SubResource("Box_bandera")
+
+[node name="Vias" type="Node3D" parent="."]
+script = ExtResource("61b_vias")
+half_length = 60.0
+siding_offsets = PackedFloat32Array(7)
+base_track_count = 2
+
+[node name="AndenIsla" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 0.3, 0)
+
+[node name="Malla" type="MeshInstance3D" parent="AndenIsla"]
+material_override = SubResource("Mat_anden")
+mesh = SubResource("Box_isla")
+
+[node name="Forma" type="CollisionShape3D" parent="AndenIsla"]
+shape = SubResource("Shape_isla")
