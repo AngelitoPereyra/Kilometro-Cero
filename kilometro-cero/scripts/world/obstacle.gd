@@ -1,7 +1,9 @@
 class_name Obstacle
 extends Node3D
 ## Obstáculo que corta un tramo (tarea 55, D78): un árbol caído, una piedra. Mientras exista,
-## el tramo queda cortado (RailNetwork.add_blocker) y ningún tren entra; al despejarse
+## el tramo queda cortado (RailNetwork.add_blocker) para la economía y las misiones; desde la
+## tarea 62.3 los trenes entran igual y frenan a unos metros de él
+## (RailNetwork.get_obstacle_stops); al despejarse
 ## (su hijo Clearable, o clear() por código) se borra y, si no queda otro obstáculo en ese
 ## tramo, el tramo vuelve a abrirse.
 ## Se apoya sobre la vía: si `segment_id` queda vacío, toma el tramo de la vía más cercana

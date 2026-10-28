@@ -1,7 +1,8 @@
 extends Node3D
 ## Prueba de la tarea 55: herramientas clave (KeyItems, D83), obstáculos que cortan un tramo
 ## (Obstacle con Clearable, D78) y árboles para talar (Harvestable).
-## ciudad --(a_b)-- pueblo --(b_c, con un árbol caído y una piedra)-- maderera.
+## ciudad --(a_b)-- pueblo --(b_c, con un árbol caído y una piedra)-- maderera. Desde la tarea
+## 62.3 el tren entra a b_c y frena antes del árbol.
 ## Primero corre las comprobaciones (sin tocar nada, tarda un par de segundos) y después vuelve
 ## a cargar la escena limpia para jugar: el hacha está en el piso al lado tuyo, la barreta en
 ## el pueblo, y hay árboles para talar junto a la ciudad.
@@ -143,12 +144,15 @@ func _probar_escena() -> void:
 	_comprobar(_network.get_blockers(&"b_c").size() == 2 and _network.is_cut(&"b_c"), "b_c arranca cortado por dos obstáculos")
 	_comprobar(not _network.is_cut(&"a_b"), "a_b está abierto")
 
-	# El tren no pasa del pueblo mientras b_c esté cortado.
+	# Desde la tarea 62.3 el tren entra a b_c (cortado solo por obstáculos) y frena antes del
+	# árbol caído (a 50 m del principio de b_c): la punta a OBSTACLE_CLEARANCE + SIGNAL_STOP_MARGIN.
 	_loco.set_physics_process(false)
 	_flatcar.set_physics_process(false)
 	_poner_tren(130.0, 8.0)
 	_simular(20.0)
-	_comprobar(_loco.get_parent() == _ida and is_equal_approx(_loco.progress, _ida.curve.get_baked_length() - 5.0), "Con b_c cortado el tren frena en el pueblo")
+	var punta: float = _loco.progress + _loco.data.length * 0.5
+	var tope: float = _ramal.curve.get_closest_offset(_ramal.to_local(_arbol_caido.global_position)) - RailNetwork.OBSTACLE_CLEARANCE - Vehicle.SIGNAL_STOP_MARGIN
+	_comprobar(_loco.get_parent() == _ramal and absf(punta - tope) < 0.5, "Con b_c cortado por obstáculos el tren entra y frena antes del árbol (punta %.1f, tope %.1f)" % [punta, tope])
 
 	# Sin herramientas no se puede.
 	_ir_a(_arbol_caido.global_position + Vector3(-2.0, 0.0, 0.0))

@@ -11,7 +11,9 @@ extends Node
 ## EventBus.segment_state_changed.
 ## Bloqueos (tarea 55): un obstáculo (Obstacle) u otra cosa que corta un tramo se anota con
 ## add_blocker. Mientras un tramo tenga bloqueos queda cortado y no se lo puede abrir; al irse
-## el último, vuelve al estado que tenía antes (abierto si estaba cortado).
+## el último, vuelve al estado que tenía antes (abierto si estaba cortado). Desde la tarea 62.3
+## un tramo cortado solo por obstáculos sigue cortado para la economía y las misiones, pero los
+## trenes entran y frenan antes del obstáculo (is_closed_to_trains, get_obstacle_stops).
 ## Vías de estación y cambios (tarea 61b, D112, D113): las StationTrack no son tramos (no entran
 ## al grafo) sino las vías de una estación. Debajo del grafo la red arma la capa física: une las
 ## puntas de vía que se tocan (a menos de JOIN_DISTANCE y mirando para lados opuestos) cuando una
@@ -41,6 +43,8 @@ extends Node
 const GROUP: StringName = &"rail_network"
 ## Lo más lejos que pueden estar dos puntas de vía para unirse (tarea 61b).
 const JOIN_DISTANCE: float = 1.0
+## Metros entre el centro de un obstáculo y donde frena la punta del tren (tarea 62.3).
+const OBSTACLE_CLEARANCE: float = 3.0
 ## Coseno mínimo entre una punta y la opuesta de la otra vía: tienen que seguir derecho.
 const JOIN_ALIGNMENT: float = 0.9
 ## Dónde va la palanca madre de un cambio: metros hacia atrás de la aguja y al costado de la vía.
@@ -323,6 +327,28 @@ func is_blocked(segment_id: StringName) -> bool:
 	return not get_blockers(segment_id).is_empty()
 
 
+## Si un tren no puede entrar al tramo (tarea 62.3): cortado y sin obstáculos que lo expliquen
+## (cortado a mano). Si solo lo cortan obstáculos, el tren entra y frena antes de ellos.
+func is_closed_to_trains(segment_id: StringName) -> bool:
+	return is_cut(segment_id) and not is_blocked(segment_id)
+
+
+## Dónde frena un tren que va hacia esa punta de `path` por los obstáculos de su tramo (tarea
+## 62.3): avances a OBSTACLE_CLEARANCE del obstáculo, del lado de donde viene el tren.
+func get_obstacle_stops(path: Path3D, at_end: bool) -> PackedFloat64Array:
+	var stops := PackedFloat64Array()
+	var track: TrackSegment = track_of(path)
+	if track == null or track is StationTrack or path.curve == null or not _blockers.has(track.segment_id):
+		return stops
+	for blocker: Variant in get_blockers(track.segment_id):
+		var node := blocker as Node3D
+		if node == null or not node.is_inside_tree():
+			continue
+		var at: float = path.curve.get_closest_offset(path.to_local(node.global_position))
+		stops.append(at - OBSTACLE_CLEARANCE if at_end else at + OBSTACLE_CLEARANCE)
+	return stops
+
+
 ## Largo del tramo: el de su vía más corta.
 func get_segment_length(segment_id: StringName) -> float:
 	var length: float = INF
@@ -416,7 +442,7 @@ func next_track(current: TrackSegment, station: StringName, destination: StringN
 		var route: Array[StringName] = find_route(station, destination)
 		if not route.is_empty() and options.has(route[0]):
 			chosen = route[0]
-	if chosen == &"" or is_cut(chosen):
+	if chosen == &"" or is_closed_to_trains(chosen):
 		return null
 	return track_leaving(chosen, station)
 
@@ -557,7 +583,7 @@ func next_piece(path: Path3D, at_end: bool, vehicle: Vehicle = null, prefer: Arr
 			if not _trail(path, at_end, chosen, vehicle):
 				return []
 		var next: TrackSegment = track_of(chosen[0])
-		if next != null and next.is_cut():
+		if next != null and next.is_cut() and is_closed_to_trains(next.segment_id):
 			return []
 		# Volver marcha atrás a una vía donde ya está el mismo tren se puede siempre.
 		if next != null and not prefer.has(chosen[0]) and not may_enter(vehicle, next, next.to_station if chosen[1] else next.from_station):

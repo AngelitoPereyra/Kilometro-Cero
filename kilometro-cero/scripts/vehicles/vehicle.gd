@@ -406,6 +406,8 @@ func _signal_limits(network: RailNetwork, behind: float, ahead: float, only_bloc
 # salida de la vía de estación.
 static func _stops_toward(network: RailNetwork, path: Path3D, at_end: bool, only_blocks: bool) -> PackedFloat64Array:
 	var stops: PackedFloat64Array = network.get_block_stops(path, at_end)
+	# Los obstáculos de un tramo frenan a cualquier tren (tarea 62.3).
+	stops.append_array(network.get_obstacle_stops(path, at_end))
 	if not only_blocks:
 		var exit_stop: float = network.get_exit_stop(path, at_end)
 		if exit_stop >= 0.0:
@@ -459,9 +461,13 @@ func _use_own_way_on_spares(network: RailNetwork, behind: float, ahead: float) -
 				_route.replace_piece(last, own.get_track_path(), 1 if own.from_station == station else -1)
 
 
+# Un tramo cortado solo por obstáculos no cuenta: el tren entra y frena antes (tarea 62.3).
 static func _is_cut(path: Path3D) -> bool:
 	var track: TrackSegment = RailNetwork.track_of(path)
-	return track != null and track.is_cut()
+	if track == null or not track.is_cut():
+		return false
+	var network: RailNetwork = RailNetwork.find_in(path.get_tree()) if path.is_inside_tree() else null
+	return network == null or network.is_closed_to_trains(track.segment_id)
 
 
 # Lo que ocupa el tren detrás del centro de su cabeza (hasta la punta de la cola).

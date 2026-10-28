@@ -1017,26 +1017,40 @@ func _release_tokens(run: AutoTrainRun, keep: StringName = &"") -> void:
 
 
 # Hay en el tramo un vehículo que no es de este tren (el del jugador, uno suelto u otro
-# automático). Sin `run`, cualquier vehículo.
-func _has_foreign_vehicle(network: RailNetwork, segment_id: StringName, run: AutoTrainRun) -> bool:
+# automático). Sin `run`, cualquier vehículo. Con `skip_loose`, los vagones sueltos no cuentan.
+func _has_foreign_vehicle(network: RailNetwork, segment_id: StringName, run: AutoTrainRun, skip_loose: bool = false) -> bool:
 	var own: Array[Vehicle] = []
 	if run != null:
 		own = get_train(run)
 	for track: TrackSegment in network.get_tracks(segment_id):
-		if _path_has_foreign(track.get_track_path(), own):
+		if _path_has_foreign(track.get_track_path(), own, skip_loose):
 			return true
 	return false
 
 
-# Hay en la curva un vehículo que no es de `own`.
-static func _path_has_foreign(path: Path3D, own: Array[Vehicle]) -> bool:
+# Hay en la curva un vehículo que no es de `own`. Con `skip_loose`, los vagones sueltos no
+# cuentan (tarea 62.3).
+static func _path_has_foreign(path: Path3D, own: Array[Vehicle], skip_loose: bool = false) -> bool:
 	if path == null:
 		return false
 	for child: Node in path.get_children():
 		var vehicle := child as Vehicle
-		if vehicle != null and not own.has(vehicle) and not vehicle.is_queued_for_deletion():
+		if vehicle != null and not own.has(vehicle) and not vehicle.is_queued_for_deletion() and not (skip_loose and is_loose(vehicle)):
 			return true
 	return false
+
+
+## Si el vehículo es parte de un grupo de vagones sueltos (tarea 62.3): sin locomotora y sin ser
+## de un automático (el coche de regalo, los vagones que dejó el jugador). Para los carteles que
+## frenan al tren del jugador no ocupan la vía: así puede entrar a engancharlos. Los automáticos
+## los siguen contando.
+static func is_loose(vehicle: Vehicle) -> bool:
+	if vehicle == null or vehicle.automatic:
+		return false
+	for part: Vehicle in vehicle.get_train():
+		if not (part.data is WagonData):
+			return false
+	return true
 
 
 # Un automático (que no sea `except`) parado en `station` con el tren dentro de `segment_id`:
@@ -1298,7 +1312,7 @@ func _entry_aspect(network: RailNetwork, segment_id: StringName, station: String
 	var section: StringName = _section_of_path(network, target)
 	if section != &"" and get_token_holder(section) != 0:
 		return RailSignal.Aspect.RED
-	return RailSignal.Aspect.RED if _path_has_foreign(target, []) else RailSignal.Aspect.GREEN
+	return RailSignal.Aspect.RED if _path_has_foreign(target, [], true) else RailSignal.Aspect.GREEN
 
 
 # El cambio que encuentra un tren que llega a `station` por el tramo, o null.
@@ -1414,7 +1428,7 @@ func _track_entry_aspect(station_track: StationTrack) -> RailSignal.Aspect:
 		if run == null or not run.is_moving():
 			return RailSignal.Aspect.RED
 		return RailSignal.Aspect.RED if _path_has_foreign(path, get_train(run)) else RailSignal.Aspect.GREEN
-	return RailSignal.Aspect.RED if _path_has_foreign(path, []) else RailSignal.Aspect.GREEN
+	return RailSignal.Aspect.RED if _path_has_foreign(path, [], true) else RailSignal.Aspect.GREEN
 
 
 # Si la principal necesita la punta del cambio `track_switch` (D117, cada punta de la estación se
@@ -1500,7 +1514,7 @@ func _signal_state(network: RailNetwork, segment_id: StringName, station: String
 	var holder: AutoTrainRun = get_run(get_token_holder(segment_id))
 	if holder != null:
 		return [_entry_of(network, holder, segment_id) == station and not _has_foreign_vehicle(network, segment_id, holder), true]
-	if _has_foreign_vehicle(network, segment_id, null):
+	if _has_foreign_vehicle(network, segment_id, null, true):
 		return [false, false]
 	return [true, false]
 
