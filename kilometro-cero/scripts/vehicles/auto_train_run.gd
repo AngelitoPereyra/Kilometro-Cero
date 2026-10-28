@@ -16,6 +16,12 @@ extends RefCounted
 ## pasa por ellas. Esos pedazos del viaje se escriben "@estación/vía/f" (o "/r"): la vía por su
 ## nombre de nodo (Principal, Cruce1, Carga1) y si se la recorre hacia el final de su curva (f) o
 ## hacia el principio (r). Ahí el tren para centrado en la vía y no en la punta.
+## Troncales (D118, tarea 61d): el viaje de una troncal tiene `trunk_key` y va de punta a punta
+## del pedazo de la línea que usan sus flujos (`home` es la punta de donde salió primero);
+## `stops` son las estaciones de la línea que recorre, en orden de `home` a `away`.
+## Paradas (tarea 61d.2): una troncal va de parada en parada. `hop_to` es la estación del medio
+## donde termina el pedazo de viaje actual ("" si va hasta la punta); al llegar ahí espera
+## MIN_DWELL_HOURS (`dwelling`, sin dejar de ir de ida o de vuelta) y sigue desde `hop_from`.
 
 enum State { AT_HOME, OUTBOUND, AT_AWAY, INBOUND }
 
@@ -61,6 +67,15 @@ var loco_flipped: bool = false
 var needs_turn: bool = false
 ## Lejos del jugador la vuelta es una espera: hasta qué hora (absoluta), o -1.
 var turn_until: float = -1.0
+## Troncal (tarea 61d): la clave de su línea, motivo y servicio ("" si es el tren de una conexión).
+var trunk_key: String = ""
+## Troncal: las estaciones de la línea entre `home` y `away`, en ese orden (vacío si no es troncal).
+var stops: Array[StringName] = []
+## Troncal (tarea 61d.2): de qué estación del medio salió el pedazo de viaje actual ("" si de la
+## punta), hasta cuál va ("" si hasta la punta) y si está parada en una del medio.
+var hop_from: StringName = &""
+var hop_to: StringName = &""
+var dwelling: bool = false
 
 
 ## Una hora del día que vuelve cada día: la primera vez que llega en `after` o después.
@@ -87,8 +102,18 @@ func set_schedule(hour_out: float, now: float) -> void:
 		due = next_occurrence(back_hour, now)
 
 
+## Si es una troncal de una línea (tarea 61d) y no el tren de una conexión.
+func is_trunk() -> bool:
+	return not trunk_key.is_empty()
+
+
+## Si el viaje pasa por la estación: sale o llega ahí o, si es troncal, está en su recorrido.
+func serves(station_id: StringName) -> bool:
+	return home == station_id or away == station_id or stops.has(station_id)
+
+
 func is_moving() -> bool:
-	return state == State.OUTBOUND or state == State.INBOUND
+	return (state == State.OUTBOUND or state == State.INBOUND) and not dwelling
 
 
 ## Si el viaje actual (o el próximo, parado en una estación) es de ida.
@@ -98,10 +123,14 @@ func is_outbound() -> bool:
 
 ## La estación de donde sale el viaje actual o el próximo.
 func leg_from() -> StringName:
+	if hop_from != &"":
+		return hop_from
 	return home if is_outbound() else away
 
 
 func leg_to() -> StringName:
+	if hop_to != &"":
+		return hop_to
 	return away if is_outbound() else home
 
 
@@ -199,7 +228,11 @@ func depart(route: Array[StringName], lengths: Array[float]) -> bool:
 	leg_lengths = lengths.duplicate()
 	position = start_position()
 	waiting = ""
-	state = State.OUTBOUND if state == State.AT_HOME else State.INBOUND
+	if dwelling:
+		# Sigue el mismo viaje desde la parada del medio.
+		dwelling = false
+	else:
+		state = State.OUTBOUND if state == State.AT_HOME else State.INBOUND
 	return true
 
 
@@ -216,9 +249,34 @@ func advance(distance: float, now: float, limit: float = INF) -> bool:
 		waiting = ""
 	position = target
 	if position >= stop_position() - 0.01:
-		arrive(now)
+		finish_hop(now)
 		return true
 	return false
+
+
+## Llegó al final del pedazo de viaje: a una parada del medio o a la punta.
+func finish_hop(now: float) -> void:
+	if hop_to != &"":
+		arrive_stop(now)
+	else:
+		arrive(now)
+
+
+## Llegó a una parada del medio (tarea 61d.2): espera MIN_DWELL_HOURS y sigue el mismo viaje.
+## El viaje queda solo con la vía donde paró, para salir de ahí.
+func arrive_stop(now: float) -> void:
+	if not is_moving() or hop_to == &"":
+		return
+	dwelling = true
+	hop_from = hop_to
+	hop_to = &""
+	due = now + MIN_DWELL_HOURS
+	waiting = ""
+	var kept: Array[StringName] = [leg.back()]
+	var kept_lengths: Array[float] = [leg_lengths.back()]
+	leg = kept
+	leg_lengths = kept_lengths
+	position = start_position()
 
 
 ## La posición que tiene el tren de verdad (cuando está cerca del jugador).
@@ -231,6 +289,9 @@ func arrive(now: float) -> void:
 	if not is_moving():
 		return
 	var after: float = now + MIN_DWELL_HOURS
+	hop_from = &""
+	hop_to = &""
+	dwelling = false
 	if state == State.OUTBOUND:
 		state = State.AT_AWAY
 		due = next_occurrence(back_hour, after)
@@ -285,6 +346,8 @@ func segment_entry(index: int, other_end: Callable) -> StringName:
 ## "Tren de troncos de Maderera: viajando a Pueblo · sale 07:00, vuelve 13:00".
 func status_text(station_name: Callable) -> String:
 	var where: String = STATE_NAMES[state] % station_name.call(leg_to() if is_moving() else (home if state == State.AT_HOME else away))
+	if dwelling:
+		where = "parada en %s" % station_name.call(hop_from)
 	if not waiting.is_empty():
 		where += " (%s)" % waiting
 	return "%s: %s · sale %s, vuelve %s" % [display_name, where, hour_text(out_hour), hour_text(back_hour)]
@@ -298,6 +361,7 @@ func to_dict() -> Dictionary:
 		"leg": leg.map(func(segment_id: StringName) -> String: return String(segment_id)),
 		"leg_lengths": leg_lengths.duplicate(),
 		"loco_leads": loco_leads, "loco_flipped": loco_flipped, "needs_turn": needs_turn,
+		"hop_from": String(hop_from), "hop_to": String(hop_to), "dwelling": dwelling,
 	}
 
 
@@ -310,6 +374,9 @@ func load_dict(values: Dictionary) -> void:
 	loco_leads = bool(values.get("loco_leads", is_outbound()))
 	loco_flipped = bool(values.get("loco_flipped", false))
 	needs_turn = bool(values.get("needs_turn", false))
+	hop_from = StringName(values.get("hop_from", ""))
+	hop_to = StringName(values.get("hop_to", ""))
+	dwelling = bool(values.get("dwelling", false))
 	turn_until = -1.0
 	leg.clear()
 	for segment_id: Variant in values.get("leg", []):

@@ -57,6 +57,18 @@ extends Node
 ## el tren del jugador, frena, toca la bocina y espera a que el otro le deje la vía.
 ## La entrega sigue siendo la del ProductionModel una vez por día (D95): el tren es la cara del
 ## flujo, su carga es de adorno (no se descarga, no cuenta en el tablero ni en el mercado).
+## Troncales (D118, tarea 61d): si en el mundo hay líneas marcadas a mano (TrunkLine), los flujos
+## con sus dos estaciones en una línea no van en el tren de su conexión sino en una troncal de
+## la línea: una de carga (todo lo que no es gente) y otra de pasajeros. Cada una va de punta a
+## punta del pedazo de la línea que usan sus flujos y se estira cuando aparece uno más lejos (la
+## punta donde está parada queda; la lejana cambia enseguida). Sus vagones salen del tramo más
+## cargado (TrunkPlanner) y lo que no entra en lo que arrastra la locomotora va en otro servicio
+## del mismo recorrido, a otra hora. Lo que no va por una línea sigue con el tren de su conexión.
+## Paradas y prioridad (tarea 61d.2): la troncal para media hora en cada estación del medio donde
+## sube o baja algo en ese sentido (en la principal si está libre) y pasa de largo por las demás;
+## reserva de parada en parada (AutoTrainRun.hop_to). Si varios piden vía a la vez, la troncal va
+## primero. Lleva una locomotora en cada punta: no da la vuelta, a la vuelta la de adelante es la
+## de la cola (la que tira, la de la cabeza del tren, empuja; lejos es igual).
 
 signal train_added(run: AutoTrainRun)
 signal train_removed(run: AutoTrainRun)
@@ -74,6 +86,9 @@ const FLATCAR_DATA: String = "res://data/vehicles/flatcar.tres"
 const COACH_DATA: String = "res://data/vehicles/passenger_coach.tres"
 const KIND_FLATCAR: StringName = &"flatcar"
 const KIND_COACH: StringName = &"coach"
+## Motivos de las troncales (tarea 61d): carga y pasajeros van en trenes distintos.
+const TRUNK_CARGO: String = "carga"
+const TRUNK_PASSENGERS: String = "pasajeros"
 ## Acelerador con que andan (fracción de la velocidad máxima), también lejos del jugador.
 const AUTO_THROTTLE: float = 0.7
 ## Primer horario de ida y cuántas horas después sale el tren siguiente (provisorio).
@@ -147,6 +162,9 @@ var _track_signals: Dictionary = {}
 var _block_signals: Dictionary = {}
 # run.id -> segundos trabado
 var _blocked: Dictionary = {}
+## Troncales (tarea 61d): id del viaje -> {"line": ids de la línea, "low" y "high": las puntas
+## que usan sus flujos, "flows", "passengers", "service"}.
+var _trunk_targets: Dictionary = {}
 var _signature: String = ""
 var _next_id: int = 1
 var _refresh_left: float = 0.0
@@ -229,7 +247,7 @@ func get_run(run_id: int) -> AutoTrainRun:
 func get_runs_at(station_id: StringName) -> Array[AutoTrainRun]:
 	var found: Array[AutoTrainRun] = []
 	for run: AutoTrainRun in _runs:
-		if run.home == station_id or run.away == station_id:
+		if run.serves(station_id):
 			found.append(run)
 	return found
 
@@ -271,7 +289,14 @@ func describe_at(station_id: StringName) -> PackedStringArray:
 ## Revisa los flujos ahora (normalmente lo hace solo cada REFRESH_TIME).
 func sync_flows() -> void:
 	var flows: Array[ProductionFlow] = GameState.production.get_flows() if GameState.production != null else [] as Array[ProductionFlow]
+	var lines: Array[Array] = []
+	for line: TrunkLine in TrunkLine.find_all(get_tree() if is_inside_tree() else null):
+		var ids: Array[StringName] = line.get_station_ids()
+		if ids.size() >= 2:
+			lines.append(ids)
 	var parts: PackedStringArray = []
+	for ids: Array in lines:
+		parts.append("L:" + "-".join(PackedStringArray(ids)))
 	for flow: ProductionFlow in flows:
 		parts.append("%d:%s:%s:%s:%d:%s:%s" % [flow.id, flow.from_station, flow.to_station, flow.item_id, flow.amount, flow.round_trip, flow.custom_name])
 	var signature: String = ",".join(parts)
@@ -280,18 +305,44 @@ func sync_flows() -> void:
 	_signature = signature
 	var groups: Dictionary = {}
 	var order: Array[String] = []
+	# Troncales (tarea 61d): los flujos de cada línea, por motivo.
+	var by_line: Dictionary = {}
+	var line_order: Array[String] = []
 	for flow: ProductionFlow in flows:
+		var line_index: int = _line_for(flow, lines)
 		var key: String = connection_key(flow.from_station, flow.to_station)
-		if not groups.has(key):
-			groups[key] = [] as Array[ProductionFlow]
+		var bucket: Dictionary = groups
+		if line_index >= 0:
+			key = "%d|%s" % [line_index, TRUNK_PASSENGERS if _is_passenger(flow.item_id) else TRUNK_CARGO]
+			bucket = by_line
+		if not bucket.has(key):
+			bucket[key] = [] as Array[ProductionFlow]
+			if line_index >= 0:
+				line_order.append(key)
+			else:
+				order.append(key)
+		(bucket[key] as Array[ProductionFlow]).append(flow)
+	var trunks: Dictionary = {}
+	for line_key: String in line_order:
+		var line: Array[StringName] = lines[int(line_key.get_slice("|", 0))]
+		var motive: String = line_key.get_slice("|", 1)
+		var kind: StringName = KIND_COACH if motive == TRUNK_PASSENGERS else KIND_FLATCAR
+		var services: Array = TrunkPlanner.split_services(by_line[line_key], line, _capacity(kind), _max_wagons())
+		for index: int in services.size():
+			var key: String = "troncal|%s|%s|%d" % ["-".join(PackedStringArray(line)), motive, index + 1]
+			trunks[key] = {"line": line, "flows": services[index], "passengers": motive == TRUNK_PASSENGERS, "service": index + 1}
 			order.append(key)
-		(groups[key] as Array[ProductionFlow]).append(flow)
 	for run: AutoTrainRun in _runs.duplicate():
-		if not groups.has(connection_key(run.home, run.away)):
+		if not groups.has(_run_key(run)) and not trunks.has(_run_key(run)):
 			_remove_run(run)
 	for key: String in order:
-		var group: Array[ProductionFlow] = groups[key]
 		var run: AutoTrainRun = _find_run(key)
+		if trunks.has(key):
+			if run == null:
+				run = _create_trunk_run(key, trunks[key])
+			_update_trunk_run(run, trunks[key])
+			continue
+		var group: Array[ProductionFlow] = groups[key]
 		if run == null:
 			run = _create_run(group[0])
 		_update_run(run, group)
@@ -305,6 +356,8 @@ func step(delta: float) -> void:
 	var asking: Array[AutoTrainRun] = []
 	for run: AutoTrainRun in _runs.duplicate():
 		if not run.is_moving():
+			if run.is_trunk() and _apply_trunk_span(run):
+				_refresh_trunk(run)
 			if run.leg.is_empty():
 				_plan_parked_leg(run)
 			if run.needs_turn:
@@ -329,7 +382,7 @@ func to_dict() -> Dictionary:
 	var runs: Array = []
 	for run: AutoTrainRun in _runs:
 		var values: Dictionary = run.to_dict()
-		values["key"] = connection_key(run.home, run.away)
+		values["key"] = _run_key(run)
 		runs.append(values)
 	return {"next_id": _next_id, "runs": runs}
 
@@ -344,6 +397,11 @@ func load_dict(values: Dictionary) -> void:
 		if run != null:
 			_despawn(run)
 			run.load_dict(saved)
+			if run.is_trunk():
+				# La troncal pudo haber cambiado de puntas: retoma las suyas.
+				run.home = StringName(saved.get("home", run.home))
+				run.away = StringName(saved.get("away", run.away))
+				_refresh_trunk(run)
 	_restore_reservations()
 
 
@@ -365,17 +423,28 @@ func _physics_process(delta: float) -> void:
 
 func _find_run(key: String) -> AutoTrainRun:
 	for run: AutoTrainRun in _runs:
-		if connection_key(run.home, run.away) == key:
+		if _run_key(run) == key:
 			return run
 	return null
 
 
+# La clave de un viaje: la de su troncal o la de su conexión.
+static func _run_key(run: AutoTrainRun) -> String:
+	return run.trunk_key if run.is_trunk() else connection_key(run.home, run.away)
+
+
 func _create_run(first: ProductionFlow) -> AutoTrainRun:
 	var run := AutoTrainRun.new()
-	run.id = _next_id
-	_next_id += 1
 	run.home = first.from_station
 	run.away = first.to_station
+	_start_run(run)
+	return run
+
+
+# Le da id, largo y horario a un viaje nuevo y lo suma.
+func _start_run(run: AutoTrainRun) -> void:
+	run.id = _next_id
+	_next_id += 1
 	run.loco_length = _loco_data.length if _loco_data != null else 10.0
 	var now: float = now_hours()
 	run.set_schedule(FIRST_HOUR + HOUR_STEP * float(_runs.size() % SCHEDULE_SLOTS), now)
@@ -383,7 +452,6 @@ func _create_run(first: ProductionFlow) -> AutoTrainRun:
 	run.due = now + AutoTrainRun.MIN_DWELL_HOURS
 	_runs.append(run)
 	train_added.emit(run)
-	return run
 
 
 func _update_run(run: AutoTrainRun, flows: Array[ProductionFlow]) -> void:
@@ -391,17 +459,29 @@ func _update_run(run: AutoTrainRun, flows: Array[ProductionFlow]) -> void:
 	for flow: ProductionFlow in flows:
 		run.flow_ids.append(flow.id)
 	run.display_name = FlowNames.train_name(flows, _find_item, _station_name)
-	var capacities: Dictionary = {
-		KIND_FLATCAR: _flatcar_data.capacity if _flatcar_data != null else 20,
-		KIND_COACH: _coach_data.capacity if _coach_data != null else 10,
-	}
-	var max_wagons: int = _loco_data.max_wagons if _loco_data != null else 4
-	var wagons: Array[Dictionary] = plan_wagons(flows, run.home, _is_passenger, capacities, max_wagons)
+	var capacities: Dictionary = {KIND_FLATCAR: _capacity(KIND_FLATCAR), KIND_COACH: _capacity(KIND_COACH)}
+	_set_wagons(run, plan_wagons(flows, run.home, _is_passenger, capacities, _max_wagons()))
+
+
+func _capacity(kind: StringName) -> int:
+	if kind == KIND_COACH:
+		return _coach_data.capacity if _coach_data != null else 10
+	return _flatcar_data.capacity if _flatcar_data != null else 20
+
+
+func _max_wagons() -> int:
+	return _loco_data.max_wagons if _loco_data != null else 4
+
+
+func _set_wagons(run: AutoTrainRun, wagons: Array[Dictionary]) -> void:
 	var changed: bool = wagons != run.wagons
 	run.wagons = wagons
 	var lengths: Array[float] = []
 	for wagon: Dictionary in wagons:
 		lengths.append(_wagon_data(wagon["kind"]).length if _wagon_data(wagon["kind"]) != null else 10.0)
+	if run.is_trunk():
+		# La locomotora de la cola (tarea 61d.2).
+		lengths.append(run.loco_length)
 	run.behind = length_behind(run.loco_length, lengths)
 	# Un tren en la escena cambia de vagones parado en una estación; si viaja, al llegar.
 	if changed and is_spawned(run) and not run.is_moving():
@@ -414,12 +494,125 @@ func _remove_run(run: AutoTrainRun) -> void:
 	_despawn(run)
 	_release_tokens(run)
 	_runs.erase(run)
+	_trunk_targets.erase(run.id)
 	_blocked.erase(run.id)
 	_reserved.erase(run.id)
 	_requested.erase(run.id)
 	_maneuvers.erase(run.id)
 	_update_signals()
 	train_removed.emit(run)
+
+
+# --- Troncales (tarea 61d, D118) ---
+
+# La primera línea por donde va el flujo, o -1.
+static func _line_for(flow: ProductionFlow, lines: Array[Array]) -> int:
+	for index: int in lines.size():
+		var line: Array[StringName] = lines[index]
+		if TrunkPlanner.fits(flow, line):
+			return index
+	return -1
+
+
+func _create_trunk_run(key: String, info: Dictionary) -> AutoTrainRun:
+	var line: Array[StringName] = info["line"]
+	var reach: Vector2i = _trunk_reach(info["flows"], line)
+	var run := AutoTrainRun.new()
+	run.trunk_key = key
+	run.home = line[reach.x]
+	run.away = line[reach.y]
+	_start_run(run)
+	return run
+
+
+func _update_trunk_run(run: AutoTrainRun, info: Dictionary) -> void:
+	var line: Array[StringName] = info["line"]
+	var flows: Array[ProductionFlow] = info["flows"]
+	var reach: Vector2i = _trunk_reach(flows, line)
+	_trunk_targets[run.id] = {"line": line, "low": line[reach.x], "high": line[reach.y], "flows": flows, "passengers": info["passengers"], "service": info["service"]}
+	_apply_trunk_span(run)
+	_refresh_trunk(run)
+
+
+# Estira o acorta el recorrido hacia lo que usan sus flujos: solo parada (sin viaje reservado ni
+# maniobra), deja la punta donde está y cambia la lejana. Si la punta donde está también cambió,
+# se corrige al llegar a la otra. Devuelve true si cambió algo.
+func _apply_trunk_span(run: AutoTrainRun) -> bool:
+	var target: Dictionary = _trunk_targets.get(run.id, {})
+	if target.is_empty() or run.is_moving() or run.dwelling or _maneuvers.has(run.id) or _requested.has(run.id) or _has_trip_reserved(run):
+		return false
+	var line: Array[StringName] = target["line"]
+	var low: StringName = target["low"]
+	var high: StringName = target["high"]
+	var at_home: bool = run.state == AutoTrainRun.State.AT_HOME
+	var here: StringName = run.home if at_home else run.away
+	var far: StringName = run.away if at_home else run.home
+	# La punta lejana nueva queda del mismo lado que la de antes.
+	var new_far: StringName = high if line.find(far) >= line.find(here) else low
+	if new_far == here:
+		new_far = low if new_far == high else high
+	if new_far == far:
+		return false
+	if at_home:
+		run.away = new_far
+	else:
+		run.home = new_far
+	return true
+
+
+# Nombre, recorrido y vagones de una troncal según sus flujos y sus puntas de ahora.
+func _refresh_trunk(run: AutoTrainRun) -> void:
+	var target: Dictionary = _trunk_targets.get(run.id, {})
+	if target.is_empty():
+		return
+	var line: Array[StringName] = target["line"]
+	var flows: Array[ProductionFlow] = target["flows"]
+	var passengers: bool = target["passengers"]
+	run.flow_ids.clear()
+	for flow: ProductionFlow in flows:
+		run.flow_ids.append(flow.id)
+	run.stops = TrunkPlanner.stops(line, run.home, run.away)
+	run.display_name = FlowNames.trunk_name(flows, passengers, target["low"], target["high"], _station_name, int(target["service"]))
+	var kind: StringName = KIND_COACH if passengers else KIND_FLATCAR
+	_set_wagons(run, TrunkPlanner.plan_wagons(flows, line, run.home, run.away, kind, _capacity(kind), _max_wagons()))
+
+
+# Las puntas de una troncal: lo que usan sus flujos, estirado hasta una ciudad (61d.2).
+func _trunk_reach(flows: Array[ProductionFlow], line: Array[StringName]) -> Vector2i:
+	var hubs: Array[bool] = []
+	for station_id: StringName in line:
+		var data: StationData = GameState.production.get_data(station_id) if GameState.production != null else null
+		hubs.append(data != null and (data.type == StationData.StationType.CITY or data.type == StationData.StationType.PORT))
+	return TrunkPlanner.anchor(TrunkPlanner.span(flows, line), hubs)
+
+
+# La próxima parada de una troncal desde donde está (tarea 61d.2): la primera estación de su
+# recorrido, en el sentido del viaje, donde sube o baja algo que va en ese sentido; "" si la
+# próxima es la punta.
+func _next_stop(run: AutoTrainRun) -> StringName:
+	var route: Array[StringName] = run.stops.duplicate()
+	if not run.is_outbound():
+		route.reverse()
+	var dir: int = run.cargo_dir()
+	var wanted: Dictionary = {}
+	for wagon: Dictionary in run.wagons:
+		for part: Dictionary in wagon.get("loads", []):
+			if int(part["dir"]) == 0 or int(part["dir"]) == dir:
+				wanted[part["from"]] = true
+				wanted[part["to"]] = true
+	var start: int = route.find(run.leg_from())
+	if start < 0:
+		return &""
+	for index: int in range(start + 1, route.size() - 1):
+		if wanted.has(route[index]):
+			return route[index]
+	return &""
+
+
+# Cuántos vehículos tiene el tren en la escena: locomotora, vagones y, en las troncales, la
+# locomotora de la cola.
+static func _train_size(run: AutoTrainRun) -> int:
+	return run.wagons.size() + (2 if run.is_trunk() else 1)
 
 
 func _wagon_data(kind: StringName) -> WagonData:
@@ -453,6 +646,9 @@ func _try_depart(run: AutoTrainRun, now: float) -> void:
 	var network: RailNetwork = _network()
 	if network == null:
 		return
+	if run.is_trunk():
+		# De parada en parada (61d.2): hasta la próxima estación donde sube o baja algo.
+		run.hop_to = _next_stop(run)
 	if not _reserved.has(run.id):
 		var plan: Dictionary = _plan_leg(network, run, false)
 		if plan.has("error"):
@@ -506,6 +702,9 @@ func _try_depart(run: AutoTrainRun, now: float) -> void:
 
 # Quién reserva primero: el que lleva más carga; si llevan lo mismo, el que pidió antes (D114).
 func _goes_first(a: AutoTrainRun, b: AutoTrainRun) -> bool:
+	# La troncal siempre primero (tarea 61d.2).
+	if a.is_trunk() != b.is_trunk():
+		return a.is_trunk()
 	var cargo_a: int = _cargo(a)
 	var cargo_b: int = _cargo(b)
 	if cargo_a != cargo_b:
@@ -558,13 +757,24 @@ func _plan_leg(network: RailNetwork, run: AutoTrainRun, through_cut: bool, stric
 		if not arriving.is_empty():
 			var chosen: Array = []
 			if index == route.size() - 1:
-				chosen = _pick_track(run, arriving, strict)
+				if run.is_trunk() and run.hop_to != &"":
+					# En una parada del medio, la troncal para en la principal si está libre (61d.2).
+					for option: Array in arriving:
+						if (option[0] as StationTrack).is_main():
+							chosen = _pick_track(run, [option], true)
+				if chosen.is_empty():
+					chosen = _pick_track(run, arriving, strict)
 				if chosen.is_empty():
 					return {"error": "esperando vía libre en %s" % _station_name(station)}
 			else:
 				for option: Array in arriving:
 					if (option[0] as StationTrack).is_main():
 						chosen = option
+				# Si en la principal hay otro tren parado, pasa por otra vía libre (61d.2).
+				if not chosen.is_empty() and _pick_track(run, [chosen], true).is_empty():
+					var other: Array = _pick_track(run, arriving, true)
+					if not other.is_empty():
+						chosen = other
 			if not chosen.is_empty():
 				# Entra por la punta que toca el tramo: si es el principio de su curva, va hacia el final.
 				_append_station_piece(pieces, lengths, station, chosen[0], not chosen[1])
@@ -706,7 +916,7 @@ func _on_arrived(run: AutoTrainRun) -> void:
 		train[0].throttle = 0.0
 		train[0].brake = 1.0
 		# Cambió de vagones mientras viajaba: los cambia ahora, parado.
-		if train.size() - 1 != run.wagons.size():
+		if train.size() != _train_size(run):
 			_despawn(run)
 		else:
 			_apply_loads(run)
@@ -1719,6 +1929,21 @@ func _spawn(run: AutoTrainRun) -> void:
 			wagon.queue_free()
 			continue
 		train.append(wagon)
+	if run.is_trunk():
+		# Locomotora de la cola (61d.2): mira para el otro lado y va adelante a la vuelta.
+		var tail_loco := (load(LOCOMOTIVE_SCENE) as PackedScene).instantiate() as Vehicle
+		tail_loco.name = "%s_Cola" % loco.name
+		tail_loco.automatic = true
+		tail_loco.reversed = loco.reversed
+		distance += Vehicle.coupling_distance(previous, tail_loco.data.length)
+		path.add_child(tail_loco)
+		tail_loco.progress = progress - dir * distance
+		if loco.get_tail().couple(tail_loco):
+			tail_loco.model_yaw = PI
+			train.append(tail_loco)
+		else:
+			push_warning("AutoTrains: no se pudo enganchar la locomotora de la cola del %s." % run.display_name)
+			tail_loco.queue_free()
 	loco.destination = run.leg_to()
 	loco.throttle = 0.0
 	loco.brake = 0.0 if run.is_moving() else 1.0
@@ -1803,7 +2028,7 @@ func _drive(run: AutoTrainRun, delta: float) -> void:
 	var left: float = run.remaining()
 	var moving: float = absf(loco.speed)
 	if left <= 0.5 and moving < 0.2:
-		run.arrive(now_hours())
+		run.finish_hop(now_hours())
 		_on_arrived(run)
 		return
 	var stopping: float = moving * moving / (2.0 * loco.data.braking) + 0.3
@@ -1849,6 +2074,9 @@ static func _find_cab(loco: Vehicle) -> Cab:
 func _plan_turn_after_arrival(run: AutoTrainRun) -> void:
 	run.needs_turn = false
 	run.turn_until = -1.0
+	if run.is_trunk() or run.dwelling:
+		# La troncal tiene una locomotora en cada punta (61d.2): no da la vuelta.
+		return
 	var network: RailNetwork = _network()
 	if network == null or run.loco_leads or run.leg.is_empty() or not AutoTrainRun.is_station_piece(run.leg[0]):
 		return
