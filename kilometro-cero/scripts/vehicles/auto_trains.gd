@@ -85,11 +85,15 @@ const GROUP: StringName = &"auto_trains"
 const LOCOMOTIVE_SCENE: String = "res://scenes/vehicles/locomotive.tscn"
 const FLATCAR_SCENE: String = "res://scenes/vehicles/flatcar.tscn"
 const COACH_SCENE: String = "res://scenes/vehicles/passenger_coach.tscn"
+const BOXCAR_SCENE: String = "res://scenes/vehicles/boxcar.tscn"
 const LOCOMOTIVE_DATA: String = "res://data/vehicles/locomotive.tres"
 const FLATCAR_DATA: String = "res://data/vehicles/flatcar.tres"
 const COACH_DATA: String = "res://data/vehicles/passenger_coach.tres"
+const BOXCAR_DATA: String = "res://data/vehicles/boxcar.tres"
 const KIND_FLATCAR: StringName = &"flatcar"
 const KIND_COACH: StringName = &"coach"
+## Vagón cerrado (tarea 62): lo que acepta boxcar.tres (el cemento).
+const KIND_BOXCAR: StringName = &"boxcar"
 ## Motivos de las troncales (tarea 61d): carga y pasajeros van en trenes distintos.
 const TRUNK_CARGO: String = "carga"
 const TRUNK_PASSENGERS: String = "pasajeros"
@@ -180,6 +184,7 @@ var _refresh_left: float = 0.0
 var _loco_data: VehicleData
 var _flatcar_data: WagonData
 var _coach_data: WagonData
+var _boxcar_data: WagonData
 
 
 func _enter_tree() -> void:
@@ -190,6 +195,7 @@ func _ready() -> void:
 	_loco_data = load(LOCOMOTIVE_DATA) as VehicleData
 	_flatcar_data = load(FLATCAR_DATA) as WagonData
 	_coach_data = load(COACH_DATA) as WagonData
+	_boxcar_data = load(BOXCAR_DATA) as WagonData
 
 
 ## El AutoTrains de la escena, o null.
@@ -211,12 +217,15 @@ static func connection_key(a: StringName, b: StringName) -> String:
 
 ## Los vagones de un tren (lógica pura): por cada flujo, del más viejo al más nuevo, los que
 ## hacen falta para su carga por día (`capacities`: tipo -> lugares), sin pasar de
-## `max_wagons`. La gente va en coche y lo demás en plataforma. "dir": 1 de `home` hacia la otra
-## estación, -1 al revés, 0 si el flujo va y vuelve.
-static func plan_wagons(flows: Array[ProductionFlow], home: StringName, is_passenger: Callable, capacities: Dictionary, max_wagons: int) -> Array[Dictionary]:
+## `max_wagons`. La gente va en coche y lo demás en plataforma; con `kind_of` (func(item_id) ->
+## tipo, tarea 62) cada carga va en su tipo de vagón (el cemento en el cerrado). "dir": 1 de
+## `home` hacia la otra estación, -1 al revés, 0 si el flujo va y vuelve.
+static func plan_wagons(flows: Array[ProductionFlow], home: StringName, is_passenger: Callable, capacities: Dictionary, max_wagons: int, kind_of: Callable = Callable()) -> Array[Dictionary]:
 	var wagons: Array[Dictionary] = []
 	for flow: ProductionFlow in flows:
 		var kind: StringName = KIND_COACH if is_passenger.call(flow.item_id) else KIND_FLATCAR
+		if kind_of.is_valid():
+			kind = kind_of.call(flow.item_id)
 		var capacity: int = maxi(int(capacities.get(kind, 1)), 1)
 		var dir: int = 0 if flow.round_trip else (1 if flow.from_station == home else -1)
 		var left: int = maxi(flow.amount, 1)
@@ -336,7 +345,7 @@ func sync_flows() -> void:
 		var line: Array[StringName] = lines[int(line_key.get_slice("|", 0))]
 		var motive: String = line_key.get_slice("|", 1)
 		var kind: StringName = KIND_COACH if motive == TRUNK_PASSENGERS else KIND_FLATCAR
-		var services: Array = TrunkPlanner.split_services(by_line[line_key], line, _capacity(kind), _max_wagons())
+		var services: Array = TrunkPlanner.split_services(by_line[line_key], line, _capacity(kind), _max_wagons(), _kind_of_callable(), _capacities())
 		for index: int in services.size():
 			var key: String = "troncal|%s|%s|%d" % ["-".join(PackedStringArray(line)), motive, index + 1]
 			trunks[key] = {"line": line, "flows": services[index], "passengers": motive == TRUNK_PASSENGERS, "service": index + 1}
@@ -468,14 +477,36 @@ func _update_run(run: AutoTrainRun, flows: Array[ProductionFlow]) -> void:
 	for flow: ProductionFlow in flows:
 		run.flow_ids.append(flow.id)
 	run.display_name = FlowNames.train_name(flows, _find_item, _station_name)
-	var capacities: Dictionary = {KIND_FLATCAR: _capacity(KIND_FLATCAR), KIND_COACH: _capacity(KIND_COACH)}
-	_set_wagons(run, plan_wagons(flows, run.home, _is_passenger, capacities, _max_wagons()))
+	_set_wagons(run, plan_wagons(flows, run.home, _is_passenger, _capacities(), _max_wagons(), _kind_of_callable()))
 
 
 func _capacity(kind: StringName) -> int:
-	if kind == KIND_COACH:
-		return _coach_data.capacity if _coach_data != null else 10
-	return _flatcar_data.capacity if _flatcar_data != null else 20
+	var data: WagonData = _wagon_data(kind)
+	if data != null:
+		return data.capacity
+	return 10 if kind == KIND_COACH else (40 if kind == KIND_BOXCAR else 20)
+
+
+# Lugares de cada tipo de vagón (tarea 62).
+func _capacities() -> Dictionary:
+	return {KIND_FLATCAR: _capacity(KIND_FLATCAR), KIND_COACH: _capacity(KIND_COACH), KIND_BOXCAR: _capacity(KIND_BOXCAR)}
+
+
+## El tipo de vagón de un objeto (tarea 62): coche si es gente, vagón cerrado si lo acepta
+## boxcar.tres (el cemento) y si no plataforma.
+func kind_for(item_id: StringName) -> StringName:
+	if _is_passenger(item_id):
+		return KIND_COACH
+	var item: ItemData = _find_item(item_id)
+	if item != null and _boxcar_data != null:
+		for tag: StringName in item.tags:
+			if _boxcar_data.accepted_tags.has(tag):
+				return KIND_BOXCAR
+	return KIND_FLATCAR
+
+
+func _kind_of_callable() -> Callable:
+	return kind_for
 
 
 func _max_wagons() -> int:
@@ -583,7 +614,7 @@ func _refresh_trunk(run: AutoTrainRun) -> void:
 	run.stops = TrunkPlanner.stops(line, run.home, run.away)
 	run.display_name = FlowNames.trunk_name(flows, passengers, target["low"], target["high"], _station_name, int(target["service"]))
 	var kind: StringName = KIND_COACH if passengers else KIND_FLATCAR
-	_set_wagons(run, TrunkPlanner.plan_wagons(flows, line, run.home, run.away, kind, _capacity(kind), _max_wagons()))
+	_set_wagons(run, TrunkPlanner.plan_wagons(flows, line, run.home, run.away, kind, _capacity(kind), _max_wagons(), _kind_of_callable(), _capacities()))
 
 
 # Las puntas de una troncal: lo que usan sus flujos, estirado hasta una ciudad (61d.2).
@@ -656,7 +687,12 @@ static func _train_size(run: AutoTrainRun) -> int:
 
 
 func _wagon_data(kind: StringName) -> WagonData:
-	return _coach_data if kind == KIND_COACH else _flatcar_data
+	match kind:
+		KIND_COACH:
+			return _coach_data
+		KIND_BOXCAR:
+			return _boxcar_data
+	return _flatcar_data
 
 
 func _abstract_speed() -> float:
@@ -1946,7 +1982,12 @@ func _spawn(run: AutoTrainRun) -> void:
 	var previous: float = loco.data.length
 	for index: int in run.wagons.size():
 		var wagon_entry: Dictionary = run.wagons[index]
-		var scene_path: String = COACH_SCENE if wagon_entry["kind"] == KIND_COACH else FLATCAR_SCENE
+		var scene_path: String = FLATCAR_SCENE
+		match wagon_entry["kind"]:
+			KIND_COACH:
+				scene_path = COACH_SCENE
+			KIND_BOXCAR:
+				scene_path = BOXCAR_SCENE
 		var wagon := (load(scene_path) as PackedScene).instantiate() as Wagon
 		wagon.name = "%s_Vagon%d" % [loco.name, index + 1]
 		wagon.automatic = true

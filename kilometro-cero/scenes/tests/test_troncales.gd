@@ -1,5 +1,5 @@
 extends Node3D
-## Prueba de las tareas 61d.1 a 61d.3: trenes troncales (TrunkLine, TrunkPlanner, FlowNames.trunk_name y
+## Prueba de las tareas 61d.1 a 61d.3 (y vagones por tipo de la 62.2): trenes troncales (TrunkLine, TrunkPlanner, FlowNames.trunk_name y
 ## las troncales de AutoTrains; D118). Primero la lógica pura; después la escena (la de
 ## test_cruces, con vías de estación): ciudad --(c_p)-- pueblo --(p_m)-- maderera, con la
 ## LineaTroncal Ciudad, Pueblo, Maderera. Los trenes automáticos se mueven paso a paso, lejos del jugador.
@@ -9,6 +9,7 @@ const CONTROLES: String = "WASD: caminar · 1: 10 troncos maderera→pueblo · 2
 const PASO_S: float = 0.25
 const LOG: StringName = &"log"
 const TRAVELERS: StringName = &"travelers"
+const CEMENT: StringName = &"cement"
 const LEJOS: Vector3 = Vector3(140.0, 0.7, 0.0)
 
 ## Ya se corrieron las comprobaciones: al recargar la escena queda solo para jugar.
@@ -29,6 +30,7 @@ func _ready() -> void:
 	_probado = true
 	_probar_linea()
 	_probar_vagones()
+	_probar_vagones_por_tipo()
 	_probar_servicios()
 	_probar_nombres()
 	_probar_paradas()
@@ -169,6 +171,36 @@ func _probar_vagones() -> void:
 	var muchos: Array[Dictionary] = TrunkPlanner.plan_wagons(_lista([_flujo(&"c", &"m", 200)]), linea, &"c", &"m", AutoTrains.KIND_FLATCAR, 20, 4)
 	_check(muchos.size() == 4, "Sin pasar de lo que arrastra la locomotora")
 
+
+
+# Tarea 62: cada carga en su tipo de vagón (el cemento en el cerrado).
+func _probar_vagones_por_tipo() -> void:
+	var linea: Array[StringName] = _ids([&"c", &"p", &"m"])
+	var tipo: Callable = func(item_id: StringName) -> StringName:
+		if item_id == TRAVELERS:
+			return AutoTrains.KIND_COACH
+		return AutoTrains.KIND_BOXCAR if item_id == CEMENT else AutoTrains.KIND_FLATCAR
+	var lugares: Dictionary = {AutoTrains.KIND_FLATCAR: 20, AutoTrains.KIND_BOXCAR: 40, AutoTrains.KIND_COACH: 10}
+	var flujos: Array[ProductionFlow] = [_flujo(&"m", &"p", 20), _flujo(&"c", &"p", 30, CEMENT)]
+	var vagones: Array[Dictionary] = TrunkPlanner.plan_wagons(flujos, linea, &"c", &"m", AutoTrains.KIND_FLATCAR, 20, 4, tipo, lugares)
+	var tipos: Array[StringName] = []
+	for vagon: Dictionary in vagones:
+		tipos.append(vagon["kind"])
+	_check(vagones.size() == 2 and tipos.has(AutoTrains.KIND_FLATCAR) and tipos.has(AutoTrains.KIND_BOXCAR), "Troncos en plataforma y cemento en vagón cerrado: %s" % [tipos])
+	var cerrado: int = tipos.find(AutoTrains.KIND_BOXCAR)
+	_check(cerrado >= 0 and int(vagones[cerrado]["units"]) == 30, "Las 30 bolsas entran en un solo vagón cerrado (40 lugares)")
+	flujos.append(_flujo(&"p", &"m", 20, CEMENT))
+	vagones = TrunkPlanner.plan_wagons(flujos, linea, &"c", &"m", AutoTrains.KIND_FLATCAR, 20, 4, tipo, lugares)
+	_check(vagones.size() == 2, "El cemento que sigue del pueblo a la maderera usa el mismo vagón cerrado (otro tramo)")
+	flujos.append(_flujo(&"m", &"c", 10))
+	vagones = TrunkPlanner.plan_wagons(flujos, linea, &"c", &"m", AutoTrains.KIND_FLATCAR, 20, 4, tipo, lugares)
+	_check(vagones.size() == 3, "Troncos de vuelta no van en el vagón cerrado aunque vaya vacío para ese lado (%d vagones)" % vagones.size())
+	var servicios: Array = TrunkPlanner.split_services(flujos, linea, 20, 2, tipo, lugares)
+	_check(servicios.size() == 2, "Con 2 vagones por tren, lo que no entra va a un segundo servicio")
+	var nadie: Callable = func(_item_id: StringName) -> bool: return false
+	var chicos: Array[Dictionary] = AutoTrains.plan_wagons(_lista([_flujo(&"c", &"p", 10, CEMENT)]), &"c", nadie, lugares, 4, tipo)
+	_check(chicos.size() == 1 and chicos[0]["kind"] == AutoTrains.KIND_BOXCAR, "Un tren chico también lleva el cemento en vagón cerrado")
+	_check(load(AutoTrains.BOXCAR_SCENE) is PackedScene and load(AutoTrains.BOXCAR_DATA) is WagonData, "La escena y los datos del vagón cerrado cargan")
 
 func _probar_servicios() -> void:
 	var linea: Array[StringName] = _ids([&"c", &"p", &"m"])
@@ -318,7 +350,8 @@ func _probar_escena() -> void:
 	_llegar(carga)
 	var principal: Path3D = ($Pueblo/Vias as StationTracks).get_main_track().get_track_path()
 	_check(carga.dwelling and carga.state == AutoTrainRun.State.INBOUND and carga.hop_from == &"pueblo", "Para en el pueblo sin terminar el viaje")
-	_check(AutoTrainRun.piece_station(carga.leg[0]) == &"pueblo" and AutoTrainRun.piece_track_name(carga.leg[0]) == String(principal.name), "Para en la vía principal")
+	# Desde la 61d.3 la troncal de carga para en la de carga o la de cruce; la principal queda para los pasajeros.
+	_check(AutoTrainRun.piece_station(carga.leg[0]) == &"pueblo" and AutoTrainRun.piece_track_name(carga.leg[0]) != String(principal.name), "La de carga para fuera de la vía principal (en la de cruce)")
 	_check(absf(carga.due - AutoTrains.now_hours() - AutoTrainRun.MIN_DWELL_HOURS) < 0.05, "Espera media hora")
 	_check(carga.status_text(GameState.missions.station_name).contains("parada en"), "El tablero dice que está parada")
 	_avanzar_hasta(carga.due)

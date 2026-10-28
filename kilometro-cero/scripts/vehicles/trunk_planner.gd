@@ -14,6 +14,10 @@ extends RefCounted
 ## - Servicios (split_services): los flujos, del más viejo al más nuevo, entran en el primer
 ##   servicio donde sus vagones caben en lo que arrastra la locomotora; si no, en el siguiente
 ##   (otro tren del mismo recorrido, a otra hora).
+## - Vagones por tipo (tarea 62): con `kind_of` (func(item_id) -> tipo de vagón) cada carga va
+##   en su tipo (piedra y troncos en plataforma, cemento en vagón cerrado) y solo comparte vagón
+##   con cargas del mismo tipo; `capacities` da los lugares de cada tipo. Sin `kind_of`, todo va
+##   en un solo tipo con `capacity` lugares.
 ## Índices: la posición de cada estación en la línea. "dir" de una carga sobre la línea: 1 hacia
 ## el final de la línea, -1 hacia el principio, 0 los dos (ida y vuelta).
 
@@ -69,27 +73,29 @@ static func stops(line: Array[StringName], from: StringName, to: StringName) -> 
 	return result
 
 
-## Las cargas de los flujos: {"item", "units", "from", "to", "low", "high", "dir"} de a lo sumo
-## `capacity` unidades cada una (dir sobre la línea).
-static func chunks(flows: Array[ProductionFlow], line: Array[StringName], capacity: int) -> Array[Dictionary]:
+## Las cargas de los flujos: {"item", "units", "from", "to", "low", "high", "dir", "kind"} de a
+## lo sumo los lugares de su tipo de vagón cada una (dir sobre la línea). "kind" es &"" sin
+## `kind_of` (tarea 62).
+static func chunks(flows: Array[ProductionFlow], line: Array[StringName], capacity: int, kind_of: Callable = Callable(), capacities: Dictionary = {}) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var room: int = maxi(capacity, 1)
 	for flow: ProductionFlow in flows:
 		if not fits(flow, line):
 			continue
+		var kind: StringName = kind_of.call(flow.item_id) if kind_of.is_valid() else &""
+		var room: int = maxi(int(capacities.get(kind, capacity)), 1)
 		var a: int = line.find(flow.from_station)
 		var b: int = line.find(flow.to_station)
 		var dir: int = 0 if flow.round_trip else (1 if b > a else -1)
 		var left: int = maxi(flow.amount, 1)
 		while left > 0:
 			var units: int = mini(left, room)
-			result.append({"item": flow.item_id, "units": units, "from": flow.from_station, "to": flow.to_station, "low": mini(a, b), "high": maxi(a, b), "dir": dir})
+			result.append({"item": flow.item_id, "units": units, "from": flow.from_station, "to": flow.to_station, "low": mini(a, b), "high": maxi(a, b), "dir": dir, "kind": kind})
 			left -= units
 	return result
 
 
-## Reparte las cargas en vagones: cada vagón es {"loads": [cargas]} y dos cargas comparten vagón
-## si no se pisan (otro pedazo de la línea u otro sentido). Las que empiezan antes van primero.
+## Reparte las cargas en vagones: cada vagón es {"loads": [cargas], "kind"} y dos cargas del
+## mismo tipo de vagón lo comparten si no se pisan (otro pedazo de la línea u otro sentido). Las que empiezan antes van primero.
 static func pack(loads: Array[Dictionary]) -> Array[Dictionary]:
 	var sorted: Array[Dictionary] = loads.duplicate()
 	sorted.sort_custom(_starts_before)
@@ -101,7 +107,7 @@ static func pack(loads: Array[Dictionary]) -> Array[Dictionary]:
 				slot = index
 				break
 		if slot < 0:
-			wagons.append({"loads": [] as Array[Dictionary]})
+			wagons.append({"loads": [] as Array[Dictionary], "kind": part.get("kind", &"")})
 			slot = wagons.size() - 1
 		(wagons[slot]["loads"] as Array[Dictionary]).append(part)
 	return wagons
@@ -110,7 +116,7 @@ static func pack(loads: Array[Dictionary]) -> Array[Dictionary]:
 ## Los servicios de una troncal: listas de flujos (del más viejo al más nuevo en cada una).
 ## Un flujo que no entra en ningún servicio abre otro; si no entra ni solo, ese servicio lleva
 ## lo que arrastre la locomotora.
-static func split_services(flows: Array[ProductionFlow], line: Array[StringName], capacity: int, max_wagons: int) -> Array:
+static func split_services(flows: Array[ProductionFlow], line: Array[StringName], capacity: int, max_wagons: int, kind_of: Callable = Callable(), capacities: Dictionary = {}) -> Array:
 	var services: Array = []
 	for flow: ProductionFlow in flows:
 		if not fits(flow, line):
@@ -119,7 +125,7 @@ static func split_services(flows: Array[ProductionFlow], line: Array[StringName]
 		for service: Array[ProductionFlow] in services:
 			var trial: Array[ProductionFlow] = service.duplicate()
 			trial.append(flow)
-			if pack(chunks(trial, line, capacity)).size() <= max_wagons:
+			if pack(chunks(trial, line, capacity, kind_of, capacities)).size() <= max_wagons:
 				service.append(flow)
 				placed = true
 				break
@@ -134,10 +140,11 @@ static func split_services(flows: Array[ProductionFlow], line: Array[StringName]
 ## revés, 0 los dos) más "loads": lo que lleva por pedazo ({"item", "units", "from", "to",
 ## "dir"}, con el mismo dir). "item", "units" y "dir" resumen lo que se ve hasta que la carga
 ## cambie en cada parada (tarea 61d.3): la primera carga, la mayor y el sentido de sus cargas.
-static func plan_wagons(flows: Array[ProductionFlow], line: Array[StringName], home: StringName, away: StringName, kind: StringName, capacity: int, max_wagons: int) -> Array[Dictionary]:
+## "kind" es el tipo de cada vagón según `kind_of` (tarea 62) o, sin él, `kind`.
+static func plan_wagons(flows: Array[ProductionFlow], line: Array[StringName], home: StringName, away: StringName, kind: StringName, capacity: int, max_wagons: int, kind_of: Callable = Callable(), capacities: Dictionary = {}) -> Array[Dictionary]:
 	var forward: int = 1 if line.find(away) >= line.find(home) else -1
 	var wagons: Array[Dictionary] = []
-	for packed: Dictionary in pack(chunks(flows, line, capacity)):
+	for packed: Dictionary in pack(chunks(flows, line, capacity, kind_of, capacities)):
 		if wagons.size() >= max_wagons:
 			break
 		var loads: Array[Dictionary] = []
@@ -149,7 +156,8 @@ static func plan_wagons(flows: Array[ProductionFlow], line: Array[StringName], h
 			units = maxi(units, int(part["units"]))
 			dirs[dir] = true
 		var shown_dir: int = int(dirs.keys()[0]) if dirs.size() == 1 else 0
-		wagons.append({"kind": kind, "item": loads[0]["item"], "dir": shown_dir, "units": units, "loads": loads})
+		var wagon_kind: StringName = packed["kind"] if packed["kind"] != &"" else kind
+		wagons.append({"kind": wagon_kind, "item": loads[0]["item"], "dir": shown_dir, "units": units, "loads": loads})
 	return wagons
 
 
@@ -160,6 +168,8 @@ static func _starts_before(a: Dictionary, b: Dictionary) -> bool:
 
 
 static func _has_room(wagon: Dictionary, part: Dictionary) -> bool:
+	if wagon.get("kind", &"") != part.get("kind", &""):
+		return false
 	for other: Dictionary in wagon["loads"]:
 		var same_way: bool = int(other["dir"]) == 0 or int(part["dir"]) == 0 or int(other["dir"]) == int(part["dir"])
 		if same_way and int(other["low"]) < int(part["high"]) and int(part["low"]) < int(other["high"]):
