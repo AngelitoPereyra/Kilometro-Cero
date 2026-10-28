@@ -1,0 +1,300 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicles/wagon.gd" id="1_veh"]
+[ext_resource type="Resource" path="res://data/vehicles/boxcar.tres" id="2_data"]
+[ext_resource type="Script" path="res://scripts/storage/storage_container.gd" id="3_cont"]
+[ext_resource type="Script" path="res://scripts/storage/storage_area.gd" id="4_area"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_piso"]
+albedo_color = Color(0.5, 0.35, 0.2, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_chasis"]
+albedo_color = Color(0.08, 0.08, 0.08, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_rampa"]
+albedo_color = Color(0.45, 0.3, 0.15, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_Chasis"]
+size = Vector3(2, 0.5, 9.4)
+
+[sub_resource type="BoxShape3D" id="Shape_Chasis"]
+size = Vector3(2, 0.5, 9.4)
+
+[sub_resource type="BoxMesh" id="Mesh_Piso"]
+size = Vector3(3, 0.3, 10)
+
+[sub_resource type="BoxShape3D" id="Shape_Piso"]
+size = Vector3(3, 0.3, 10)
+
+[sub_resource type="BoxMesh" id="Mesh_RampaDerecha"]
+size = Vector3(1.6, 0.1, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_RampaDerecha"]
+size = Vector3(1.6, 0.1, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_RampaIzquierda"]
+size = Vector3(1.6, 0.1, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_RampaIzquierda"]
+size = Vector3(1.6, 0.1, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_pasarela"]
+albedo_color = Color(0.3, 0.3, 0.32, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_Pasarela"]
+size = Vector3(1, 0.03, 1)
+
+[sub_resource type="BoxShape3D" id="Shape_Pasarela"]
+size = Vector3(1, 0.03, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_troncos"]
+albedo_color = Color(0.72, 0.66, 0.52, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_Troncos"]
+size = Vector3(2.4, 1.6, 9)
+
+[sub_resource type="BoxShape3D" id="Shape_ZonaDeCarga"]
+size = Vector3(3, 1.6, 10)
+
+[sub_resource type="StandardMaterial3D" id="Mat_paredes"]
+albedo_color = Color(0.45, 0.2, 0.15, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_ParedIzquierdaFrente"]
+size = Vector3(0.1, 2.4, 4)
+
+[sub_resource type="BoxShape3D" id="Shape_ParedIzquierdaFrente"]
+size = Vector3(0.1, 2.4, 4)
+
+[sub_resource type="BoxMesh" id="Mesh_ParedIzquierdaFondo"]
+size = Vector3(0.1, 2.4, 4)
+
+[sub_resource type="BoxShape3D" id="Shape_ParedIzquierdaFondo"]
+size = Vector3(0.1, 2.4, 4)
+
+[sub_resource type="BoxMesh" id="Mesh_ParedDerechaFrente"]
+size = Vector3(0.1, 2.4, 4)
+
+[sub_resource type="BoxShape3D" id="Shape_ParedDerechaFrente"]
+size = Vector3(0.1, 2.4, 4)
+
+[sub_resource type="BoxMesh" id="Mesh_ParedDerechaFondo"]
+size = Vector3(0.1, 2.4, 4)
+
+[sub_resource type="BoxShape3D" id="Shape_ParedDerechaFondo"]
+size = Vector3(0.1, 2.4, 4)
+
+[sub_resource type="BoxMesh" id="Mesh_PuntaFrenteIzquierda"]
+size = Vector3(0.9, 2.4, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_PuntaFrenteIzquierda"]
+size = Vector3(0.9, 2.4, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_PuntaFrenteDerecha"]
+size = Vector3(0.9, 2.4, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_PuntaFrenteDerecha"]
+size = Vector3(0.9, 2.4, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_PuntaFrenteDintel"]
+size = Vector3(1.2, 0.3, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_PuntaFrenteDintel"]
+size = Vector3(1.2, 0.3, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_PuntaFondoIzquierda"]
+size = Vector3(0.9, 2.4, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_PuntaFondoIzquierda"]
+size = Vector3(0.9, 2.4, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_PuntaFondoDerecha"]
+size = Vector3(0.9, 2.4, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_PuntaFondoDerecha"]
+size = Vector3(0.9, 2.4, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_PuntaFondoDintel"]
+size = Vector3(1.2, 0.3, 0.1)
+
+[sub_resource type="BoxShape3D" id="Shape_PuntaFondoDintel"]
+size = Vector3(1.2, 0.3, 0.1)
+
+[sub_resource type="BoxMesh" id="Mesh_Techo"]
+size = Vector3(3, 0.1, 10)
+
+[sub_resource type="BoxShape3D" id="Shape_Techo"]
+size = Vector3(3, 0.1, 10)
+
+[node name="Boxcar" type="PathFollow3D"]
+script = ExtResource("1_veh")
+data = ExtResource("2_data")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="CuerpoFisico" type="AnimatableBody3D" parent="."]
+sync_to_physics = false
+collision_mask = 0
+
+[node name="Chasis" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = SubResource("Mat_chasis")
+mesh = SubResource("Mesh_Chasis")
+
+[node name="Piso" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+material_override = SubResource("Mat_piso")
+mesh = SubResource("Mesh_Piso")
+
+[node name="RampaDerecha" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(0.866025, 0.5, 0, -0.5, 0.866025, 0, 0, 0, 1, 2.16782, 0.356699, 0)
+material_override = SubResource("Mat_rampa")
+mesh = SubResource("Mesh_RampaDerecha")
+
+[node name="RampaIzquierda" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, -2.16782, 0.356699, 0)
+material_override = SubResource("Mat_rampa")
+mesh = SubResource("Mesh_RampaIzquierda")
+
+[node name="Chasis" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+shape = SubResource("Shape_Chasis")
+
+[node name="Piso" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+shape = SubResource("Shape_Piso")
+
+[node name="RampaDerecha" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(0.866025, 0.5, 0, -0.5, 0.866025, 0, 0, 0, 1, 2.16782, 0.356699, 0)
+shape = SubResource("Shape_RampaDerecha")
+
+[node name="RampaIzquierda" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, -2.16782, 0.356699, 0)
+shape = SubResource("Shape_RampaIzquierda")
+
+[node name="Pasarela" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.815, 5.45)
+material_override = SubResource("Mat_pasarela")
+mesh = SubResource("Mesh_Pasarela")
+
+[node name="Pasarela" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.815, 5.45)
+shape = SubResource("Shape_Pasarela")
+
+[node name="Carga" type="Node3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+visible = false
+
+[node name="Troncos" type="MeshInstance3D" parent="Visual/Carga"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+material_override = SubResource("Mat_troncos")
+mesh = SubResource("Mesh_Troncos")
+
+[node name="ParedIzquierdaFrente" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2, 3)
+material_override = SubResource("Mat_paredes")
+mesh = SubResource("Mesh_ParedIzquierdaFrente")
+
+[node name="ParedIzquierdaFrente" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2, 3)
+shape = SubResource("Shape_ParedIzquierdaFrente")
+
+[node name="ParedIzquierdaFondo" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2, -3)
+material_override = SubResource("Mat_paredes")
+mesh = SubResource("Mesh_ParedIzquierdaFondo")
+
+[node name="ParedIzquierdaFondo" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.45, 2, -3)
+shape = SubResource("Shape_ParedIzquierdaFondo")
+
+[node name="ParedDerechaFrente" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2, 3)
+material_override = SubResource("Mat_paredes")
+mesh = SubResource("Mesh_ParedDerechaFrente")
+
+[node name="ParedDerechaFrente" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2, 3)
+shape = SubResource("Shape_ParedDerechaFrente")
+
+[node name="ParedDerechaFondo" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2, -3)
+material_override = SubResource("Mat_paredes")
+mesh = SubResource("Mesh_ParedDerechaFondo")
+
+[node name="ParedDerechaFondo" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.45, 2, -3)
+shape = SubResource("Shape_ParedDerechaFondo")
+
+[node name="PuntaFrenteIzquierda" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.05, 2, 4.95)
+material_override = SubResource("Mat_paredes")
+mesh = SubResource("Mesh_PuntaFrenteIzquierda")
+
+[node name="PuntaFrenteIzquierda" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.05, 2, 4.95)
+shape = SubResource("Shape_PuntaFrenteIzquierda")
+
+[node name="PuntaFrenteDerecha" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.05, 2, 4.95)
+material_override = SubResource("Mat_paredes")
+mesh = SubResource("Mesh_PuntaFrenteDerecha")
+
+[node name="PuntaFrenteDerecha" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.05, 2, 4.95)
+shape = SubResource("Shape_PuntaFrenteDerecha")
+
+[node name="PuntaFrenteDintel" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.05, 4.95)
+material_override = SubResource("Mat_paredes")
+mesh = SubResource("Mesh_PuntaFrenteDintel")
+
+[node name="PuntaFrenteDintel" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.05, 4.95)
+shape = SubResource("Shape_PuntaFrenteDintel")
+
+[node name="PuntaFondoIzquierda" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.05, 2, -4.95)
+material_override = SubResource("Mat_paredes")
+mesh = SubResource("Mesh_PuntaFondoIzquierda")
+
+[node name="PuntaFondoIzquierda" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.05, 2, -4.95)
+shape = SubResource("Shape_PuntaFondoIzquierda")
+
+[node name="PuntaFondoDerecha" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.05, 2, -4.95)
+material_override = SubResource("Mat_paredes")
+mesh = SubResource("Mesh_PuntaFondoDerecha")
+
+[node name="PuntaFondoDerecha" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.05, 2, -4.95)
+shape = SubResource("Shape_PuntaFondoDerecha")
+
+[node name="PuntaFondoDintel" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.05, -4.95)
+material_override = SubResource("Mat_paredes")
+mesh = SubResource("Mesh_PuntaFondoDintel")
+
+[node name="PuntaFondoDintel" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.05, -4.95)
+shape = SubResource("Shape_PuntaFondoDintel")
+
+[node name="Techo" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.25, 0)
+material_override = SubResource("Mat_paredes")
+mesh = SubResource("Mesh_Techo")
+
+[node name="Techo" type="CollisionShape3D" parent="CuerpoFisico"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.25, 0)
+shape = SubResource("Shape_Techo")
+
+[node name="Carga" type="Node" parent="."]
+script = ExtResource("3_cont")
+
+[node name="ZonaDeCarga" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+script = ExtResource("4_area")
+reach = 6.0
+
+[node name="Forma" type="CollisionShape3D" parent="ZonaDeCarga"]
+shape = SubResource("Shape_ZonaDeCarga")

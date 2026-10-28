@@ -208,19 +208,71 @@ func first_delivery(item_id: StringName, amount: int) -> int:
 	return amount * Mission.FIRST_DELIVERY_DAYS
 
 
-## Las principales activas de pasajeros que salen de una estación (su productor elegido).
+## Las misiones activas de pasajeros que salen de una estación: las principales cuyo productor
+## elegido es esa estación y, desde la tarea 62, las secundarias de entrega que piden gente
+## que sale de ahí (`passenger_source`).
 func get_passenger_missions_from(station_id: StringName) -> Array[Mission]:
 	var result: Array[Mission] = []
 	for mission: Mission in _missions.values():
-		if mission.main and mission.is_active() and is_passenger(mission.item_id) and find_source(mission) == station_id:
-			result.append(mission)
+		for item_id: StringName in get_passenger_needs(mission):
+			if passenger_source(mission, item_id) == station_id:
+				result.append(mission)
+				break
 	return result
 
 
-## Si alguna principal activa (de cualquier estación) espera este pasajero.
+## Los pasajeros que todavía espera una misión activa (id -> unidades): la principal de
+## pasajeros o una secundaria de entrega que pide gente (tarea 62). Vacío si no espera a nadie.
+func get_passenger_needs(mission: Mission) -> Dictionary[StringName, int]:
+	var needs: Dictionary[StringName, int] = {}
+	if mission == null or not mission.is_active() or mission.kind != MissionData.Kind.DELIVERY:
+		return needs
+	var remaining: Dictionary[StringName, int] = mission.get_remaining()
+	for item_id: StringName in remaining:
+		if remaining[item_id] > 0 and is_passenger(item_id):
+			needs[item_id] = remaining[item_id]
+	return needs
+
+
+## De qué estación sale la gente de una misión: en una principal, su productor elegido
+## (find_source); en una secundaria (tarea 62), la estación más cerca que produce ese pasajero,
+## primero las conectadas. Vacío si no hay ninguna.
+func passenger_source(mission: Mission, item_id: StringName) -> StringName:
+	if mission == null:
+		return &""
+	if mission.main:
+		return find_source(mission) if mission.item_id == item_id else &""
+	var best: StringName = &""
+	var best_connected: bool = false
+	var best_length: float = INF
+	for station_id: StringName in production.get_station_ids():
+		if station_id == mission.station_id or production.get_production(station_id).get(item_id, 0) <= 0:
+			continue
+		var route: Variant = _find_route(station_id, mission.station_id)
+		if route == null:
+			continue
+		var connected: bool = production.are_connected(station_id, mission.station_id)
+		var length: float = _length_of(route)
+		if best == &"" or (connected and not best_connected) or (connected == best_connected and length < best_length):
+			best = station_id
+			best_connected = connected
+			best_length = length
+	return best
+
+
+## Si alguna misión activa (de cualquier estación, principal o secundaria) espera este pasajero.
 func is_reserved_passenger(item_id: StringName) -> bool:
 	for mission: Mission in _missions.values():
-		if mission.main and mission.is_active() and mission.item_id == item_id and is_passenger(item_id):
+		if get_passenger_needs(mission).has(item_id):
+			return true
+	return false
+
+
+## Si a la estación ya le llegó `item_id` con una misión cumplida (tarea 62: la maestra de una
+## secundaria abre la escuela aunque no tenga flujo).
+func has_delivered(station_id: StringName, item_id: StringName) -> bool:
+	for mission: Mission in _missions.values():
+		if mission.station_id == station_id and mission.is_completed() and mission.delivered.get(item_id, 0) > 0:
 			return true
 	return false
 

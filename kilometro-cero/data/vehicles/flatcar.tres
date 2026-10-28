@@ -6,7 +6,7 @@
 script = ExtResource("1_wdata")
 cargo_type = 0
 capacity = 20
-accepted_tags = Array[StringName]([&"log", &"rail"])
+accepted_tags = Array[StringName]([&"log", &"rail", &"stone"])
 id = &"flatcar"
 display_name = "plataforma"
 length = 10.0

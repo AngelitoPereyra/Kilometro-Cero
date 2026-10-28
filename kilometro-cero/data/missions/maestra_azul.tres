@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="MissionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="1_amt"]
+[ext_resource type="Resource" path="res://data/items/teacher.tres" id="2_mae"]
+[ext_resource type="Script" path="res://scripts/missions/mission_data.gd" id="3_mis"]
+
+[sub_resource type="Resource" id="Pide_maestra"]
+script = ExtResource("1_amt")
+item = ExtResource("2_mae")
+amount = 1
+
+[resource]
+script = ExtResource("3_mis")
+id = &"maestra_azul"
+title = "La maestra de Azul"
+intro = "Con los colonos llegaron chicos, y la escuela está cerrada desde que se fue la última maestra. En Olavarría la escuela normal ya forma maestras otra vez. ¿Nos traés una en el coche? Abrí las puertas allá y acá."
+outro = "¡Ya suena la campana! Hacía años que los chicos no tenían clase en el pueblo."
+station_id = &"azul"
+delivery = Array[ExtResource("1_amt")]([SubResource("Pide_maestra")])
+min_level = 2
+reward_money = 200

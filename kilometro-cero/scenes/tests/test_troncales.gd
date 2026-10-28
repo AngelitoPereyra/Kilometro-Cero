@@ -1,5 +1,5 @@
 extends Node3D
-## Prueba de las tareas 61d.1 y 61d.2: trenes troncales (TrunkLine, TrunkPlanner, FlowNames.trunk_name y
+## Prueba de las tareas 61d.1 a 61d.3: trenes troncales (TrunkLine, TrunkPlanner, FlowNames.trunk_name y
 ## las troncales de AutoTrains; D118). Primero la lógica pura; después la escena (la de
 ## test_cruces, con vías de estación): ciudad --(c_p)-- pueblo --(p_m)-- maderera, con la
 ## LineaTroncal Ciudad, Pueblo, Maderera. Los trenes automáticos se mueven paso a paso, lejos del jugador.
@@ -32,6 +32,7 @@ func _ready() -> void:
 	_probar_servicios()
 	_probar_nombres()
 	_probar_paradas()
+	_probar_carga_visible()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await _probar_escena()
@@ -78,7 +79,16 @@ func _process(_delta: float) -> void:
 			for carga: Dictionary in wagon.get("loads", []):
 				cargas.append("%d %s %s→%s" % [carga["units"], carga["item"], carga["from"], carga["to"]])
 			vagones.append("[%s]" % (", ".join(cargas) if not cargas.is_empty() else "%d %s" % [wagon["units"], wagon["item"]]))
-		lineas.append("%s%s · %s" % [run.status_text(GameState.missions.station_name), " (en la vía)" if _trains.is_spawned(run) else "", " ".join(vagones)])
+		# Por qué vías de estación va el viaje (para ver si el plan y los cambios coinciden).
+		var vias: PackedStringArray = []
+		for piece: StringName in run.leg:
+			if AutoTrainRun.is_station_piece(piece):
+				vias.append("%s/%s" % [AutoTrainRun.piece_station(piece), AutoTrainRun.piece_track_name(piece)])
+		var cabeza: String = ""
+		var tren: Array[Vehicle] = _trains.get_train(run)
+		if not tren.is_empty():
+			cabeza = " · cabeza en %s, cola en %s" % [tren[0].get_parent().name, tren.back().get_parent().name]
+		lineas.append("%s%s · %s · vías: %s%s" % [run.status_text(GameState.missions.station_name), " (en la vía)" if _trains.is_spawned(run) else "", " ".join(vagones), ", ".join(vias), cabeza])
 	_hud.text = "\n".join(lineas)
 
 
@@ -209,6 +219,27 @@ func _probar_paradas() -> void:
 	_check(_trains._goes_first(troncal, chico) and not _trains._goes_first(chico, troncal), "Si piden vía a la vez, la troncal va primero aunque lleve menos")
 
 
+func _probar_carga_visible() -> void:
+	var run := AutoTrainRun.new()
+	run.trunk_key = "troncal|prueba"
+	run.home = &"c"
+	run.away = &"m"
+	run.stops = _ids([&"c", &"p", &"m"])
+	var cargas: Array[Dictionary] = [
+		{"item": LOG, "units": 10, "from": &"m", "to": &"p", "dir": -1},
+		{"item": LOG, "units": 5, "from": &"c", "to": &"m", "dir": 1},
+		{"item": LOG, "units": 7, "from": &"p", "to": &"c", "dir": -1},
+	]
+	var vagon: Dictionary = {"kind": AutoTrains.KIND_FLATCAR, "item": LOG, "dir": 0, "units": 10, "loads": cargas}
+	_check(_trains._shown_units(run, vagon, run.cargo_dir()) == 5, "En la ciudad, a la ida, se ve lo que va a la maderera")
+	run.state = AutoTrainRun.State.AT_AWAY
+	_check(_trains._shown_units(run, vagon, run.cargo_dir()) == 10, "En la maderera, a la vuelta, se ven los troncos para el pueblo")
+	run.state = AutoTrainRun.State.INBOUND
+	run.dwelling = true
+	run.hop_from = &"p"
+	_check(_trains._shown_units(run, vagon, run.cargo_dir()) == 7, "Parada en el pueblo: bajan los de la maderera y suben los que van a la ciudad")
+
+
 func _lista(flujos: Array) -> Array[ProductionFlow]:
 	var result: Array[ProductionFlow] = []
 	result.assign(flujos)
@@ -261,11 +292,19 @@ func _probar_escena() -> void:
 	_check(_trains.get_runs().size() == 1, "Otra carga de la línea va en la misma troncal")
 	_check(carga.wagons.size() == 1 and (carga.wagons[0]["loads"] as Array).size() == 2, "Un solo vagón: los troncos al pueblo a la vuelta y los de la ciudad a la ida")
 	_check(_trains.get_runs_at(&"pueblo").has(carga), "El tablero del pueblo la muestra aunque solo pase")
+	var tablero: String = "\n".join(_trains.describe_at(&"pueblo"))
+	_check(tablero.contains("para acá a la ida") and tablero.contains("a la vuelta"), "El tablero del pueblo dice a qué hora para a la ida y a la vuelta")
+	_check(not "\n".join(_trains.describe_at(&"ciudad")).contains("para acá"), "En las puntas sigue con la hora de salida y de vuelta")
 
-	# A la ida no para en el pueblo: ahí no sube ni baja nada que vaya para la maderera.
+	# Para en todas las estaciones de su recorrido, también a la ida.
 	_avanzar_hasta(carga.due)
 	_trains.step(0.0)
-	_check(carga.state == AutoTrainRun.State.OUTBOUND and carga.hop_to == &"" and carga.leg.has(&"c_p") and carga.leg.has(&"p_m"), "A la ida pasa de largo por el pueblo")
+	_check(carga.state == AutoTrainRun.State.OUTBOUND and carga.hop_to == &"pueblo" and carga.leg.has(&"c_p") and not carga.leg.has(&"p_m"), "A la ida también para en el pueblo")
+	_llegar(carga)
+	_check(carga.dwelling and carga.hop_from == &"pueblo", "Parada en el pueblo")
+	_avanzar_hasta(carga.due)
+	_trains.step(0.0)
+	_check(carga.state == AutoTrainRun.State.OUTBOUND and carga.leg.has(&"p_m"), "Sigue a la maderera")
 	_llegar(carga)
 	_check(carga.state == AutoTrainRun.State.AT_AWAY, "Llega a la maderera")
 	_trains.step(0.0)
@@ -311,7 +350,10 @@ func _probar_escena() -> void:
 	for piece: StringName in carga.leg:
 		if AutoTrainRun.is_station_piece(piece) and AutoTrainRun.piece_station(piece) == &"pueblo":
 			por_el_pueblo = piece
-	_check(carga.state == AutoTrainRun.State.OUTBOUND and por_el_pueblo != &"" and AutoTrainRun.piece_track_name(por_el_pueblo) != String(principal.name), "Con la principal ocupada pasa por otra vía del pueblo")
+	_check(carga.state == AutoTrainRun.State.OUTBOUND and por_el_pueblo != &"" and AutoTrainRun.piece_track_name(por_el_pueblo) != String(principal.name), "Con la principal ocupada para en otra vía del pueblo")
+	_llegar(carga)
+	_avanzar_hasta(carga.due)
+	_trains.step(0.0)
 	_llegar(carga)
 	_check(carga.state == AutoTrainRun.State.AT_AWAY, "Llega a la maderera")
 	parado.get_parent().remove_child(parado)

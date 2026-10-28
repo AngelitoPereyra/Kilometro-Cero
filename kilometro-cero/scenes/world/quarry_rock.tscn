@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/components/harvestable.gd" id="1_harv"]
+[ext_resource type="Resource" path="res://data/items/crowbar.tres" id="2_bar"]
+[ext_resource type="Resource" path="res://data/items/limestone.tres" id="3_piedra"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_caliza"]
+albedo_color = Color(0.78, 0.76, 0.68, 1)
+roughness = 1.0
+
+[sub_resource type="BoxMesh" id="Mesh_bloque"]
+size = Vector3(2.6, 1.8, 2.2)
+
+[sub_resource type="BoxMesh" id="Mesh_punta"]
+size = Vector3(1.4, 1.0, 1.2)
+
+[sub_resource type="BoxShape3D" id="Shape_bloque"]
+size = Vector3(2.6, 1.8, 2.2)
+
+[node name="Afloramiento" type="StaticBody3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("Shape_bloque")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Bloque" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(0.97, 0, 0.24, 0, 1, 0, -0.24, 0, 0.97, 0, 0.9, 0)
+material_override = SubResource("Mat_caliza")
+mesh = SubResource("Mesh_bloque")
+
+[node name="Punta" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(0.87, 0, -0.5, 0, 1, 0, 0.5, 0, 0.87, 0.4, 2.2, -0.2)
+material_override = SubResource("Mat_caliza")
+mesh = SubResource("Mesh_punta")
+
+[node name="Harvestable" type="Node" parent="."]
+script = ExtResource("1_harv")
+required_tool = ExtResource("2_bar")
+hits_required = 4
+reach = 3.0
+drop_item = ExtResource("3_piedra")
+drop_amount = 3

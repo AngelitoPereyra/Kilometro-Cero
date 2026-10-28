@@ -4,7 +4,8 @@ extends Node3D
 ## del pueblo cuando llega la maestra. Va dentro de una Station (normalmente en
 ## Niveles/NivelN). En el editor se ve siempre, para acomodarlo; jugando aparece cuando la
 ## estación tiene un flujo de `item_id` (la principal del especialista se cumplió) y brota como
-## en el festejo. Al cargar una partida con el flujo ya hecho, aparece quieto.
+## en el festejo. Al cargar una partida con el flujo ya hecho, aparece quieto. Desde la tarea
+## 62 también abre si el especialista llegó con una secundaria (MissionBoard.has_delivered).
 
 signal opened
 
@@ -49,6 +50,12 @@ func is_open() -> bool:
 	return _open
 
 
-## Si a la estación ya le llega `item_id` por un flujo.
+## Si a la estación ya le llega `item_id` por un flujo o, desde la tarea 62, si llegó con una
+## secundaria cumplida (la maestra de Azul).
 func has_arrived() -> bool:
-	return _station != null and GameState.production.get_committed_supply(_station.get_station_id()).get(item_id, 0) > 0
+	if _station == null:
+		return false
+	var station_id: StringName = _station.get_station_id()
+	if GameState.production.get_committed_supply(station_id).get(item_id, 0) > 0:
+		return true
+	return GameState.missions != null and GameState.missions.has_delivered(station_id, item_id)

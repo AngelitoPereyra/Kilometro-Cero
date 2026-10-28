@@ -64,11 +64,15 @@ extends Node
 ## punta donde está parada queda; la lejana cambia enseguida). Sus vagones salen del tramo más
 ## cargado (TrunkPlanner) y lo que no entra en lo que arrastra la locomotora va en otro servicio
 ## del mismo recorrido, a otra hora. Lo que no va por una línea sigue con el tren de su conexión.
-## Paradas y prioridad (tarea 61d.2): la troncal para media hora en cada estación del medio donde
-## sube o baja algo en ese sentido (en la principal si está libre) y pasa de largo por las demás;
-## reserva de parada en parada (AutoTrainRun.hop_to). Si varios piden vía a la vez, la troncal va
+## Paradas y prioridad (tarea 61d.2): la troncal para media hora en cada estación del medio de su
+## recorrido, a la ida y a la vuelta (en la principal si está libre): en cada una baja y sube lo
+## que haga falta (Batmi, 2026-10-28); reserva de parada en parada (AutoTrainRun.hop_to). Si varios piden vía a la vez, la troncal va
 ## primero. Lleva una locomotora en cada punta: no da la vuelta, a la vuelta la de adelante es la
 ## de la cola (la que tira, la de la cabeza del tren, empuja; lejos es igual).
+## Carga y tablero (tarea 61d.3): cada vagón de una troncal muestra lo que lleva en el pedazo que
+## sale de la estación donde está (al parar baja lo que llega y sube lo que sigue), y el tablero
+## de cada estación del medio dice a qué hora para la troncal a la ida y a la vuelta, según su
+## horario.
 
 signal train_added(run: AutoTrainRun)
 signal train_removed(run: AutoTrainRun)
@@ -89,6 +93,11 @@ const KIND_COACH: StringName = &"coach"
 ## Motivos de las troncales (tarea 61d): carga y pasajeros van en trenes distintos.
 const TRUNK_CARGO: String = "carga"
 const TRUNK_PASSENGERS: String = "pasajeros"
+## En qué vía para un tren al llegar, en orden de preferencia: la de carga, la de cruce y la
+## principal. La troncal de pasajeros para en la principal, junto al andén (tarea 61d.3, Batmi):
+## así la gente no cruza la vía del tren de carga.
+const DEFAULT_TRACK_ROLES: Array = [StationTrack.Role.FREIGHT, StationTrack.Role.SIDING, StationTrack.Role.MAIN]
+const PASSENGER_TRACK_ROLES: Array = [StationTrack.Role.MAIN, StationTrack.Role.SIDING, StationTrack.Role.FREIGHT]
 ## Acelerador con que andan (fracción de la velocidad máxima), también lejos del jugador.
 const AUTO_THROTTLE: float = 0.7
 ## Primer horario de ida y cuántas horas después sale el tren siguiente (provisorio).
@@ -282,7 +291,7 @@ func get_signal(segment_id: StringName, station_id: StringName) -> RailSignal:
 func describe_at(station_id: StringName) -> PackedStringArray:
 	var lines: PackedStringArray = []
 	for run: AutoTrainRun in get_runs_at(station_id):
-		lines.append(run.status_text(_station_name))
+		lines.append(run.status_text(_station_name) + _pass_text(run, station_id))
 	return lines
 
 
@@ -586,27 +595,58 @@ func _trunk_reach(flows: Array[ProductionFlow], line: Array[StringName]) -> Vect
 	return TrunkPlanner.anchor(TrunkPlanner.span(flows, line), hubs)
 
 
-# La próxima parada de una troncal desde donde está (tarea 61d.2): la primera estación de su
-# recorrido, en el sentido del viaje, donde sube o baja algo que va en ese sentido; "" si la
-# próxima es la punta.
+# La próxima parada de una troncal desde donde está (tarea 61d.2): la estación siguiente de su
+# recorrido en el sentido del viaje (para en todas); "" si la siguiente es la punta.
 func _next_stop(run: AutoTrainRun) -> StringName:
 	var route: Array[StringName] = run.stops.duplicate()
 	if not run.is_outbound():
 		route.reverse()
-	var dir: int = run.cargo_dir()
-	var wanted: Dictionary = {}
-	for wagon: Dictionary in run.wagons:
-		for part: Dictionary in wagon.get("loads", []):
-			if int(part["dir"]) == 0 or int(part["dir"]) == dir:
-				wanted[part["from"]] = true
-				wanted[part["to"]] = true
 	var start: int = route.find(run.leg_from())
-	if start < 0:
+	if start < 0 or start + 1 >= route.size() - 1:
 		return &""
-	for index: int in range(start + 1, route.size() - 1):
-		if wanted.has(route[index]):
-			return route[index]
-	return &""
+	return route[start + 1]
+
+
+# Para el tablero de una estación del medio de una troncal (61d.3): a qué hora para, a la ida y a
+# la vuelta, según su horario (sin contar demoras). "" si no es troncal o es una punta.
+func _pass_text(run: AutoTrainRun, station_id: StringName) -> String:
+	if not run.is_trunk() or station_id == run.home or station_id == run.away or not run.stops.has(station_id):
+		return ""
+	var parts: PackedStringArray = []
+	for outbound: bool in [true, false]:
+		var route: Array[StringName] = run.stops.duplicate()
+		if not outbound:
+			route.reverse()
+		var hours: float = 0.0
+		for index: int in range(1, route.size()):
+			hours += _travel_hours(route[index - 1], route[index])
+			if route[index] == station_id:
+				break
+			hours += AutoTrainRun.MIN_DWELL_HOURS
+		var start: float = run.out_hour if outbound else run.back_hour
+		parts.append("a la %s %s" % ["ida" if outbound else "vuelta", AutoTrainRun.hour_text(start + hours)])
+	return " · para acá " + ", ".join(parts)
+
+
+# Cuánto tarda lejos del jugador de una estación a otra (horas de juego).
+func _travel_hours(from: StringName, to: StringName) -> float:
+	var network: RailNetwork = _network()
+	if network == null:
+		return 0.0
+	var meters: float = 0.0
+	for segment_id: StringName in network.find_route(from, to, true):
+		meters += network.get_segment_length(segment_id)
+	var per_hour: float = _abstract_speed() / GameClock.hours_per_real_second(GameState.DAY_LENGTH_MINUTES)
+	return meters / per_hour if per_hour > 0.0 else 0.0
+
+
+# Las vías donde prefiere parar (61d.3): la troncal de pasajeros en la principal; los demás, en la
+# de carga o la de cruce.
+func _track_roles(run: AutoTrainRun) -> Array:
+	var target: Dictionary = _trunk_targets.get(run.id, {})
+	if run.is_trunk() and bool(target.get("passengers", false)):
+		return PASSENGER_TRACK_ROLES
+	return DEFAULT_TRACK_ROLES
 
 
 # Cuántos vehículos tiene el tren en la escena: locomotora, vagones y, en las troncales, la
@@ -743,7 +783,7 @@ func _plan_leg(network: RailNetwork, run: AutoTrainRun, through_cut: bool, stric
 			if (option[0] as StationTrack).get_track_path().name == AutoTrainRun.piece_track_name(parked):
 				start = option
 	elif run.leg.is_empty():
-		start = _pick_track(run, leaving, false)
+		start = _pick_track(run, leaving, false, _track_roles(run))
 	if not start.is_empty():
 		# Sale por la punta que toca el tramo: si es el final de su curva, va hacia el final.
 		_append_station_piece(pieces, lengths, from, start[0], start[1])
@@ -757,13 +797,7 @@ func _plan_leg(network: RailNetwork, run: AutoTrainRun, through_cut: bool, stric
 		if not arriving.is_empty():
 			var chosen: Array = []
 			if index == route.size() - 1:
-				if run.is_trunk() and run.hop_to != &"":
-					# En una parada del medio, la troncal para en la principal si está libre (61d.2).
-					for option: Array in arriving:
-						if (option[0] as StationTrack).is_main():
-							chosen = _pick_track(run, [option], true)
-				if chosen.is_empty():
-					chosen = _pick_track(run, arriving, strict)
+				chosen = _pick_track(run, arriving, strict, _track_roles(run))
 				if chosen.is_empty():
 					return {"error": "esperando vía libre en %s" % _station_name(station)}
 			else:
@@ -810,9 +844,9 @@ func _station_options(network: RailNetwork, segment_id: StringName, station: Str
 
 # La vía donde para: la de carga, si no la de cruce, si no la principal; la primera libre (sin
 # reserva de otro ni vehículos). Sin `strict`, si no hay libre, la primera.
-func _pick_track(run: AutoTrainRun, options: Array, strict: bool) -> Array:
+func _pick_track(run: AutoTrainRun, options: Array, strict: bool, roles: Array = DEFAULT_TRACK_ROLES) -> Array:
 	var ordered: Array = []
-	for role: StationTrack.Role in [StationTrack.Role.FREIGHT, StationTrack.Role.SIDING, StationTrack.Role.MAIN]:
+	for role: StationTrack.Role in roles:
 		for option: Array in options:
 			if (option[0] as StationTrack).role == role:
 				ordered.append(option)
@@ -2005,8 +2039,29 @@ func _apply_loads(run: AutoTrainRun) -> void:
 		var wagon := train[index + 1] as Wagon
 		var entry: Dictionary = run.wagons[index]
 		if wagon != null:
-			var entry_dir: int = int(entry["dir"])
-			wagon.set_display_load(int(entry["units"]) if entry_dir == 0 or entry_dir == dir else 0)
+			wagon.set_display_load(_shown_units(run, entry, dir))
+
+
+# Lo que se ve en un vagón. En una troncal (61d.3), lo que lleva en el pedazo que sale de la
+# estación donde está (o de donde salió) hacia la siguiente del recorrido, en el sentido `dir`.
+func _shown_units(run: AutoTrainRun, entry: Dictionary, dir: int) -> int:
+	var entry_dir: int = int(entry["dir"])
+	if not run.is_trunk() or not entry.has("loads"):
+		return int(entry["units"]) if entry_dir == 0 or entry_dir == dir else 0
+	var here: int = run.stops.find(run.leg_from())
+	var next: int = here + (1 if run.is_outbound() else -1)
+	if here < 0 or next < 0 or next >= run.stops.size():
+		return 0
+	var total: int = 0
+	for part: Dictionary in entry["loads"]:
+		var part_dir: int = int(part["dir"])
+		if part_dir != 0 and part_dir != dir:
+			continue
+		var a: int = run.stops.find(part["from"])
+		var b: int = run.stops.find(part["to"])
+		if a >= 0 and b >= 0 and mini(a, b) <= mini(here, next) and maxi(here, next) <= maxi(a, b):
+			total += int(part["units"])
+	return total
 
 
 # --- Cerca del jugador: el tren de verdad se maneja solo ---

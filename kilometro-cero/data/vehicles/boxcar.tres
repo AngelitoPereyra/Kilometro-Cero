@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="WagonData" format=3]
+
+[ext_resource type="Script" path="res://scripts/vehicles/wagon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+cargo_type = 2
+capacity = 40
+accepted_tags = Array[StringName]([&"cement"])
+id = &"boxcar"
+display_name = "vagón cerrado"
+length = 10.0
+max_speed = 15.0
+acceleration = 1.5
+braking = 3.0
+coast_deceleration = 0.3

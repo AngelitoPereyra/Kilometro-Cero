@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/world/obstacle.gd" id="1_obs"]
 [ext_resource type="Script" path="res://scripts/components/clearable.gd" id="2_clear"]
 [ext_resource type="Resource" path="res://data/items/crowbar.tres" id="3_bar"]
+[ext_resource type="Resource" path="res://data/items/limestone.tres" id="4_piedra"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_piedra"]
 albedo_color = Color(0.5, 0.5, 0.48, 1)
@@ -35,3 +36,5 @@ mesh = SubResource("Mesh_piedra")
 script = ExtResource("2_clear")
 required_tool = ExtResource("3_bar")
 hits_required = 5
+drop_item = ExtResource("4_piedra")
+drop_amount = 3

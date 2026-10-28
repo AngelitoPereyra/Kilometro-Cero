@@ -118,11 +118,13 @@ func plan_exchange(station_id: StringName, aboard: Dictionary[StringName, int], 
 	var board_free: Dictionary[StringName, int] = {}
 	var board_paid: Dictionary[StringName, int] = {}
 	var left: Dictionary[StringName, int] = aboard.duplicate()
-	# 1. Los reservados para las principales de esta estación.
+	# 1. Los reservados para las misiones de esta estación (principales y, desde la 62,
+	# secundarias que piden gente).
 	var wanted: Dictionary[StringName, int] = {}
-	for mission: Mission in missions.get_main_missions(station_id):
-		if is_passenger(mission.item_id):
-			wanted[mission.item_id] = wanted.get(mission.item_id, 0) + mission.get_remaining().get(mission.item_id, 0)
+	for mission: Mission in missions.get_active_missions(station_id):
+		var mission_needs: Dictionary[StringName, int] = missions.get_passenger_needs(mission)
+		for item_id: StringName in mission_needs:
+			wanted[item_id] = wanted.get(item_id, 0) + mission_needs[item_id]
 	for item_id: StringName in left:
 		var amount: int = mini(left[item_id], wanted.get(item_id, 0))
 		if amount > 0:
@@ -139,10 +141,13 @@ func plan_exchange(station_id: StringName, aboard: Dictionary[StringName, int], 
 			left[item_id] -= amount
 			demand -= amount
 	var seats: int = capacity - _sum(left)
-	# 3. Suben gratis los que faltan para las principales que salen de acá.
+	# 3. Suben gratis los que faltan para las misiones que salen de acá.
 	var needed: Dictionary[StringName, int] = {}
 	for mission: Mission in missions.get_passenger_missions_from(station_id):
-		needed[mission.item_id] = needed.get(mission.item_id, 0) + mission.get_remaining().get(mission.item_id, 0)
+		var mission_needs: Dictionary[StringName, int] = missions.get_passenger_needs(mission)
+		for item_id: StringName in mission_needs:
+			if missions.passenger_source(mission, item_id) == station_id:
+				needed[item_id] = needed.get(item_id, 0) + mission_needs[item_id]
 	# Primero los especialistas: son pocos y abren edificios.
 	var order: Array[StringName] = []
 	for item_id: StringName in needed:
