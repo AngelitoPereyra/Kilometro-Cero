@@ -22,6 +22,10 @@ extends RefCounted
 ## Paradas (tarea 61d.2): una troncal va de parada en parada. `hop_to` es la estación del medio
 ## donde termina el pedazo de viaje actual ("" si va hasta la punta); al llegar ahí espera
 ## MIN_DWELL_HOURS (`dwelling`, sin dejar de ir de ida o de vuelta) y sigue desde `hop_from`.
+## Vuelta atrás (tarea 62.4, D120): un tren trabado en el camino (turn_back) vuelve a la estación de
+## donde salió como si fuera una parada: ahí espera MIN_DWELL_HOURS y prueba de nuevo el mismo viaje.
+## Guardado (tarea 62.4, D120): con AutoTrains.park_hidden, un tren parado en su punta se guarda
+## (`hidden`): no está en ninguna vía hasta poco antes de su salida.
 
 enum State { AT_HOME, OUTBOUND, AT_AWAY, INBOUND }
 
@@ -76,6 +80,12 @@ var stops: Array[StringName] = []
 var hop_from: StringName = &""
 var hop_to: StringName = &""
 var dwelling: bool = false
+## Tarea 62.4: vuelve a la estación de donde salió (turn_back) y cuándo llegó a su punta (hora
+## absoluta, -1 si todavía no viajó).
+var turned_back: bool = false
+var arrived_at: float = -1.0
+## Tarea 62.4: guardado fuera de las vías hasta poco antes de su salida (AutoTrains.park_hidden).
+var hidden: bool = false
 
 
 ## Una hora del día que vuelve cada día: la primera vez que llega en `after` o después.
@@ -271,12 +281,39 @@ func arrive_stop(now: float) -> void:
 	hop_from = hop_to
 	hop_to = &""
 	due = now + MIN_DWELL_HOURS
+	if turned_back:
+		# Volvió marcha atrás: el próximo intento va otra vez con la locomotora adelante.
+		turned_back = false
+		loco_leads = not loco_leads
 	waiting = ""
 	var kept: Array[StringName] = [leg.back()]
 	var kept_lengths: Array[float] = [leg_lengths.back()]
 	leg = kept
 	leg_lengths = kept_lengths
 	position = start_position()
+
+
+## Vuelve a la estación de donde salió el pedazo de viaje actual (tarea 62.4): el viaje se da
+## vuelta desde donde está y termina ahí como en una parada del medio (arrive_stop), para probar
+## de nuevo. La locomotora queda del otro lado (empuja) hasta llegar. Devuelve false si no viaja.
+func turn_back() -> bool:
+	if not is_moving() or leg.is_empty():
+		return false
+	var origin: StringName = leg_from()
+	var target: StringName = leg_to()
+	var total: float = get_leg_length()
+	# Si vuelve a la punta hacia donde va el viaje (dio la vuelta dos veces), llega a la punta.
+	hop_to = &"" if origin == (away if is_outbound() else home) else origin
+	hop_from = target
+	leg.reverse()
+	leg_lengths.reverse()
+	for index: int in leg.size():
+		leg[index] = flip_piece(leg[index])
+	position = total - position
+	loco_leads = not loco_leads
+	turned_back = not turned_back
+	waiting = ""
+	return true
 
 
 ## La posición que tiene el tren de verdad (cuando está cerca del jugador).
@@ -292,6 +329,8 @@ func arrive(now: float) -> void:
 	hop_from = &""
 	hop_to = &""
 	dwelling = false
+	turned_back = false
+	arrived_at = now
 	if state == State.OUTBOUND:
 		state = State.AT_AWAY
 		due = next_occurrence(back_hour, after)
@@ -346,6 +385,8 @@ func segment_entry(index: int, other_end: Callable) -> StringName:
 ## "Tren de troncos de Maderera: viajando a Pueblo · sale 07:00, vuelve 13:00".
 func status_text(station_name: Callable) -> String:
 	var where: String = STATE_NAMES[state] % station_name.call(leg_to() if is_moving() else (home if state == State.AT_HOME else away))
+	if turned_back and is_moving():
+		where = "volviendo a %s (vía ocupada adelante)" % station_name.call(leg_to())
 	if dwelling:
 		where = "parada en %s" % station_name.call(hop_from)
 	if not waiting.is_empty():
@@ -362,6 +403,7 @@ func to_dict() -> Dictionary:
 		"leg_lengths": leg_lengths.duplicate(),
 		"loco_leads": loco_leads, "loco_flipped": loco_flipped, "needs_turn": needs_turn,
 		"hop_from": String(hop_from), "hop_to": String(hop_to), "dwelling": dwelling,
+		"turned_back": turned_back, "arrived_at": arrived_at, "hidden": hidden,
 	}
 
 
@@ -377,6 +419,9 @@ func load_dict(values: Dictionary) -> void:
 	hop_from = StringName(values.get("hop_from", ""))
 	hop_to = StringName(values.get("hop_to", ""))
 	dwelling = bool(values.get("dwelling", false))
+	turned_back = bool(values.get("turned_back", false))
+	arrived_at = float(values.get("arrived_at", -1.0))
+	hidden = bool(values.get("hidden", false))
 	turn_until = -1.0
 	leg.clear()
 	for segment_id: Variant in values.get("leg", []):

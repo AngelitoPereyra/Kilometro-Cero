@@ -1,10 +1,17 @@
 extends Node3D
 ## El Hito A (tarea 62.3, D77 y D119): Azul --(o_a, cortado por un árbol caído)-- Olavarría
 ## --(o_s)-- Sierras Bayas --(s_c, desvío cortado por piedras)-- cantera vieja, en la Línea del
-## Sud. Arranca en la vía principal de Olavarría, junto al andén, con locomotora, plataforma y
-## vagón cerrado (en la escena están en o_s y se pasan a la estación al empezar); el hacha está en el
-## galpón de Olavarría y la barreta en el andén de Azul. El texto de arriba es provisorio hasta
-## la interfaz de la tarea 67.
+## Sud. El texto de arriba es provisorio hasta la interfaz de la tarea 67.
+## Tarea 62.4 (D120, después de la primera partida de Batmi): los flujos empiezan el día siguiente
+## de cumplida la misión (la primera entrega es la del jugador) y los trenes automáticos se guardan
+## entre viaje y viaje (TrenesAutomaticos.park_hidden).
+## Tarea 62.5 (D121, prueba de Batmi para darle más uso a las herramientas): arranca solo con la
+## locomotora en la principal de Olavarría (en la escena está en o_s y se pasa a la estación al
+## empezar), encerrada por dos árboles caídos (grupo troncos_olavarria, en o_a y en o_s). Don
+## Ernesto, el jefe de estación, da "La vía tapada" y el hacha. Los vagones son regalos vacíos
+## (WagonGift) que carga el jugador: una plataforma en Azul al despejar o_a (troncos del monte),
+## otra en Sierras Bayas al cumplir la de los troncos (piedra con la barreta de Azul) y un vagón
+## cerrado en Olavarría al cumplir la de la piedra (cemento).
 
 const CONTROLES: String = "WASD: caminar · E: agarrar · clic: golpear (hacha, barreta) · F: cabina, tablero, mercado, taller o hablar · O: puertas del coche (en la cabina)\nT: pasa un día (provisorio, para probar) · H: esconde o muestra este texto"
 ## Pesos con que arranca la partida (D119): alcanzan para el cemento del coche de regalo.
@@ -23,6 +30,7 @@ const START_AHEAD: float = 12.0
 func _ready() -> void:
 	if GameState.money < START_MONEY:
 		GameState.add_money(START_MONEY - GameState.money)
+	GameState.missions.flows_start_next_day = true
 	# Las vías de estación y el acople de los vagones se arman diferidos.
 	for _i: int in 3:
 		await get_tree().physics_frame
@@ -83,6 +91,11 @@ func _process(_delta: float) -> void:
 		lineas.append("Coche de pasajeros: " + PassengerTraffic.coach_state_name(coche))
 	for flujo: ProductionFlow in modelo.get_flows():
 		lineas.append("Flujo: %s · entregó %d" % [flujo.describe(), flujo.last_delivered])
+	for nodo: Node in get_tree().get_nodes_in_group(WagonGift.GROUP):
+		var regalo := nodo as WagonGift
+		var vagon: Wagon = regalo.get_wagon() if regalo != null else null
+		if vagon != null and vagon.front == null and vagon.rear == null:
+			lineas.append("%s · esperando en la vía, engánchalo" % regalo.describe())
 	var cerca: Interactable = Interactable.find_nearest(get_tree(), _player.global_position, _player)
 	if cerca != null:
 		lineas.append("F: " + cerca.get_prompt())

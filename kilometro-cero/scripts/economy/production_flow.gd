@@ -21,6 +21,9 @@ var round_trip: bool = false
 ## Nombre especial del flujo y de su tren ("El Marplatense", D106); vacío: el armado por
 ## FlowNames. Se guarda.
 var custom_name: String = ""
+## Recién nacido (tarea 62.4, D120): empieza el día siguiente. Mientras tanto ya compromete la
+## producción y el consumo (no nace otra misión por lo mismo), pero no entrega ni lleva tren.
+var pending: bool = false
 
 
 func _init(new_from: StringName = &"", new_to: StringName = &"", new_item: StringName = &"", new_amount: int = 0) -> void:
@@ -33,7 +36,9 @@ func _init(new_from: StringName = &"", new_to: StringName = &"", new_item: Strin
 ## "10 log de maderera a pueblo" (para pruebas y avisos).
 func describe() -> String:
 	var text: String = "%d %s de %s a %s" % [amount, item_id, from_station, to_station]
-	return text + ", ida y vuelta" if round_trip else text
+	if round_trip:
+		text += ", ida y vuelta"
+	return text + " (empieza mañana)" if pending else text
 
 
 ## Para el guardado (tarea 65).
@@ -46,6 +51,7 @@ func to_dict() -> Dictionary:
 		"amount": amount,
 		"round_trip": round_trip,
 		"name": custom_name,
+		"pending": pending,
 	}
 
 
@@ -56,4 +62,5 @@ static func from_dict(values: Dictionary) -> ProductionFlow:
 	flow.id = int(values.get("id", 0))
 	flow.round_trip = bool(values.get("round_trip", false))
 	flow.custom_name = String(values.get("name", ""))
+	flow.pending = bool(values.get("pending", false))
 	return flow

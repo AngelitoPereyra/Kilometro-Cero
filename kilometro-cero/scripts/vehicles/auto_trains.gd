@@ -73,6 +73,15 @@ extends Node
 ## sale de la estación donde está (al parar baja lo que llega y sube lo que sigue), y el tablero
 ## de cada estación del medio dice a qué hora para la troncal a la ida y a la vuelta, según su
 ## horario.
+## Trabados y perdidos (tarea 62.4, D120): un automático trabado STUCK_SECONDS en el camino (por
+## ejemplo, de frente con el tren del jugador en una vía simple) vuelve a la estación de donde salió
+## si lo de atrás está libre (AutoTrainRun.turn_back), espera y prueba otra vez. Uno de verdad que
+## se salió de su recorrido (su locomotora en una vía que no es de su viaje) frena, avisa con un
+## warning y vuelve a su recorrido (desaparece y lo retoma como número).
+## Guardados (tarea 62.4, D120, idea de Batmi para el Hito A, hasta que haya playas de maniobra):
+## con `park_hidden`, un tren parado en su punta se guarda HIDE_AFTER_HOURS después de llegar (no
+## ocupa vía ni se ve) y vuelve SHOW_BEFORE_HOURS antes de su salida, en una vía libre de su
+## estación (si no hay, espera). El primer viaje de un tren nuevo sale a su horario.
 
 signal train_added(run: AutoTrainRun)
 signal train_removed(run: AutoTrainRun)
@@ -135,6 +144,14 @@ const MAIN_BUSY_SPEED: float = 0.1
 const RESERVE_AHEAD_HOURS: float = 0.25
 ## Lejos del jugador, cuánto tarda en dar la vuelta (horas de juego).
 const TURN_HOURS: float = 0.25
+## Segundos trabado en el camino antes de volver a la estación de donde salió (tarea 62.4).
+const STUCK_SECONDS: float = 15.0
+## Segundos con la locomotora fuera de su recorrido: a los primeros frena, al final vuelve a él.
+const LOST_BRAKE_SECONDS: float = 0.5
+const LOST_SECONDS: float = 2.0
+## Con park_hidden (tarea 62.4): horas después de llegar en que se guarda y antes de salir en que vuelve.
+const HIDE_AFTER_HOURS: float = 0.5
+const SHOW_BEFORE_HOURS: float = 0.5
 ## Acelerador de la locomotora mientras maniobra y segundos que tarda la mesa en girar.
 const MANEUVER_THROTTLE: float = 0.6
 const TURN_SECONDS: float = 4.0
@@ -155,6 +172,9 @@ const LABEL_RANGE: float = 80.0
 ## Largo de cada bloque de la vía doble (tarea 61e.3): entre carteles de bloque. Las vías más cortas
 ## que esto (sin contar la salida y la llegada) quedan en un solo bloque.
 @export_range(20.0, 2000.0, 1.0, "suffix:m") var block_length: float = 400.0
+## Guarda los trenes parados en su punta entre viaje y viaje (tarea 62.4): no ocupan vía. Apagado,
+## como antes, esperan en su vía.
+@export var park_hidden: bool = false
 
 var _runs: Array[AutoTrainRun] = []
 # run.id -> Array[Vehicle], de la locomotora hacia atrás.
@@ -175,6 +195,10 @@ var _track_signals: Dictionary = {}
 var _block_signals: Dictionary = {}
 # run.id -> segundos trabado
 var _blocked: Dictionary = {}
+# run.id -> segundos trabado lejos del jugador (tarea 62.4).
+var _stuck: Dictionary = {}
+# run.id -> segundos con la locomotora fuera de su recorrido (tarea 62.4).
+var _lost: Dictionary = {}
 ## Troncales (tarea 61d): id del viaje -> {"line": ids de la línea, "low" y "high": las puntas
 ## que usan sus flujos, "flows", "passengers", "service"}.
 var _trunk_targets: Dictionary = {}
@@ -306,7 +330,8 @@ func describe_at(station_id: StringName) -> PackedStringArray:
 
 ## Revisa los flujos ahora (normalmente lo hace solo cada REFRESH_TIME).
 func sync_flows() -> void:
-	var flows: Array[ProductionFlow] = GameState.production.get_flows() if GameState.production != null else [] as Array[ProductionFlow]
+	# Los que empiezan mañana todavía no llevan tren (tarea 62.4).
+	var flows: Array[ProductionFlow] = GameState.production.get_running_flows() if GameState.production != null else [] as Array[ProductionFlow]
 	var lines: Array[Array] = []
 	for line: TrunkLine in TrunkLine.find_all(get_tree() if is_inside_tree() else null):
 		var ids: Array[StringName] = line.get_station_ids()
@@ -376,6 +401,8 @@ func step(delta: float) -> void:
 		if not run.is_moving():
 			if run.is_trunk() and _apply_trunk_span(run):
 				_refresh_trunk(run)
+			if park_hidden and _update_parking(run, now):
+				continue
 			if run.leg.is_empty():
 				_plan_parked_leg(run)
 			if run.needs_turn:
@@ -389,6 +416,8 @@ func step(delta: float) -> void:
 				_on_arrived(run)
 			elif run.is_moving():
 				_release_passed(run)
+				if not is_spawned(run):
+					_check_stuck_far(run, delta)
 	# Si varios piden a la vez, primero el que lleva más carga (D114).
 	asking.sort_custom(_goes_first)
 	for run: AutoTrainRun in asking:
@@ -466,8 +495,14 @@ func _start_run(run: AutoTrainRun) -> void:
 	run.loco_length = _loco_data.length if _loco_data != null else 10.0
 	var now: float = now_hours()
 	run.set_schedule(FIRST_HOUR + HOUR_STEP * float(_runs.size() % SCHEDULE_SLOTS), now)
-	# El primer viaje sale apenas nace el flujo; después sigue su horario.
-	run.due = now + AutoTrainRun.MIN_DWELL_HOURS
+	if park_hidden:
+		# Guardado (62.4): el primer viaje sale a su horario y el tren aparece un rato antes.
+		run.hidden = run.due - now > SHOW_BEFORE_HOURS
+		if run.hidden:
+			run.waiting = _hidden_text(run)
+	else:
+		# El primer viaje sale apenas nace el flujo; después sigue su horario.
+		run.due = now + AutoTrainRun.MIN_DWELL_HOURS
 	_runs.append(run)
 	train_added.emit(run)
 
@@ -536,6 +571,8 @@ func _remove_run(run: AutoTrainRun) -> void:
 	_runs.erase(run)
 	_trunk_targets.erase(run.id)
 	_blocked.erase(run.id)
+	_stuck.erase(run.id)
+	_lost.erase(run.id)
 	_reserved.erase(run.id)
 	_requested.erase(run.id)
 	_maneuvers.erase(run.id)
@@ -1081,6 +1118,155 @@ func is_segment_busy(segment_id: StringName) -> bool:
 	return false
 
 
+# --- Trabados, perdidos y guardados (tarea 62.4, D120) ---
+
+# Lejos del jugador: cuenta el tiempo que no avanza por un vehículo adelante y, pasado
+# STUCK_SECONDS, vuelve a la estación de donde salió.
+func _check_stuck_far(run: AutoTrainRun, delta: float) -> void:
+	if run.waiting != "esperando vía libre":
+		_stuck.erase(run.id)
+		return
+	var time: float = float(_stuck.get(run.id, 0.0)) + delta
+	if time >= STUCK_SECONDS:
+		_try_turn_back(run)
+		time = 0.0
+	_stuck[run.id] = time
+
+
+# Vuelve a la estación de donde salió el pedazo de viaje (AutoTrainRun.turn_back) si lo que tiene
+# atrás está libre: ningún tramo de vía doble (iría de contramano), nada reservado por otro y
+# ningún vehículo detrás de su cola. Reserva el camino de vuelta y suelta el resto. Devuelve si
+# pudo.
+func _try_turn_back(run: AutoTrainRun) -> bool:
+	var network: RailNetwork = _network()
+	if network == null or not run.is_moving() or run.leg.is_empty() or _maneuvers.has(run.id):
+		return false
+	var head_index: int = run.locate(run.position + run.lead_offset())[0]
+	if head_index < 0:
+		return false
+	var sections: Array[StringName] = []
+	for index: int in head_index + 1:
+		var piece: StringName = run.leg[index]
+		if AutoTrainRun.is_station_piece(piece):
+			var path: Path3D = _station_track_path(network, piece)
+			if path == null or network.is_track_reserved(path):
+				return false
+		elif network.is_double(piece):
+			return false
+		var section: StringName = AutoTrainRun.piece_section(piece)
+		var holder: int = get_token_holder(section)
+		if holder != 0 and holder != run.id:
+			return false
+		sections.append(section)
+	# Nada detrás de la cola (en el camino de vuelta).
+	var tail: float = run.position - run.trail_offset()
+	var own: Array[Vehicle] = get_train(run)
+	for node: Node in get_tree().get_nodes_in_group(Vehicle.GROUP):
+		var vehicle := node as Vehicle
+		if vehicle == null or vehicle.data == null or own.has(vehicle) or vehicle.is_queued_for_deletion():
+			continue
+		var at: float = _leg_coordinate(run, vehicle)
+		if not is_nan(at) and at - vehicle.data.length * 0.5 < tail:
+			return false
+	var origin: StringName = run.leg_from()
+	_release_tokens(run)
+	for section: StringName in sections:
+		_tokens[section] = run.id
+	run.turn_back()
+	_blocked.erase(run.id)
+	_stuck.erase(run.id)
+	var train: Array[Vehicle] = get_train(run)
+	if not train.is_empty():
+		train[0].destination = run.leg_to()
+		train[0].forget_route_ahead()
+	_update_signals()
+	print("AutoTrains: el %s estaba trabado y vuelve a %s." % [run.display_name, _station_name(origin)])
+	return true
+
+
+# Un tren de verdad cuya locomotora quedó fuera de su recorrido (no debería pasar): avisa y vuelve
+# a ser un número en su recorrido, donde estaba la última vez; reaparece ahí si hay lugar.
+func _rescue(run: AutoTrainRun, loco: Vehicle) -> void:
+	var path := loco.get_parent() as Path3D
+	var track: TrackSegment = RailNetwork.track_of(path)
+	var where: String = track.segment_id if track != null and track.segment_id != &"" else (String(path.name) if path != null else "?")
+	push_warning("AutoTrains: el %s se salió de su recorrido (está en %s; su viaje: %s). Vuelve a su recorrido." % [run.display_name, where, ", ".join(PackedStringArray(run.leg))])
+	_lost.erase(run.id)
+	_blocked.erase(run.id)
+	_despawn(run)
+
+
+# Con park_hidden: guarda al tren parado en su punta o lo vuelve a sacar antes de su salida.
+# Devuelve true si queda guardado (no sale ni reserva todavía).
+func _update_parking(run: AutoTrainRun, now: float) -> bool:
+	if run.hidden:
+		if now >= run.due - SHOW_BEFORE_HOURS:
+			_try_show(run)
+		return run.hidden
+	if _can_hide(run, now):
+		_hide(run)
+		return true
+	return false
+
+
+func _can_hide(run: AutoTrainRun, now: float) -> bool:
+	if run.is_moving() or run.dwelling or _maneuvers.has(run.id) or _requested.has(run.id) or _has_trip_reserved(run):
+		return false
+	if run.arrived_at < 0.0 or now < run.arrived_at + HIDE_AFTER_HOURS or run.due - now <= SHOW_BEFORE_HOURS:
+		return false
+	return not _player_aboard(get_train(run))
+
+
+func _hide(run: AutoTrainRun) -> void:
+	if run.needs_turn:
+		# Guardado da la vuelta solo.
+		_finish_turn(run, _turn_is_plain(run))
+	_despawn(run)
+	_release_tokens(run)
+	run.leg.clear()
+	run.leg_lengths.clear()
+	run.position = 0.0
+	run.hidden = true
+	run.waiting = _hidden_text(run)
+	_blocked.erase(run.id)
+	_update_signals()
+
+
+# Vuelve a la estación donde se guardó, en una vía libre (si no hay, sigue guardado y espera).
+func _try_show(run: AutoTrainRun) -> void:
+	var network: RailNetwork = _network()
+	if network == null:
+		return
+	var from: StringName = run.leg_from()
+	var route: Array[StringName] = network.find_route(from, run.leg_to(), true)
+	if route.is_empty():
+		run.waiting = "vía cortada"
+		return
+	var leaving: Array = _station_options(network, route[0], from, false)
+	if not leaving.is_empty():
+		var start: Array = _pick_track(run, leaving, true, _track_roles(run))
+		if start.is_empty():
+			run.waiting = "esperando vía libre en %s" % _station_name(from)
+			return
+		var station_track: StationTrack = start[0]
+		var pieces: Array[StringName] = [AutoTrainRun.station_piece(from, station_track.get_track_path().name, start[1])]
+		var lengths: Array[float] = [station_track.get_length()]
+		run.leg = pieces
+		run.leg_lengths = lengths
+	run.hidden = false
+	if not _plan_parked_leg(run):
+		run.leg.clear()
+		run.leg_lengths.clear()
+		run.hidden = true
+		return
+	run.waiting = ""
+	_update_signals()
+
+
+func _hidden_text(run: AutoTrainRun) -> String:
+	return "guardado hasta las %s" % AutoTrainRun.hour_text(run.due - SHOW_BEFORE_HOURS)
+
+
 # --- Carteles de señal (D114, D117) ---
 
 # Los carteles de línea de un tramo: uno en cada punta de cada vía, unos metros adentro, antes del
@@ -1288,7 +1474,7 @@ func _update_signals() -> void:
 		var track_signal: RailSignal = _track_signals[key] if is_instance_valid(_track_signals[key]) else null
 		if track_signal == null or not is_instance_valid(track_signal.station_track):
 			continue
-		track_signal.set_aspects(_track_exit_aspect(network, track_signal.station_track, track_signal.at_end), _track_entry_aspect(track_signal.station_track))
+		track_signal.set_aspects(_track_exit_aspect(network, track_signal.station_track, track_signal.at_end), _track_entry_aspect(track_signal.station_track, track_signal.at_end))
 		var track_path: Path3D = track_signal.station_track.get_track_path()
 		if track_path != null:
 			network.set_exit_stop(track_path, track_signal.at_end, -1.0 if track_signal.clear else track_signal.track_offset)
@@ -1414,20 +1600,30 @@ func _track_exit_aspect(network: RailNetwork, station_track: StationTrack, at_en
 	return RailSignal.Aspect.RED if _path_has_foreign(exit[0], _vehicles_on(path)) else RailSignal.Aspect.GREEN
 
 
-# La entrada a una vía de estación (la cara de atrás de su cartel): verde si está libre. Si la
-# tiene un automático que está llegando o pasando, verde para él. Reservada por una palanca madre,
-# rojo en las dos puntas (bloqueada).
-func _track_entry_aspect(station_track: StationTrack) -> RailSignal.Aspect:
+# La entrada a una vía de estación por la punta `at_end` (la cara de atrás de su cartel). Si la
+# tiene un automático que está llegando o pasando, verde para él. Reservada por una palanca madre
+# (tarea 62.4, pedido de Batmi: la luz tiene que ser la de la vía elegida): verde en la punta por
+# donde se reservó y rojo en la otra. Si no, verde solo si el cambio de esa punta está puesto
+# para esta vía y la vía está libre (los vagones sueltos no cuentan); las demás vías de esa punta
+# quedan en rojo.
+func _track_entry_aspect(station_track: StationTrack, at_end: bool) -> RailSignal.Aspect:
 	var path: Path3D = station_track.get_track_path()
 	var network: RailNetwork = _network()
 	if network != null and network.is_track_reserved(path):
-		return RailSignal.Aspect.RED
+		if not network.is_reserved(path, at_end):
+			return RailSignal.Aspect.RED
+		return RailSignal.Aspect.RED if _path_has_foreign(path, [], true) else RailSignal.Aspect.GREEN
 	var holder_id: int = get_token_holder(_section_of(station_track))
 	if holder_id != 0:
 		var run: AutoTrainRun = get_run(holder_id)
 		if run == null or not run.is_moving():
 			return RailSignal.Aspect.RED
 		return RailSignal.Aspect.RED if _path_has_foreign(path, get_train(run)) else RailSignal.Aspect.GREEN
+	if network != null:
+		var exit: Array = network.get_exit(path, at_end)
+		var track_switch: TrackSwitch = network.find_switch(exit[0], exit[1]) if not exit.is_empty() else null
+		if track_switch != null and track_switch.get_option_path(track_switch.state) != path:
+			return RailSignal.Aspect.RED
 	return RailSignal.Aspect.RED if _path_has_foreign(path, [], true) else RailSignal.Aspect.GREEN
 
 
@@ -1898,7 +2094,7 @@ func _find_players() -> Array[Player]:
 # no hay viaje.
 func _placement(run: AutoTrainRun) -> Array:
 	var network: RailNetwork = _network()
-	if network == null:
+	if network == null or run.hidden:
 		return []
 	if run.leg.is_empty() and not _plan_parked_leg(run):
 		return []
@@ -1924,7 +2120,7 @@ func _placement(run: AutoTrainRun) -> Array:
 # dónde está parado. Devuelve false si no hay camino.
 func _plan_parked_leg(run: AutoTrainRun) -> bool:
 	var network: RailNetwork = _network()
-	if network == null or run.is_moving():
+	if network == null or run.is_moving() or run.hidden:
 		return false
 	var plan: Dictionary = _plan_leg(network, run, true, false)
 	if plan.has("error"):
@@ -2132,7 +2328,19 @@ func _drive(run: AutoTrainRun, delta: float) -> void:
 		loco.brake = 1.0
 		return
 	var at: float = _leg_coordinate(run, loco)
-	if not is_nan(at):
+	if is_nan(at):
+		# La locomotora no está en ninguna vía de su viaje (tarea 62.4): se perdió.
+		var lost: float = float(_lost.get(run.id, 0.0)) + delta
+		_lost[run.id] = lost
+		if lost >= LOST_SECONDS:
+			_rescue(run, loco)
+			return
+		if lost >= LOST_BRAKE_SECONDS:
+			loco.throttle = 0.0
+			loco.brake = 1.0
+			return
+	else:
+		_lost.erase(run.id)
 		run.set_position(at)
 	loco.destination = run.leg_to()
 	var left: float = run.remaining()
@@ -2163,6 +2371,10 @@ func _drive(run: AutoTrainRun, delta: float) -> void:
 			var cab: Cab = _find_cab(loco)
 			if cab != null:
 				cab.sound_horn()
+		if time >= STUCK_SECONDS:
+			# Trabado hace rato (tarea 62.4): vuelve a la estación de donde salió, si puede.
+			_try_turn_back(run)
+			time = BLOCKED_TIME
 		_blocked[run.id] = time
 	else:
 		_blocked[run.id] = 0.0

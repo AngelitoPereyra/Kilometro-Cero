@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="MissionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/missions/mission_data.gd" id="1_mis"]
+[ext_resource type="Resource" path="res://data/items/axe.tres" id="2_hacha"]
+
+[resource]
+script = ExtResource("1_mis")
+id = &"la_via_tapada"
+title = "La vía tapada"
+intro = "Anoche con el viento se vinieron abajo los árboles de las dos salidas y la máquina quedó encerrada. Tomá, llevate mi hacha: cortá los troncos y liberá la vía. En Azul te espera una plataforma vacía: el monte de allá tiene leña de sobra para la cantera."
+outro = "¡Así me gusta! La vía libre otra vez. Ahora andá a Azul a buscar la plataforma."
+station_id = &"olavarria"
+kind = 2
+zone_group = &"troncos_olavarria"
+gives_tools = Array[ExtResource("2_hacha")]([ExtResource("2_hacha")])

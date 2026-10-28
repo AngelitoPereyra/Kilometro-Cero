@@ -38,6 +38,10 @@ var route_length: Callable = Callable()
 var segment_check: Callable = Callable()
 ## Cuántos nodos quedan en un grupo: func(group) -> int. Vacío: ninguno.
 var zone_count: Callable = Callable()
+## El flujo de una principal cumplida empieza el día siguiente (tarea 62.4, D120, idea de Batmi):
+## la primera entrega es la del jugador y el tren sale recién al otro día. Apagado (como antes de
+## la 62.4) empieza enseguida; lo prende la escena del Hito A.
+var flows_start_next_day: bool = false
 
 # id -> misión, en orden de creación.
 var _missions: Dictionary[StringName, Mission] = {}
@@ -462,7 +466,7 @@ func _is_ready(mission: Mission) -> bool:
 func _complete(mission: Mission) -> void:
 	mission.state = Mission.State.COMPLETED
 	if mission.main:
-		mission.flow = production.add_flow(find_source(mission), mission.station_id, mission.item_id, mission.flow_amount, is_passenger(mission.item_id))
+		mission.flow = production.add_flow(find_source(mission), mission.station_id, mission.item_id, mission.flow_amount, is_passenger(mission.item_id), flows_start_next_day)
 	elif mission.data != null:
 		for entry: ItemAmount in mission.data.reward_production:
 			if entry != null and entry.item != null:

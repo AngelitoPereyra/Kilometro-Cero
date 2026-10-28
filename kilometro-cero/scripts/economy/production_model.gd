@@ -12,6 +12,8 @@ extends RefCounted
 ##    le falta para crecer) suma un día; al juntar los días del nivel
 ##    (StationData.get_days_to_grow) sube de nivel y nace el consumo nuevo.
 ## 4. Nada decrece: un día sin cubrir no suma ni resta (estancamiento).
+## Un flujo recién nacido puede empezar el día siguiente (ProductionFlow.pending, tarea 62.4):
+## se activa al principio del próximo advance_day, antes de repartir, y ese día ya entrega.
 ## Lo que la producción no manda por flujos queda libre (get_free_production) para el mercado y
 ## las misiones (tareas 58 y 59).
 ## Desde la tarea 58 una estación puede tener producción extra permanente (add_production_bonus),
@@ -157,14 +159,16 @@ func get_consumption(station_id: StringName) -> Dictionary[StringName, int]:
 ## Crea un flujo permanente de `amount` unidades por día. Devuelve null si los datos no sirven
 ## (estación desconocida, la misma estación, sin objeto o cantidad menor a 1). No exige que
 ## alcance la producción: si no alcanza, el flujo nuevo recibe lo que dejan los más viejos.
-## `round_trip`: flujo de pasajeros que va y vuelve (tarea 60b).
-func add_flow(from: StringName, to: StringName, item_id: StringName, amount: int, round_trip: bool = false) -> ProductionFlow:
+## `round_trip`: flujo de pasajeros que va y vuelve (tarea 60b). `pending`: empieza el día
+## siguiente (tarea 62.4).
+func add_flow(from: StringName, to: StringName, item_id: StringName, amount: int, round_trip: bool = false, pending: bool = false) -> ProductionFlow:
 	if not has_station(from) or not has_station(to) or from == to or item_id == &"" or amount < 1:
 		push_warning("ProductionModel: flujo inválido (%d %s de '%s' a '%s')." % [amount, item_id, from, to])
 		return null
 	var flow := ProductionFlow.new(from, to, item_id, amount)
 	flow.id = _next_flow_id
 	flow.round_trip = round_trip
+	flow.pending = pending
 	_next_flow_id += 1
 	_flows.append(flow)
 	flow_added.emit(flow)
@@ -179,9 +183,18 @@ func remove_flow(flow: ProductionFlow) -> bool:
 	return true
 
 
-## Todos los flujos, del más viejo al más nuevo.
+## Todos los flujos, del más viejo al más nuevo (también los que empiezan mañana).
 func get_flows() -> Array[ProductionFlow]:
 	return _flows.duplicate()
+
+
+## Los flujos que ya empezaron (sin los que empiezan mañana): los que llevan tren.
+func get_running_flows() -> Array[ProductionFlow]:
+	var result: Array[ProductionFlow] = []
+	for flow: ProductionFlow in _flows:
+		if not flow.pending:
+			result.append(flow)
+	return result
 
 
 func get_flows_from(station_id: StringName) -> Array[ProductionFlow]:
@@ -252,7 +265,7 @@ func plan_deliveries() -> Dictionary[int, int]:
 			remaining[flow.from_station] = get_production(flow.from_station)
 		var left: Dictionary = remaining[flow.from_station]
 		var amount: int = 0
-		if is_flow_connected(flow):
+		if not flow.pending and is_flow_connected(flow):
 			amount = mini(flow.amount, left.get(flow.item_id, 0))
 			if amount > 0:
 				left[flow.item_id] -= amount
@@ -285,6 +298,9 @@ func is_growing(station_id: StringName) -> bool:
 ## Simula un día: entrega los flujos, suma días a las estaciones cubiertas y las hace crecer.
 ## Primero actualiza todo y después avisa, así quien escucha ve el modelo entero ya al día.
 func advance_day() -> void:
+	# Los flujos que nacieron ayer empiezan hoy (tarea 62.4).
+	for flow: ProductionFlow in _flows:
+		flow.pending = false
 	var plan: Dictionary[int, int] = plan_deliveries()
 	for flow: ProductionFlow in _flows:
 		flow.last_delivered = plan.get(flow.id, 0)

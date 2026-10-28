@@ -3,7 +3,8 @@ extends Interactable
 ## Un poblador (o un objeto que cuenta algo, como un cartel viejo) que da misiones secundarias
 ## (D80, tarea 58). Se pone en cualquier lugar del pueblo, la ciudad o la estación de carga.
 ## Registra sus misiones en GameState.missions al empezar. Con F:
-## - si tiene una disponible, la da y cuenta su presentación (`intro`);
+## - si tiene una disponible, la da y cuenta su presentación (`intro`); si la misión trae
+##   herramientas (`MissionData.gives_tools`, tarea 62.5), se las da al jugador;
 ## - si se cumplió una y todavía no contó el cierre, cuenta el cierre (`outro`);
 ## - si hay una en curso, recuerda lo que falta.
 ## Lo que dice se ve en su Label3D "Globo" durante SPEECH_TIME; el resto del tiempo el globo
@@ -56,7 +57,8 @@ func has_news() -> bool:
 
 
 ## Lo que dice al hablarle (también lo hace: da la misión o marca el cierre como contado).
-func talk() -> String:
+## `player`: a quien le da las herramientas de la misión (null: no da ninguna).
+func talk(player: Player = null) -> String:
 	var board: MissionBoard = GameState.missions
 	var text: String = ""
 	var untold: Mission = _find_untold()
@@ -68,6 +70,9 @@ func talk() -> String:
 	elif available != null:
 		board.start(available.id)
 		text = "%s\n[%s]" % [available.data.intro, board.get_title(available)]
+		var given: PackedStringArray = _give_tools(available.data, player)
+		if not given.is_empty():
+			text += "\nTe da: %s" % ", ".join(given)
 	elif active != null:
 		var steps: PackedStringArray = board.get_pending_steps(active)
 		text = "[%s] %s" % [board.get_title(active), "; ".join(steps) if not steps.is_empty() else "listo"]
@@ -80,8 +85,20 @@ func talk() -> String:
 	return text
 
 
-func _on_interact(_player: Player) -> void:
-	talk()
+func _on_interact(player: Player) -> void:
+	talk(player)
+
+
+# Le da al jugador las herramientas de la misión que no tenga. Devuelve sus nombres.
+func _give_tools(mission_data: MissionData, player: Player) -> PackedStringArray:
+	var names: PackedStringArray = []
+	var keys: KeyItems = player.get_key_items() if player != null else null
+	if keys == null:
+		return names
+	for tool: KeyItemData in mission_data.gives_tools:
+		if tool != null and keys.add(tool):
+			names.append(tool.display_name)
+	return names
 
 
 func _find(state: Mission.State) -> Mission:

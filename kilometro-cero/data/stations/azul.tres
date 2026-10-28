@@ -14,6 +14,11 @@ script = ExtResource("2_amt")
 item = ExtResource("i_travelers")
 amount = 3
 
+[sub_resource type="Resource" id="Cant_0_log"]
+script = ExtResource("2_amt")
+item = ExtResource("i_log")
+amount = 10
+
 [sub_resource type="Resource" id="Cant_2_settlers"]
 script = ExtResource("2_amt")
 item = ExtResource("i_settlers")
@@ -22,7 +27,8 @@ amount = 5
 [sub_resource type="Resource" id="Nivel1"]
 script = ExtResource("1_lvl")
 needs = Array[ExtResource("2_amt")]([SubResource("Cant_2_settlers")])
-description = "Pueblo casi vacío: el monte creció y no hay quien lo trabaje."
+days_to_grow = 1
+description = "Pueblo casi vacío: el monte creció y el hachero que queda apenas saca 10 troncos por día."
 
 [sub_resource type="Resource" id="Cant_3_limestone"]
 script = ExtResource("2_amt")
@@ -42,9 +48,10 @@ amount = 10
 [sub_resource type="Resource" id="Nivel2"]
 script = ExtResource("1_lvl")
 needs = Array[ExtResource("2_amt")]([SubResource("Cant_3_limestone"), SubResource("Cant_4_cement")])
+days_to_grow = 2
 extra_production = Array[ExtResource("2_amt")]([SubResource("Cant_5_log")])
 market = true
-description = "Llegaron los colonos: vuelve el hachero al monte y abre el almacén de ramos generales."
+description = "Llegaron los colonos: más hacheros en el monte (10 troncos más) y abre el almacén de ramos generales."
 
 [sub_resource type="Resource" id="Nivel3"]
 script = ExtResource("1_lvl")
@@ -57,5 +64,5 @@ id = &"azul"
 display_name = "Azul"
 type = 1
 region = &"hito_a"
-production = Array[ExtResource("2_amt")]([SubResource("Cant_1_travelers")])
+production = Array[ExtResource("2_amt")]([SubResource("Cant_1_travelers"), SubResource("Cant_0_log")])
 levels = Array[ExtResource("1_lvl")]([SubResource("Nivel1"), SubResource("Nivel2"), SubResource("Nivel3")])

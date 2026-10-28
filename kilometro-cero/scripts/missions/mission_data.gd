@@ -39,6 +39,9 @@ const KIND_NAMES: Array[String] = ["entrega", "habilitar tramo", "despejar zona"
 @export var reward_production: Array[ItemAmount] = []
 ## Estación que recibe la producción extra (vacío: station_id).
 @export var reward_station: StringName
+## Herramientas clave que da el poblador al dar la misión (tarea 62.5): el jefe de estación de
+## Olavarría da el hacha con la de la vía tapada.
+@export var gives_tools: Array[KeyItemData] = []
 
 
 static func kind_name(value: Kind) -> String:

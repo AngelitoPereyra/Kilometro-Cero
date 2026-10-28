@@ -32,6 +32,10 @@
 [ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="30_cant"]
 [ext_resource type="Resource" path="res://data/items/cement.tres" id="31_cem"]
 [ext_resource type="Script" path="res://scripts/stations/arrival_building.gd" id="32_esc"]
+[ext_resource type="Script" path="res://scripts/stations/wagon_gift.gd" id="33_reg"]
+[ext_resource type="Resource" path="res://data/items/log.tres" id="34_tro"]
+[ext_resource type="Resource" path="res://data/items/limestone.tres" id="35_pie"]
+[ext_resource type="Resource" path="res://data/missions/la_via_tapada.tres" id="36_via"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Cielo_mat"]
 sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
@@ -134,6 +138,7 @@ script = ExtResource("5_red")
 
 [node name="TrenesAutomaticos" type="Node" parent="."]
 script = ExtResource("6_autos")
+park_hidden = true
 
 [node name="Olavarria" parent="." instance=ExtResource("12_ciu")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
@@ -232,26 +237,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -130)
 progress = 30.0
 reversed = true
 
-[node name="Flatcar" parent="OlavarriaSierrasBayas" instance=ExtResource("9_plat")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -140.6)
-progress = 40.6
-reversed = true
-couple_on_start = true
-
-[node name="Boxcar" parent="OlavarriaSierrasBayas" instance=ExtResource("10_cerr")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -151.2)
-progress = 51.2
-reversed = true
-couple_on_start = true
-
 [node name="LineaDelSud" type="Node" parent="." node_paths=PackedStringArray("stations")]
 script = ExtResource("7_linea")
 line_name = "Línea del Sud"
 stations = [NodePath("../Azul"), NodePath("../Olavarria"), NodePath("../SierrasBayas")]
 
-[node name="ArbolCaido" parent="." instance=ExtResource("18_arb")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 300)
+[node name="ArbolCaido" parent="." groups=["troncos_olavarria"] instance=ExtResource("18_arb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 115)
 segment_id = &"o_a"
+
+[node name="ArbolCaidoSur" parent="." groups=["troncos_olavarria"] instance=ExtResource("18_arb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -115)
+segment_id = &"o_s"
 
 [node name="PiedrasDesvio1" parent="." instance=ExtResource("19_pie")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -580)
@@ -304,6 +301,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 0, -470)
 [node name="Afloramiento3" parent="Cantera" instance=ExtResource("21_afl")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -485)
 
+[node name="Afloramiento4" parent="Cantera" instance=ExtResource("21_afl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53, 0, -450)
+
+[node name="Afloramiento5" parent="Cantera" instance=ExtResource("21_afl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, -465)
+
+[node name="Afloramiento6" parent="Cantera" instance=ExtResource("21_afl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, -480)
+
+[node name="Afloramiento7" parent="Cantera" instance=ExtResource("21_afl")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 0, -495)
+
 [node name="FrenteViejo1" parent="Cantera" instance=ExtResource("21_afl")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -635)
 
@@ -342,13 +351,14 @@ mesh = SubResource("Malla_mesa")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.4, 0)
 shape = SubResource("Forma_mesa")
 
-[node name="Hacha" parent="." instance=ExtResource("22_hac")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15.5, 1.2, -45)
-start_item = ExtResource("24_hacd")
-
 [node name="Barreta" parent="." instance=ExtResource("23_bar")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1, 548)
 start_item = ExtResource("25_bard")
+
+[node name="JefeDeEstacion" parent="." instance=ExtResource("26_pob")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0.6, -42)
+speaker = "Don Ernesto, el jefe de estación"
+missions = Array[ExtResource("27_md")]([ExtResource("36_via")])
 
 [node name="Vecina" parent="." instance=ExtResource("26_pob")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.6, 532)
@@ -359,6 +369,53 @@ missions = Array[ExtResource("27_md")]([ExtResource("28_mae")])
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 1, -478)
 speaker = "Don Aurelio, el cantero"
 missions = Array[ExtResource("27_md")]([ExtResource("29_can")])
+
+[node name="RegaloAzul" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 545)
+script = ExtResource("33_reg")
+wagon_scene = ExtResource("9_plat")
+wagon_name = "una plataforma vacía"
+hint = "Cargala con troncos del monte (hacha) y llevalos a Sierras Bayas"
+open_segment = &"o_a"
+giver_name = "Azul"
+
+[node name="Texto" type="Label3D" parent="RegaloAzul"]
+billboard = 1
+font_size = 40
+outline_size = 10
+text = "Regalo"
+
+[node name="RegaloSierrasBayas" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -470)
+script = ExtResource("33_reg")
+wagon_scene = ExtResource("9_plat")
+wagon_name = "una plataforma vacía"
+hint = "Cargala con piedra de la cantera (barreta) y llevala a Olavarría"
+mission_station = &"sierras_bayas"
+mission_item = &"log"
+giver_name = "Sierras Bayas"
+
+[node name="Texto" type="Label3D" parent="RegaloSierrasBayas"]
+billboard = 1
+font_size = 40
+outline_size = 10
+text = "Regalo"
+
+[node name="RegaloOlavarria" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -30)
+script = ExtResource("33_reg")
+wagon_scene = ExtResource("10_cerr")
+mission_station = &"olavarria"
+mission_item = &"limestone"
+wagon_name = "un vagón cerrado vacío"
+hint = "Para el cemento: compralo en el mercado y llevalo a Azul"
+giver_name = "Olavarría"
+
+[node name="Texto" type="Label3D" parent="RegaloOlavarria"]
+billboard = 1
+font_size = 40
+outline_size = 10
+text = "Regalo"
 
 [node name="Player" parent="." instance=ExtResource("11_jug")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.7, -12)

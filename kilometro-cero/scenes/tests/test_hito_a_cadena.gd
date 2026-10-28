@@ -1,5 +1,5 @@
 extends Node
-## Prueba de la tarea 62.1: los datos del Hito A (Olavarría, Azul y Sierras Bayas) y la cadena
+## Prueba de las tareas 62.1, 62.4 y 62.5: los datos del Hito A (Olavarría, Azul y Sierras Bayas) y la cadena
 ## entera jugada en lógica, sin mapa (plan en tarea-62/plan-62.md). Usa su propio modelo, su
 ## tablero y su tráfico de pasajeros, así no toca la partida de GameState.
 ## Red: Azul --(o_a, cortado)-- Olavarría --(o_s)-- Sierras Bayas --(s_c, cortado)-- cantera vieja.
@@ -25,6 +25,7 @@ func _ready() -> void:
 	_probar_archivos()
 	_armar()
 	_probar_cadena()
+	_probar_vuelta_atras()
 	if _fallos == 0:
 		print("Hito A (cadena): todas las comprobaciones pasaron.")
 	else:
@@ -32,6 +33,10 @@ func _ready() -> void:
 
 
 func _probar_archivos() -> void:
+	# Tarea 62.5: la vía tapada de Olavarría la da el jefe de estación, con el hacha.
+	var tapada := load("res://data/missions/la_via_tapada.tres") as MissionData
+	_comprobar(tapada != null and tapada.validate().is_empty() and tapada.kind == MissionData.Kind.CLEAR_ZONE and tapada.zone_group == &"troncos_olavarria", "La vía tapada: despejar los troncos de Olavarría")
+	_comprobar(tapada != null and tapada.gives_tools.size() == 1 and tapada.gives_tools[0] != null and tapada.gives_tools[0].id == &"axe", "La vía tapada da el hacha")
 	var piedra := load("res://data/items/limestone.tres") as ItemData
 	var cemento := load("res://data/items/cement.tres") as ItemData
 	_comprobar(piedra != null and piedra.id == &"limestone" and piedra.size_class == ItemData.SizeClass.LARGE and piedra.tags.has(&"stone"), "Piedra caliza: grande, etiqueta stone")
@@ -84,37 +89,46 @@ func _armar() -> void:
 
 
 func _probar_cadena() -> void:
-	# 1. Al empezar: Olavarría pide piedra que nadie da; Azul pide colonos de Olavarría.
+	# Tarea 62.4 (D120): los flujos empiezan el día siguiente y los primeros niveles crecen en un día.
+	_tablero.flows_start_next_day = true
+	# 1. Al empezar: Olavarría pide piedra que nadie da; Azul pide colonos de Olavarría; Sierras
+	# Bayas pide los troncos que Azul ya saca, pero o_a está cortado.
 	var piedra_olav: Mission = _principal(&"olavarria", &"limestone")
-	_comprobar(piedra_olav != null and piedra_olav.flow_amount == 20, "Olavarría pide 20 piedras por día")
+	_comprobar(piedra_olav != null and piedra_olav.flow_amount == 10 and piedra_olav.required.get(&"limestone", 0) == 20, "Olavarría pide 10 piedras por día (primera carga de 20: una plataforma)")
 	_comprobar(piedra_olav != null and _tablero.find_source(piedra_olav) == &"", "Nadie da piedra todavía (Sierras Bayas parada)")
 	var colonos: Mission = _principal(&"azul", &"settlers")
 	_comprobar(colonos != null and colonos.flow_amount == 5 and _tablero.find_source(colonos) == &"olavarria", "Azul pide 5 colonos por día de Olavarría")
-	_comprobar(_principal(&"sierras_bayas", &"log") != null and _tablero.find_source(_principal(&"sierras_bayas", &"log")) == &"", "Sierras Bayas pide troncos y todavía nadie los da")
+	var troncos: Mission = _principal(&"sierras_bayas", &"log")
+	_comprobar(_modelo.get_production(&"azul").get(&"log", 0) == 10, "Azul ya saca 10 troncos por día")
+	_comprobar(troncos != null and _tablero.find_source(troncos) == &"azul" and _tablero.get_cut_segments(troncos).has(&"o_a"), "Sierras Bayas pide los troncos de Azul: falta despejar o_a")
 	_comprobar(_tablero.get_passenger_missions_from(&"olavarria").has(colonos) and _tablero.is_reserved_passenger(&"settlers"), "Los colonos suben gratis en Olavarría")
-	# 2. Llevar 10 colonos con o_a cortado no alcanza; al despejarlo se cumple.
+	# 2. Con o_a cortado las entregas esperan; al despejarlo se cumplen y los flujos empiezan mañana.
 	_entregar_en_coche(&"azul", &"settlers", 10)
-	_comprobar(colonos.is_active(), "Con o_a cortado la de colonos espera")
+	_tablero.deliver(&"sierras_bayas", &"log", 20)
+	_comprobar(colonos.is_active() and troncos != null and troncos.is_active(), "Con o_a cortado las de colonos y troncos esperan")
 	_abrir(&"o_a")
 	_comprobar(colonos.is_completed() and colonos.flow != null and colonos.flow.round_trip, "Despejado o_a: nace el flujo de colonos ida y vuelta")
-	# 3. Azul crece y da troncos; Sierras Bayas los pide.
-	_modelo.advance_days(3)
-	_comprobar(_modelo.get_level(&"azul") == 2, "Azul sube a nivel 2 con los colonos (nivel %d)" % _modelo.get_level(&"azul"))
-	_comprobar(_modelo.get_production(&"azul").get(&"log", 0) == 10, "Azul nivel 2: el monte da 10 troncos por día")
-	var troncos: Mission = _principal(&"sierras_bayas", &"log")
-	_comprobar(troncos != null and _tablero.find_source(troncos) == &"azul", "Sierras Bayas pide los troncos de Azul")
-	_tablero.deliver(&"sierras_bayas", &"log", 20)
-	_comprobar(troncos != null and troncos.is_completed(), "20 troncos en Sierras Bayas: nace el flujo de madera")
-	# 4. La cantera trabaja y Olavarría recibe su piedra.
-	_modelo.advance_days(3)
-	_comprobar(_modelo.get_level(&"sierras_bayas") == 2 and _modelo.get_production(&"sierras_bayas").get(&"limestone", 0) == 20, "Sierras Bayas nivel 2: 20 piedras por día")
+	_comprobar(troncos != null and troncos.is_completed() and troncos.flow != null, "Despejado o_a: nace el flujo de troncos (los 20 del regalo de Azul)")
+	_comprobar(troncos != null and troncos.flow.pending and _modelo.get_running_flows().is_empty(), "Los flujos nuevos empiezan mañana (62.4)")
+	_comprobar(_modelo.get_supply(&"sierras_bayas").get(&"log", 0) == 0, "Hoy todavía no llegan troncos por el flujo")
+	_comprobar(_principal(&"sierras_bayas", &"log") == null and _principal(&"azul", &"settlers") == null, "Pero ya comprometen: no nace otra misión por lo mismo")
+	# 3. Al otro día empiezan, y Azul y Sierras Bayas crecen en un día.
+	_modelo.advance_day()
+	_comprobar(troncos != null and not troncos.flow.pending and troncos.flow.last_delivered == 10, "Al otro día el flujo de troncos entrega 10")
+	_comprobar(_modelo.get_level(&"azul") == 2 and _modelo.get_production(&"azul").get(&"log", 0) == 20, "Azul sube a nivel 2 en un día: 20 troncos por día (nivel %d)" % _modelo.get_level(&"azul"))
+	_comprobar(_modelo.get_level(&"sierras_bayas") == 2 and _modelo.get_production(&"sierras_bayas").get(&"limestone", 0) == 20, "Sierras Bayas nivel 2 en un día: 20 piedras por día")
+	# 4. Olavarría recibe su piedra (los 20 del regalo de Sierras Bayas).
 	_comprobar(_tablero.find_source(piedra_olav) == &"sierras_bayas", "Ahora la piedra de Olavarría sale de Sierras Bayas")
-	_tablero.deliver(&"olavarria", &"limestone", 40)
-	_comprobar(piedra_olav.is_completed(), "40 piedras en Olavarría: nace el flujo de piedra")
-	_modelo.advance_days(3)
-	_comprobar(_modelo.get_level(&"olavarria") == 2, "Olavarría sube a nivel 2 (nivel %d)" % _modelo.get_level(&"olavarria"))
+	_tablero.deliver(&"olavarria", &"limestone", 20)
+	_comprobar(piedra_olav.is_completed(), "20 piedras en Olavarría: nace el flujo de piedra")
+	_modelo.advance_day()
+	_comprobar(_modelo.get_level(&"olavarria") == 2, "Olavarría sube a nivel 2 en un día (nivel %d)" % _modelo.get_level(&"olavarria"))
 	var produce: Dictionary[StringName, int] = _modelo.get_production(&"olavarria")
 	_comprobar(produce.get(&"cement", 0) == 15 and produce.get(&"teacher", 0) == 1, "Olavarría nivel 2: 15 cemento y 1 maestra por día")
+	var piedra_olav2: Mission = _principal(&"olavarria", &"limestone")
+	_comprobar(piedra_olav2 != null and piedra_olav2.flow_amount == 10 and _tablero.find_source(piedra_olav2) == &"sierras_bayas", "Olavarría nivel 2 pide 10 piedras más: a la cantera le quedan 10 libres")
+	_tablero.deliver(&"olavarria", &"limestone", 20)
+	_comprobar(piedra_olav2 != null and piedra_olav2.is_completed(), "20 piedras más: nace el segundo flujo de piedra")
 	# 5. La maestra de Azul (secundaria de pasajeros).
 	var maestra: Mission = _tablero.get_mission(&"maestra_azul")
 	_comprobar(maestra != null and maestra.state == Mission.State.AVAILABLE, "La maestra de Azul queda disponible con Azul en nivel 2")
@@ -126,15 +140,17 @@ func _probar_cadena() -> void:
 	_trafico.apply_exchange(&"azul", plan)
 	_comprobar(maestra.is_completed() and _tablero.has_delivered(&"azul", &"teacher"), "Llegó la maestra: secundaria cumplida (abre la escuela)")
 	_comprobar(not _tablero.is_reserved_passenger(&"teacher"), "Cumplida, la maestra ya no está reservada")
-	# 6. Azul pide piedra y cemento; Olavarría más piedra. Solo el cemento tiene productor libre.
+	# 6. Azul pide piedra y cemento: solo el cemento tiene productor libre.
 	var piedra_azul: Mission = _principal(&"azul", &"limestone")
 	var cemento: Mission = _principal(&"azul", &"cement")
-	var piedra_olav2: Mission = _principal(&"olavarria", &"limestone")
 	_comprobar(piedra_azul != null and piedra_azul.flow_amount == 10 and _tablero.find_source(piedra_azul) == &"", "Azul pide 10 piedras y no alcanza la cantera")
-	_comprobar(piedra_olav2 != null and piedra_olav2.flow_amount == 10 and _tablero.find_source(piedra_olav2) == &"", "Olavarría pide 10 piedras más y no alcanza")
 	_comprobar(cemento != null and cemento.flow_amount == 5 and _tablero.find_source(cemento) == &"olavarria", "Azul pide 5 cemento de Olavarría")
 	_tablero.deliver(&"azul", &"cement", 10)
 	_comprobar(cemento != null and cemento.is_completed(), "10 cemento en Azul: nace el flujo de cemento")
+	_modelo.advance_days(2)
+	_comprobar(_modelo.get_level(&"olavarria") == 3, "Olavarría llega a nivel 3 en dos días (nivel %d)" % _modelo.get_level(&"olavarria"))
+	var piedra_olav3: Mission = _principal(&"olavarria", &"limestone")
+	_comprobar(piedra_olav3 != null and piedra_olav3.flow_amount == 10 and _tablero.find_source(piedra_olav3) == &"", "Olavarría nivel 3 pide 10 piedras más y no alcanza")
 	# 7. La cantera vieja suma 20 y alcanza para los dos.
 	var cantera: Mission = _tablero.get_mission(&"cantera_vieja")
 	_comprobar(cantera != null and cantera.state == Mission.State.AVAILABLE, "La cantera vieja queda disponible con Sierras Bayas en nivel 2")
@@ -142,16 +158,35 @@ func _probar_cadena() -> void:
 	_comprobar(cantera.is_active(), "Con s_c cortado la cantera vieja sigue en curso")
 	_abrir(&"s_c")
 	_comprobar(cantera.is_completed() and _modelo.get_production(&"sierras_bayas").get(&"limestone", 0) == 40, "Despejado s_c: Sierras Bayas da 40 piedras por día")
-	_comprobar(piedra_azul != null and _tablero.find_source(piedra_azul) == &"sierras_bayas" and piedra_olav2 != null and _tablero.find_source(piedra_olav2) == &"sierras_bayas", "Ahora la piedra alcanza para Azul y Olavarría")
+	_comprobar(piedra_azul != null and _tablero.find_source(piedra_azul) == &"sierras_bayas" and piedra_olav3 != null and _tablero.find_source(piedra_olav3) == &"sierras_bayas", "Ahora la piedra alcanza para Azul y Olavarría")
 	_tablero.deliver(&"azul", &"limestone", 20)
 	_tablero.deliver(&"olavarria", &"limestone", 20)
-	_comprobar(piedra_azul != null and piedra_azul.is_completed() and piedra_olav2 != null and piedra_olav2.is_completed(), "Entregadas: nacen los dos flujos de piedra")
+	_comprobar(piedra_azul != null and piedra_azul.is_completed() and piedra_olav3 != null and piedra_olav3.is_completed(), "Entregadas: nacen los dos flujos de piedra")
 	_modelo.advance_days(3)
 	_comprobar(_modelo.get_level(&"azul") == 3, "Azul llega a nivel 3 (nivel %d)" % _modelo.get_level(&"azul"))
-	_comprobar(_modelo.get_level(&"olavarria") == 3, "Olavarría llega a nivel 3 (nivel %d)" % _modelo.get_level(&"olavarria"))
+	_comprobar(_modelo.get_level(&"olavarria") == 4, "Olavarría llega a nivel 4 (nivel %d)" % _modelo.get_level(&"olavarria"))
 	print("Flujos al final:")
 	for flujo: ProductionFlow in _modelo.get_flows():
 		print("  ", flujo.describe(), " · entregó ", flujo.last_delivered)
+
+
+# Tarea 62.4: un automático trabado vuelve a la estación de donde salió y prueba otra vez.
+func _probar_vuelta_atras() -> void:
+	var run := AutoTrainRun.new()
+	run.home = &"a"
+	run.away = &"b"
+	run.behind = 20.0
+	var piezas: Array[StringName] = [AutoTrainRun.station_piece(&"a", "Principal", true), &"a_b", AutoTrainRun.station_piece(&"b", "Principal", false)]
+	var largos: Array[float] = [100.0, 300.0, 100.0]
+	_comprobar(run.depart(piezas, largos) and run.state == AutoTrainRun.State.OUTBOUND, "Sale de a hacia b")
+	run.advance(150.0, 0.0)
+	var donde: float = run.position
+	_comprobar(run.turn_back() and run.turned_back and not run.loco_leads, "Trabado, da la vuelta: la locomotora queda atrás y empuja")
+	_comprobar(run.leg_from() == &"b" and run.leg_to() == &"a" and is_equal_approx(run.position, 500.0 - donde), "El viaje se dio vuelta desde donde estaba, hacia a")
+	_comprobar(run.leg[0] == AutoTrainRun.station_piece(&"b", "Principal", true) and run.leg[2] == AutoTrainRun.station_piece(&"a", "Principal", false), "Las vías de estación se recorren al revés")
+	_comprobar(run.advance(1000.0, 1.0) and run.dwelling and not run.is_moving(), "Llega a a como a una parada")
+	_comprobar(run.leg_from() == &"a" and run.leg_to() == &"b" and run.loco_leads and not run.turned_back, "Espera en a y vuelve a probar hacia b con la locomotora adelante")
+	_comprobar(is_equal_approx(run.due, 1.0 + AutoTrainRun.MIN_DWELL_HOURS) and run.state == AutoTrainRun.State.OUTBOUND, "Sale de nuevo en media hora, todavía de ida")
 
 
 # Entrega pasajeros como al abrir las puertas del coche en la estación.
