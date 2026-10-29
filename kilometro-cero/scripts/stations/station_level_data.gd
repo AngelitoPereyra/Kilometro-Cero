@@ -12,6 +12,9 @@ extends Resource
 @export_range(1, 365) var days_to_grow: int = 3
 ## Producción por día que se suma a la base desde este nivel.
 @export var extra_production: Array[ItemAmount] = []
+## Familias nuevas que llegan con este nivel (en el nivel 1, las del arranque) y toman oficio
+## solas según el bioma y los rasgos de la estación (D129, D132, tarea 62b.1).
+@export_range(0, 100) var families: int = 0
 ## Abre el mercado desde este nivel (compra y venta, tarea 59).
 @export var market: bool = false
 ## Abre el taller desde este nivel (además lo habilita una misión principal, D80, tarea 63).

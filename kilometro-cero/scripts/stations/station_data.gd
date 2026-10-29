@@ -11,12 +11,23 @@ extends Resource
 enum StationType { CITY, TOWN, FREIGHT, PORT }
 
 const TYPE_NAMES: Array[String] = ["ciudad", "pueblo", "estación de carga", "puerto"]
+## Cuántas familias con oficio puede traer el jugador según el tipo (D129): ciudad, pueblo,
+## estación de carga y puerto.
+const PLAYER_OCCUPATIONS_BY_TYPE: Array[int] = [3, 1, 0, 1]
 
 @export var id: StringName
 @export var display_name: String
 @export var type: StationType = StationType.TOWN
 ## Región a la que pertenece (D76; la tarea 69 le da datos propios).
 @export var region: StringName
+## Bioma de la zona (D132, tarea 62b.1): qué oficios toman solas sus familias.
+@export var biome: BiomeData
+## Rasgos puestos a mano (monte, campo, cantera, horno, laguna, costa): habilitan los oficios
+## que los piden, también de afuera del bioma (D132).
+@export var traits: Array[StringName] = []
+## Cuántas familias con oficio puede traer el jugador. -1: según el tipo (1 en un pueblo, 3 en
+## una ciudad, 0 en una estación de carga; D129).
+@export_range(-1, 10) var max_player_occupations: int = -1
 ## Producción base por día, en cualquier nivel.
 @export var production: Array[ItemAmount] = []
 ## Niveles de crecimiento: el primero es el nivel 1. Sin niveles, la estación tiene un solo
@@ -26,6 +37,26 @@ const TYPE_NAMES: Array[String] = ["ciudad", "pueblo", "estación de carga", "pu
 
 static func type_name(value: StationType) -> String:
 	return TYPE_NAMES[value]
+
+
+## Si tiene ese rasgo puesto a mano.
+func has_trait(trait_id: StringName) -> bool:
+	return traits.has(trait_id)
+
+
+## Cuántas familias con oficio puede traer el jugador (el valor puesto o el de su tipo).
+func get_max_player_occupations() -> int:
+	return max_player_occupations if max_player_occupations >= 0 else PLAYER_OCCUPATIONS_BY_TYPE[type]
+
+
+## Cuántas familias toman oficio solas hasta `level` (el cupo de los niveles hasta ese).
+func get_family_quota(level: int) -> int:
+	var total: int = 0
+	for index: int in clamp_level(level):
+		var data: StationLevelData = _level_at(index)
+		if data != null:
+			total += data.families
+	return total
 
 
 ## El nivel más alto al que puede llegar (al menos 1).
@@ -106,7 +137,8 @@ func has_workshop(level: int) -> bool:
 	return false
 
 
-## El ItemData con ese id que aparezca en la producción o en los consumos, o null.
+## El ItemData con ese id que aparezca en la producción, en los consumos o en los oficios de su
+## bioma, o null.
 func find_item(item_id: StringName) -> ItemData:
 	var lists: Array = [production]
 	for data: StationLevelData in levels:
@@ -117,6 +149,12 @@ func find_item(item_id: StringName) -> ItemData:
 		for entry: ItemAmount in list:
 			if entry != null and entry.item != null and entry.item.id == item_id:
 				return entry.item
+	# Lo que piden y dan los oficios de su bioma (tarea 62b.1).
+	if biome != null:
+		for occupation: OccupationData in biome.get_occupations():
+			var found: ItemData = occupation.find_item(item_id)
+			if found != null:
+				return found
 	return null
 
 
@@ -135,6 +173,8 @@ func validate() -> PackedStringArray:
 			continue
 		_validate_amounts(data.needs, "el consumo del nivel %d" % (index + 1), problems)
 		_validate_amounts(data.extra_production, "la producción del nivel %d" % (index + 1), problems)
+	if get_family_quota(get_max_level()) > 0 and biome == null and traits.is_empty():
+		problems.append("'%s' tiene familias pero no tiene bioma ni rasgos para darles oficio" % id)
 	return problems
 
 
