@@ -7,6 +7,7 @@ script = ExtResource("1_bf2od")
 slot_count = 20
 small_stack_limit = 99
 medium_stack_limit = 50
+large_stack_limit = 1
 almost_full_ratio = 0.75
 id = &"backpack_basic"
 display_name = "Mochila de tela"

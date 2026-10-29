@@ -1,7 +1,8 @@
 class_name Inventory
 extends Node
 ## Mochila de ranuras (D70, D86), como la de Minecraft: N ranuras y cada una apila un
-## solo tipo de objeto. Acepta pequeños y medianos, nunca grandes. Sin peso ni reglas
+## solo tipo de objeto. Acepta pequeños, medianos y, si la mochila lo dice
+## (BackpackData.large_stack_limit, tarea 62.6), grandes. Sin peso ni reglas
 ## de compatibilidad (eso queda para vagones y cajas, en StorageContainer).
 ## Lógica pura: no dibuja nada; la interfaz (InventoryUI, tarea 49) observa sus señales.
 ## Misma regla de propiedad que StorageContainer: NUNCA modifica el ItemStack que

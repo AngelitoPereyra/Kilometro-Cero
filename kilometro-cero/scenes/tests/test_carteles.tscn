@@ -1,6 +1,6 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://qqkym3by03wq"]
 
-[ext_resource type="Script" path="res://scenes/tests/test_carteles.gd" id="1_vst"]
+[ext_resource type="Script" uid="uid://brnidk0hitfqv" path="res://scenes/tests/test_carteles.gd" id="1_vst"]
 [ext_resource type="Script" uid="uid://vjyhstl4bvxp" path="res://scripts/world/manual_track.gd" id="2_vst"]
 [ext_resource type="Script" uid="uid://63tp0rc2s27h" path="res://scripts/world/track_builder.gd" id="3_vst"]
 [ext_resource type="Script" uid="uid://cr8u1ddxfxvhv" path="res://scripts/world/track_segment.gd" id="4_vst"]
@@ -9,7 +9,7 @@
 [ext_resource type="PackedScene" path="res://scenes/stations/city_station.tscn" id="9_vst"]
 [ext_resource type="PackedScene" path="res://scenes/stations/town_station.tscn" id="10_vst"]
 [ext_resource type="PackedScene" path="res://scenes/stations/freight_station.tscn" id="11_vst"]
-[ext_resource type="Script" path="res://scripts/vehicles/auto_trains.gd" id="12_vst"]
+[ext_resource type="Script" uid="uid://6s8fqeh47uuv" path="res://scripts/vehicles/auto_trains.gd" id="12_vst"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_vst"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -38,6 +38,9 @@ _data = {
 }
 point_count = 2
 
+[sub_resource type="BoxMesh" id="BoxMesh_modulo"]
+size = Vector3(1.6, 0.2, 4.8)
+
 [sub_resource type="Curve3D" id="Curve3D_pm"]
 _data = {
 "points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, -60, 0, 0, 0, 0, 0, 0, 0, 0, -330),
@@ -45,81 +48,78 @@ _data = {
 }
 point_count = 2
 
-[sub_resource type="BoxMesh" id="BoxMesh_modulo"]
-size = Vector3(1.6, 0.2, 4.8)
-
-[node name="TestCarteles" type="Node3D"]
+[node name="TestCarteles" type="Node3D" unique_id=731155537]
 script = ExtResource("1_vst")
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=573855494]
 environment = SubResource("Environment_vst")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1263702006]
 transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
 shadow_enabled = true
 
-[node name="Ground" type="StaticBody3D" parent="."]
+[node name="Ground" type="StaticBody3D" parent="." unique_id=124440667]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=2120625772]
 material_override = SubResource("StandardMaterial3D_piso")
 mesh = SubResource("BoxMesh_piso")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=764754414]
 shape = SubResource("BoxShape3D_piso")
 
-[node name="RailNetwork" type="Node" parent="."]
+[node name="RailNetwork" type="Node" parent="." unique_id=413630824]
 script = ExtResource("5_vst")
 
-[node name="TrenesAutomaticos" type="Node" parent="."]
+[node name="TrenesAutomaticos" type="Node" parent="." unique_id=1508660237]
 script = ExtResource("12_vst")
 
-[node name="Ciudad" parent="." instance=ExtResource("9_vst")]
+[node name="Ciudad" parent="." unique_id=589499736 instance=ExtResource("9_vst")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 300)
 
-[node name="Pueblo" parent="." instance=ExtResource("10_vst")]
+[node name="Pueblo" parent="." unique_id=1704636685 instance=ExtResource("10_vst")]
 
-[node name="Maderera" parent="." instance=ExtResource("11_vst")]
+[node name="Maderera" parent="." unique_id=1055411613 instance=ExtResource("11_vst")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -400)
 
-[node name="CiudadPueblo" type="Path3D" parent="."]
+[node name="CiudadPueblo" type="Path3D" parent="." unique_id=963289002]
 curve = SubResource("Curve3D_cp")
 script = ExtResource("2_vst")
 
-[node name="TrackBuilder" type="Node3D" parent="CiudadPueblo" node_paths=PackedStringArray("segment")]
+[node name="TrackBuilder" type="Node3D" parent="CiudadPueblo" unique_id=1642516167 node_paths=PackedStringArray("segment")]
 script = ExtResource("3_vst")
 module_mesh = SubResource("BoxMesh_modulo")
 segment = NodePath("../TrackSegment")
 
-[node name="TrackSegment" type="Node" parent="CiudadPueblo"]
+[node name="TrackSegment" type="Node" parent="CiudadPueblo" unique_id=1301404197]
 script = ExtResource("4_vst")
 segment_id = &"c_p"
 from_station = &"ciudad"
 to_station = &"pueblo"
 condition = 1.0
 
-[node name="PuebloMaderera" type="Path3D" parent="."]
+[node name="PuebloMaderera" type="Path3D" parent="." unique_id=450794367]
 curve = SubResource("Curve3D_pm")
 script = ExtResource("2_vst")
 
-[node name="TrackBuilder" type="Node3D" parent="PuebloMaderera" node_paths=PackedStringArray("segment")]
+[node name="TrackBuilder" type="Node3D" parent="PuebloMaderera" unique_id=2145505967 node_paths=PackedStringArray("segment")]
 script = ExtResource("3_vst")
 module_mesh = SubResource("BoxMesh_modulo")
 segment = NodePath("../TrackSegment")
 
-[node name="TrackSegment" type="Node" parent="PuebloMaderera"]
+[node name="TrackSegment" type="Node" parent="PuebloMaderera" unique_id=1973191511]
 script = ExtResource("4_vst")
 segment_id = &"p_m"
 from_station = &"pueblo"
 to_station = &"maderera"
 condition = 1.0
 
-[node name="Player" parent="." instance=ExtResource("8_vst")]
+[node name="Player" parent="." unique_id=255566350 instance=ExtResource("8_vst")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 140, 0.7, 0)
 
-[node name="Hud" type="CanvasLayer" parent="."]
+[node name="Hud" type="CanvasLayer" parent="." unique_id=590488848]
 
-[node name="Label" type="Label" parent="Hud"]
+[node name="Label" type="Label" parent="Hud" unique_id=1793096098]
 offset_left = 16.0
 offset_top = 16.0
 offset_right = 56.0

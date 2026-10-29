@@ -12,6 +12,9 @@ class_name Grabber extends Node
 ## un grande en la mano nunca entra, así que no se puede cambiar por otro (no_room).
 ## Desde la interfaz del inventario (tarea 49) se pasa una unidad de una ranura a la
 ## mano (take_from_backpack) y lo de la mano a la mochila (stow_held).
+## Con `prefer_backpack` (tarea 62.7, el Hito A) los medianos y grandes también van solos a la
+## mochila mientras entren; recién cuando no entran quedan en la mano. Con la mano vacía, soltar
+## (Q) junto a un contenedor (el vagón) le pasa todo lo de la mochila que acepte (unload_backpack).
 ## Con los controles del jugador apagados (inventario abierto) no lee las teclas.
 ## Una herramienta clave suelta (KeyItemData, tarea 55) no va a la mano ni a la mochila: pasa
 ## a los KeyItems del jugador y el objeto desaparece. Si ya la tenía, también desaparece.
@@ -22,7 +25,11 @@ class_name Grabber extends Node
 ## lugar apuntado no es válido) o &"not_placeable" (el objeto no tiene Placeable).
 ## InventoryUI.failure_text lo traduce para mostrarlo.
 signal grab_failed(reason: StringName)
+## Se pasaron `amount` unidades de la mochila a un contenedor (unload_backpack, tarea 62.7).
+signal backpack_unloaded(amount: int)
 
+## Medianos y grandes van a la mochila si entran, en vez de a la mano (tarea 62.7).
+@export var prefer_backpack: bool = false
 ## Distancia máxima al objeto para poder tomarlo.
 @export_range(0.5, 5.0, 0.1, "suffix:m") var grab_range: float = 2.0
 ## Dónde se sostiene, en el marco del CUERPO del jugador (-Z = adelante, +X = derecha).
@@ -74,10 +81,14 @@ static func hold_offset_for(hands_used: int, base: Vector3, spread: float) -> Ve
 ##   &"to_hand"     → queda en la mano (que estaba libre)
 ##   &"swap"        → lo de la mano se guarda en la mochila y el nuevo queda en la mano
 ## o el motivo de fallo: &"too_big" (solo grúa) o &"no_room" (no entra en la mochila).
+## Con `backpack_first`, un mediano o grande que entra en la mochila va a la mochila.
 static func plan_pickup(size: ItemData.SizeClass, hands_required: ItemData.HandsRequired,
-		hand_busy: bool, fits_in_backpack: bool, hand_item_fits_in_backpack: bool) -> StringName:
+		hand_busy: bool, fits_in_backpack: bool, hand_item_fits_in_backpack: bool,
+		backpack_first: bool = false) -> StringName:
 	if Hands.hands_needed(hands_required) == 0:
 		return &"too_big"
+	if backpack_first and fits_in_backpack:
+		return &"to_backpack"
 	if size == ItemData.SizeClass.SMALL:
 		return &"to_backpack" if fits_in_backpack else &"no_room"
 	if not hand_busy:
@@ -108,7 +119,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(&"grab"):
 		try_grab()
 	elif event.is_action_pressed(&"drop"):
-		drop_held()
+		if _held == null:
+			unload_backpack()
+		else:
+			drop_held()
 	elif event.is_action_pressed(&"place"):
 		_place_pressed = true
 		_place_notified = false
@@ -269,6 +283,36 @@ func stow_held() -> bool:
 	return true
 
 
+## Pasa al contenedor más cercano (el vagón) todo lo de la mochila que acepte y entre (tarea
+## 62.7). Devuelve cuántas unidades pasó; si no pasó ninguna, avisa &"nothing_near" o
+## &"container_full".
+func unload_backpack() -> int:
+	var area: StorageArea = _find_nearest_storage_area()
+	if area == null:
+		grab_failed.emit(&"nothing_near")
+		return 0
+	var container: StorageContainer = area.get_container()
+	var backpack: Inventory = _player.get_backpack()
+	var moved: int = 0
+	for slot: int in backpack.get_slot_count():
+		var sample: ItemStack = backpack.peek(slot)
+		if sample == null or not container.accepts(sample.item):
+			continue
+		var amount: int = mini(sample.quantity, container.can_store_amount(sample))
+		if amount <= 0:
+			continue
+		var taken: ItemStack = backpack.take(slot, amount)
+		var leftover: ItemStack = container.try_store(taken)
+		moved += taken.quantity - (leftover.quantity if leftover != null else 0)
+		if leftover != null:
+			backpack.try_store(leftover)
+	if moved == 0:
+		grab_failed.emit(&"container_full")
+	else:
+		backpack_unloaded.emit(moved)
+	return moved
+
+
 func _held_long_enough() -> bool:
 	return float(Time.get_ticks_msec() - _place_press_ms) / 1000.0 >= tap_seconds
 
@@ -288,7 +332,7 @@ func _plan_for(stack: ItemStack) -> StringName:
 	var hand_busy: bool = not hands.is_empty()
 	var hand_fits: bool = (not hand_busy) or _fits_in_backpack(hands.get_held())
 	return plan_pickup(
-			stack.item.size_class, stack.item.hands, hand_busy, _fits_in_backpack(stack), hand_fits)
+			stack.item.size_class, stack.item.hands, hand_busy, _fits_in_backpack(stack), hand_fits, prefer_backpack)
 
 
 func _grab_world_item(target: WorldItem) -> bool:

@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/components/harvestable.gd" id="1_harv"]
-[ext_resource type="Resource" path="res://data/items/crowbar.tres" id="2_bar"]
+[ext_resource type="Resource" path="res://data/items/pickaxe.tres" id="2_bar"]
 [ext_resource type="Resource" path="res://data/items/limestone.tres" id="3_piedra"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_caliza"]

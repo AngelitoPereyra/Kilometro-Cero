@@ -12,25 +12,49 @@ extends Node3D
 ## (WagonGift) que carga el jugador: una plataforma en Azul al despejar o_a (troncos del monte),
 ## otra en Sierras Bayas al cumplir la de los troncos (piedra con la barreta de Azul) y un vagón
 ## cerrado en Olavarría al cumplir la de la piedra (cemento).
+## Tarea 62.6 (D122): mesa giratoria en la punta libre de Azul (Azul/Vias.turntable) y la T adelanta
+## el reloj hasta un poco antes de la próxima salida de un tren automático (sin trenes, hasta las
+## 7 del día siguiente) en vez de sumar un día entero.
+## Tarea 62.7 (D123): el jugador guarda solo en la mochila lo que levanta (Player/Grabber
+## .prefer_backpack) y con Q y la mano vacía junto al vagón le pasa la mochila; la piedra se
+## pica con el pico (en Azul, con una marca arriba que se apaga al levantarlo).
 
-const CONTROLES: String = "WASD: caminar · E: agarrar · clic: golpear (hacha, barreta) · F: cabina, tablero, mercado, taller o hablar · O: puertas del coche (en la cabina)\nT: pasa un día (provisorio, para probar) · H: esconde o muestra este texto"
+const CONTROLES: String = "WASD: caminar · E: agarrar · clic: golpear (hacha, pico) · F: cabina, tablero, mercado, taller o hablar · O: puertas del coche (en la cabina)\nLo que levantás va solo a la mochila · Q con la mano vacía junto al vagón: le pasa la mochila\nT: hasta la próxima salida de un tren (provisorio, para probar) · H: esconde o muestra este texto"
 ## Pesos con que arranca la partida (D119): alcanzan para el cemento del coche de regalo.
 const START_MONEY: int = 150
 const STATIONS: Array[StringName] = [&"azul", &"olavarria", &"sierras_bayas"]
 ## Dónde queda la locomotora en la principal de Olavarría: metros al norte del centro del andén.
 const START_AHEAD: float = 12.0
+## Con la T el reloj queda esto (horas) antes de la próxima salida, para verla.
+const SKIP_BEFORE_HOURS: float = 0.25
+## Sin trenes automáticos, la T lleva a esta hora del día siguiente.
+const SKIP_MORNING_HOUR: float = 7.0
 
 @onready var _player: Player = $Player
 @onready var _loco: Vehicle = $OlavarriaSierrasBayas/Locomotive
 @onready var _olavarria: Station = $Olavarria
 @onready var _taller: CoachGift = $Olavarria/Taller
 @onready var _hud: Label = $Hud/Label
+@onready var _pico: Node3D = $Pico
+@onready var _marca_pico: Label3D = $MarcaPico
+
+## Último aviso de la mochila y hasta cuándo se muestra (segundos de Time).
+var _aviso: String = ""
+var _aviso_hasta: float = 0.0
 
 
 func _ready() -> void:
 	if GameState.money < START_MONEY:
 		GameState.add_money(START_MONEY - GameState.money)
 	GameState.missions.flows_start_next_day = true
+	var agarrador: Grabber = null
+	for hijo: Node in _player.get_children():
+		if hijo is Grabber:
+			agarrador = hijo as Grabber
+	if agarrador != null:
+		agarrador.prefer_backpack = true
+		agarrador.backpack_unloaded.connect(func(cantidad: int) -> void: _avisar("Pasaste %d de la mochila al vagón" % cantidad))
+		agarrador.grab_failed.connect(func(motivo: StringName) -> void: _avisar(InventoryUI.failure_text(motivo)))
 	# Las vías de estación y el acople de los vagones se arman diferidos.
 	for _i: int in 3:
 		await get_tree().physics_frame
@@ -58,12 +82,33 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	match tecla.physical_keycode:
 		KEY_T:
-			GameState.clock.advance(GameClock.HOURS_PER_DAY)
+			_adelantar_reloj()
 		KEY_H:
 			_hud.visible = not _hud.visible
 
 
+# Hasta un poco antes de la próxima salida de un tren automático (tarea 62.6); sin trenes, hasta
+# la mañana siguiente.
+func _adelantar_reloj() -> void:
+	var ahora: float = AutoTrains.now_hours()
+	var autos: AutoTrains = AutoTrains.find_in(get_tree())
+	var salida: float = autos.next_departure(ahora + SKIP_BEFORE_HOURS) if autos != null else INF
+	var horas: float = salida - SKIP_BEFORE_HOURS - ahora
+	if is_inf(salida):
+		horas = GameClock.HOURS_PER_DAY - GameState.clock.time_of_day + SKIP_MORNING_HOUR
+	GameState.clock.advance(maxf(horas, 0.0))
+
+
+func _avisar(texto: String) -> void:
+	if texto == "":
+		return
+	_aviso = texto
+	_aviso_hasta = Time.get_ticks_msec() / 1000.0 + 4.0
+
+
 func _process(_delta: float) -> void:
+	if _marca_pico.visible and not is_instance_valid(_pico):
+		_marca_pico.visible = false
 	if not _hud.visible:
 		return
 	var tablero: MissionBoard = GameState.missions
@@ -99,4 +144,6 @@ func _process(_delta: float) -> void:
 	var cerca: Interactable = Interactable.find_nearest(get_tree(), _player.global_position, _player)
 	if cerca != null:
 		lineas.append("F: " + cerca.get_prompt())
+	if _aviso != "" and Time.get_ticks_msec() / 1000.0 < _aviso_hasta:
+		lineas.insert(2, "» " + _aviso)
 	_hud.text = "\n".join(lineas)

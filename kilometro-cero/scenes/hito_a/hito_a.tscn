@@ -36,6 +36,8 @@
 [ext_resource type="Resource" path="res://data/items/log.tres" id="34_tro"]
 [ext_resource type="Resource" path="res://data/items/limestone.tres" id="35_pie"]
 [ext_resource type="Resource" path="res://data/missions/la_via_tapada.tres" id="36_via"]
+[ext_resource type="PackedScene" path="res://scenes/items/pickaxe.tscn" id="37_pic"]
+[ext_resource type="Resource" path="res://data/items/pickaxe.tres" id="38_picd"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Cielo_mat"]
 sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
@@ -155,6 +157,9 @@ data = ExtResource("17_sie")
 [node name="Taller" parent="Olavarria"]
 repair_cost = Array[ExtResource("30_cant")]([SubResource("Costo_cemento")])
 
+[node name="Vias" parent="Azul"]
+turntable = true
+
 [node name="Escuela" parent="Azul/Niveles/Nivel3"]
 item_id = &"sin_uso"
 
@@ -258,6 +263,12 @@ segment_id = &"s_c"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, -600)
 segment_id = &"s_c"
 
+[node name="Clearable" parent="PiedrasDesvio1"]
+required_tool = ExtResource("38_picd")
+
+[node name="Clearable" parent="PiedrasDesvio2"]
+required_tool = ExtResource("38_picd")
+
 [node name="Bosquecito" type="Node3D" parent="."]
 
 [node name="Arbol1" parent="Bosquecito" instance=ExtResource("20_bos")]
@@ -351,9 +362,20 @@ mesh = SubResource("Malla_mesa")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.4, 0)
 shape = SubResource("Forma_mesa")
 
-[node name="Barreta" parent="." instance=ExtResource("23_bar")]
+[node name="Pico" parent="." instance=ExtResource("37_pic")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1, 548)
-start_item = ExtResource("25_bard")
+start_item = ExtResource("38_picd")
+
+[node name="MarcaPico" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3.2, 548)
+billboard = 1
+no_depth_test = true
+modulate = Color(1, 0.85, 0.2, 1)
+font_size = 72
+outline_size = 12
+text = "PICO
+(para la cantera)
+▼"
 
 [node name="JefeDeEstacion" parent="." instance=ExtResource("26_pob")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0.6, -42)
@@ -390,7 +412,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -470)
 script = ExtResource("33_reg")
 wagon_scene = ExtResource("9_plat")
 wagon_name = "una plataforma vacía"
-hint = "Cargala con piedra de la cantera (barreta) y llevala a Olavarría"
+hint = "Cargala con piedra de la cantera (pico, en Azul) y llevala a Olavarría"
 mission_station = &"sierras_bayas"
 mission_item = &"log"
 giver_name = "Sierras Bayas"

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="KeyItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/key_item_data.gd" id="1_key"]
+[ext_resource type="PackedScene" path="res://scenes/items/pickaxe.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_key")
+action_text = "Picar piedra en la cantera y romper las piedras que tapan la vía."
+id = &"pickaxe"
+display_name = "pico"
+unit_weight = 3.5
+tags = Array[StringName]([&"tool"])
+scene = ExtResource("2_scene")

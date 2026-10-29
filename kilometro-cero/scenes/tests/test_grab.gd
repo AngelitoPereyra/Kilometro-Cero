@@ -72,6 +72,11 @@ func _check_pure_logic() -> void:
 		Grabber.plan_pickup(large, two, true, false, false) == &"no_room",
 		Grabber.plan_pickup(large, crane, false, true, true) == &"too_big",
 		Grabber.plan_pickup(small, crane, false, true, true) == &"too_big",
+		# Tarea 62.7: con la mochila primero, medianos y grandes van a la mochila si entran.
+		Grabber.plan_pickup(large, one, false, true, true, true) == &"to_backpack",
+		Grabber.plan_pickup(medium, one, true, true, false, true) == &"to_backpack",
+		Grabber.plan_pickup(large, one, false, false, true, true) == &"to_hand",
+		Grabber.plan_pickup(large, crane, false, true, true, true) == &"too_big",
 		Grabber.is_ok_plan(&"swap"),
 		not Grabber.is_ok_plan(&"no_room"),
 	]

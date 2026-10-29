@@ -60,7 +60,7 @@ func _probar_archivos() -> void:
 	var aflora := load("res://scenes/world/quarry_rock.tscn") as PackedScene
 	var cuerpo: Node = aflora.instantiate() if aflora != null else null
 	var cosecha: Harvestable = (cuerpo.get_node_or_null("Harvestable") as Harvestable) if cuerpo != null else null
-	_comprobar(cosecha != null and cosecha.drop_item == piedra and cosecha.get_required_tool_id() == &"crowbar", "El afloramiento da piedra con la barreta")
+	_comprobar(cosecha != null and cosecha.drop_item == piedra and cosecha.get_required_tool_id() == &"pickaxe", "El afloramiento da piedra con el pico (62.7)")
 	if cuerpo != null:
 		cuerpo.free()
 	for nombre: String in STATION_FILES:

@@ -56,6 +56,8 @@ static func failure_text(reason: StringName) -> String:
 			return "Lo que tenés en la mano no entra en la mochila."
 		&"too_big":
 			return "Eso no se puede llevar en la mano."
+		&"container_full":
+			return "Ahí no entra nada de lo que llevás en la mochila."
 		_:
 			return ""
 

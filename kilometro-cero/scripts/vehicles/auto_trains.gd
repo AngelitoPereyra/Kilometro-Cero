@@ -145,6 +145,8 @@ const RESERVE_AHEAD_HOURS: float = 0.25
 ## Lejos del jugador, cuánto tarda en dar la vuelta (horas de juego).
 const TURN_HOURS: float = 0.25
 ## Segundos trabado en el camino antes de volver a la estación de donde salió (tarea 62.4).
+## Cuántos cambios seguidos mira, a lo sumo, una luz de entrada (tarea 62.6).
+const MAX_SWITCH_CHAIN: int = 6
 const STUCK_SECONDS: float = 15.0
 ## Segundos con la locomotora fuera de su recorrido: a los primeros frena, al final vuelve a él.
 const LOST_BRAKE_SECONDS: float = 0.5
@@ -227,6 +229,16 @@ static func find_in(tree: SceneTree) -> AutoTrains:
 	if tree == null:
 		return null
 	return tree.get_first_node_in_group(GROUP) as AutoTrains
+
+
+## La próxima salida de un tren automático después de `after` (horas absolutas), o INF si no hay
+## (tarea 62.6: la T del Hito A adelanta el reloj hasta ahí).
+func next_departure(after: float) -> float:
+	var best: float = INF
+	for run: AutoTrainRun in _runs:
+		if not run.is_moving() and run.due > after:
+			best = minf(best, run.due)
+	return best
 
 
 ## Hora absoluta del juego (horas desde el principio de la partida).
@@ -1189,7 +1201,11 @@ func _try_turn_back(run: AutoTrainRun) -> bool:
 func _rescue(run: AutoTrainRun, loco: Vehicle) -> void:
 	var path := loco.get_parent() as Path3D
 	var track: TrackSegment = RailNetwork.track_of(path)
-	var where: String = track.segment_id if track != null and track.segment_id != &"" else (String(path.name) if path != null else "?")
+	var where: String = "?"
+	if track != null and track.segment_id != &"":
+		where = String(track.segment_id)
+	elif path != null:
+		where = String(path.name)
 	push_warning("AutoTrains: el %s se salió de su recorrido (está en %s; su viaje: %s). Vuelve a su recorrido." % [run.display_name, where, ", ".join(PackedStringArray(run.leg))])
 	_lost.erase(run.id)
 	_blocked.erase(run.id)
@@ -1619,12 +1635,66 @@ func _track_entry_aspect(station_track: StationTrack, at_end: bool) -> RailSigna
 		if run == null or not run.is_moving():
 			return RailSignal.Aspect.RED
 		return RailSignal.Aspect.RED if _path_has_foreign(path, get_train(run)) else RailSignal.Aspect.GREEN
-	if network != null:
-		var exit: Array = network.get_exit(path, at_end)
-		var track_switch: TrackSwitch = network.find_switch(exit[0], exit[1]) if not exit.is_empty() else null
-		if track_switch != null and track_switch.get_option_path(track_switch.state) != path:
-			return RailSignal.Aspect.RED
+	if network != null and (not _switches_lead_to(network, path, at_end) or _switch_taken(network, path, at_end)):
+		return RailSignal.Aspect.RED
 	return RailSignal.Aspect.RED if _path_has_foreign(path, [], true) else RailSignal.Aspect.GREEN
+
+
+# Si otra vía del cambio de esa punta la tiene un automático que está pasando por el cambio
+# (tarea 62.6, la falla que vio Batmi en la maderera y en la ciudad): el automático mueve el cambio
+# recién al llegar, así que hasta entonces la principal mostraba verde junto con la anexa.
+func _switch_taken(network: RailNetwork, path: Path3D, at_end: bool) -> bool:
+	var exit: Array = network.get_exit(path, at_end)
+	var track_switch: TrackSwitch = network.find_switch(exit[0], exit[1]) if not exit.is_empty() else null
+	if track_switch == null:
+		return false
+	for index: int in track_switch.option_count():
+		var other: Path3D = track_switch.get_option_path(index)
+		var other_track := RailNetwork.track_of(other) as StationTrack
+		if other == path or other_track == null:
+			continue
+		var holder: AutoTrainRun = get_run(get_token_holder(_section_of(other_track)))
+		if holder != null and holder.is_moving() and _uses_end(network, holder, other, bool(track_switch.options[index][1])):
+			return true
+	return false
+
+
+# Si el viaje del automático entra a la vía `path` o sale de ella por esa punta.
+func _uses_end(network: RailNetwork, run: AutoTrainRun, path: Path3D, at_end: bool) -> bool:
+	if _leaves_through(network, run, path, at_end):
+		return true
+	for index: int in range(1, run.leg.size()):
+		var piece: StringName = run.leg[index]
+		# Entra por el final de la curva yendo hacia el principio (y al revés).
+		if AutoTrainRun.is_station_piece(piece) and _station_track_path(network, piece) == path and AutoTrainRun.piece_forward(piece) != at_end:
+			return true
+	return false
+
+
+# Si todos los cambios entre la punta `at_end` de `path` y la línea están puestos hacia esta vía
+# (tarea 62.6): en las estaciones con varias vías el cambio de la vía puede estar después de otro
+# (línea → cambio 1 → cambio 2 → anexa), y con el primero hacia la principal la anexa no recibe
+# a nadie aunque el segundo apunte a ella. Sigue hasta llegar a un tramo o a una punta sin cambio.
+func _switches_lead_to(network: RailNetwork, path: Path3D, at_end: bool) -> bool:
+	var current: Path3D = path
+	var current_end: bool = at_end
+	for _step: int in MAX_SWITCH_CHAIN:
+		var exit: Array = network.get_exit(current, current_end)
+		if exit.is_empty():
+			return true
+		var beyond: Path3D = exit[0]
+		var track_switch: TrackSwitch = network.find_switch(beyond, exit[1])
+		if track_switch == null:
+			return true
+		if track_switch.get_option_path(track_switch.state) != current:
+			return false
+		var track: TrackSegment = RailNetwork.track_of(beyond)
+		if track != null and not (track is StationTrack):
+			return true
+		# Sigue por la otra punta de lo que hay después del cambio.
+		current = beyond
+		current_end = not bool(exit[1])
+	return true
 
 
 # Si la principal necesita la punta del cambio `track_switch` (D117, cada punta de la estación se

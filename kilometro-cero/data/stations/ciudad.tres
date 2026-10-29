@@ -8,21 +8,6 @@
 [ext_resource type="Resource" path="res://data/items/teacher.tres" id="6_mae"]
 [ext_resource type="Resource" path="res://data/items/travelers.tres" id="7_pas"]
 
-[sub_resource type="Resource" id="Prod_colonos"]
-script = ExtResource("2_k6ase")
-item = ExtResource("5_col")
-amount = 10
-
-[sub_resource type="Resource" id="Prod_maestra"]
-script = ExtResource("2_k6ase")
-item = ExtResource("6_mae")
-amount = 1
-
-[sub_resource type="Resource" id="Prod_pasajeros"]
-script = ExtResource("2_k6ase")
-item = ExtResource("7_pas")
-amount = 10
-
 [sub_resource type="Resource" id="Resource_3628f"]
 script = ExtResource("2_k6ase")
 item = ExtResource("3_nm4px")
@@ -63,6 +48,20 @@ script = ExtResource("1_dbvwu")
 market = true
 workshop = true
 description = "La ciudad en marcha."
+
+[sub_resource type="Resource" id="Prod_colonos"]
+script = ExtResource("2_k6ase")
+item = ExtResource("5_col")
+amount = 10
+
+[sub_resource type="Resource" id="Prod_maestra"]
+script = ExtResource("2_k6ase")
+item = ExtResource("6_mae")
+
+[sub_resource type="Resource" id="Prod_pasajeros"]
+script = ExtResource("2_k6ase")
+item = ExtResource("7_pas")
+amount = 10
 
 [resource]
 script = ExtResource("4_d5nnq")
