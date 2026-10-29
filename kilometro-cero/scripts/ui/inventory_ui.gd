@@ -8,13 +8,32 @@ extends CanvasLayer
 ## Arma sus nodos por código: en la escena es solo un CanvasLayer con este script,
 ## hijo directo de Player (o con `player` asignado desde el inspector).
 ## No tiene lógica de inventario: observa señales y le pide todo al Grabber.
+## Tarea 62.8 (D124): tres pestañas. "Mochila" (lo de arriba), "Agenda" (estaciones, misiones,
+## flujos y horarios de los automáticos) y "Tren" (el tren del jugador vagón por vagón, con lo que
+## lleva cada uno). Los textos los arma AgendaText; `agenda_extra` (opcional, lo pone la escena)
+## devuelve renglones más para la agenda. Con la ventana abierta, 1, 2 y 3 cambian de pestaña.
 
 signal toggled(is_open: bool)
+
+enum Tab { BACKPACK, AGENDA, TRAIN }
+
+const TAB_NAMES: Array[String] = ["Mochila", "Agenda", "Tren"]
+const TEXT_SIZE: Vector2 = Vector2(760.0, 460.0)
+## Colores de la ventana (tarea 62.8, pedido de Batmi): fondo crema clarito, tinta oscura, ranuras
+## de un crema más tostado con borde marrón para que se vean.
+const CREAM: Color = Color(0.96, 0.93, 0.84)
+const CREAM_DARK: Color = Color(0.86, 0.8, 0.66)
+const CREAM_HOVER: Color = Color(0.91, 0.86, 0.74)
+const INK: Color = Color(0.17, 0.13, 0.09)
+const BORDER: Color = Color(0.48, 0.36, 0.22)
 
 ## Si queda vacío, usa el padre.
 @export var player: Player
 @export_range(1, 12, 1) var columns: int = 5
 @export var slot_size: Vector2 = Vector2(84.0, 84.0)
+
+## func() -> PackedStringArray: renglones que la escena suma a la agenda (tarea 62.8).
+var agenda_extra: Callable
 
 var _open: bool = false
 var _clock_was_running: bool = true
@@ -27,6 +46,11 @@ var _grid: GridContainer
 var _hand_button: Button
 var _status: Label
 var _slot_buttons: Array[Button] = []
+var _tabs: TabContainer
+var _agenda: RichTextLabel
+var _train: RichTextLabel
+# El último tren que manejó el jugador: se sigue mostrando al bajarse.
+var _last_train_head: Vehicle
 
 
 ## Texto de una ranura o de la mano: nombre y, si hay más de uno, la cantidad;
@@ -90,6 +114,11 @@ func _input(event: InputEvent) -> void:
 	elif _open and event.is_action_pressed(&"ui_cancel"):
 		set_open(false)
 		get_viewport().set_input_as_handled()
+	elif _open and event is InputEventKey and event.is_pressed() and not event.is_echo():
+		var key: Key = (event as InputEventKey).physical_keycode
+		if key >= KEY_1 and key <= KEY_3:
+			show_tab(key - KEY_1)
+			get_viewport().set_input_as_handled()
 
 
 func is_open() -> bool:
@@ -109,10 +138,54 @@ func set_open(value: bool) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		_status.text = ""
 		_refresh()
+		_refresh_texts()
 	else:
 		GameState.clock_running = _clock_was_running
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	toggled.emit(value)
+
+
+## Muestra la pestaña `tab` (Tab.BACKPACK, AGENDA o TRAIN) y rearma su texto.
+func show_tab(tab: int) -> void:
+	if _tabs == null or tab < 0 or tab >= _tabs.get_tab_count():
+		return
+	_tabs.current_tab = tab
+	_refresh_texts()
+
+
+func get_current_tab() -> int:
+	return _tabs.current_tab if _tabs != null else Tab.BACKPACK
+
+
+## Los textos de la agenda y del tren, como se ven (BBCode), para las pruebas.
+func get_agenda_text() -> String:
+	return _agenda.text if _agenda != null else ""
+
+
+func get_train_text() -> String:
+	return _train.text if _train != null else ""
+
+
+## El tren del jugador: el de la cabina donde está o, si no, el último que manejó, o el de la
+## cabina libre más cercana (de un tren que no es automático). Vacío si no hay ninguno.
+func find_player_train() -> Array[Vehicle]:
+	var cab: Cab = player.get_cab() if player != null else null
+	if cab != null and cab.get_vehicle() != null:
+		_last_train_head = cab.get_vehicle()
+	if is_instance_valid(_last_train_head) and _last_train_head.is_inside_tree():
+		return _last_train_head.get_train()
+	var best: Vehicle = null
+	var best_distance: float = INF
+	for node: Node in get_tree().get_nodes_in_group(Cab.GROUP):
+		var other := node as Cab
+		var vehicle: Vehicle = other.get_vehicle() if other != null else null
+		if vehicle == null or vehicle.automatic:
+			continue
+		var distance: float = vehicle.global_position.distance_to(player.global_position)
+		if distance < best_distance:
+			best = vehicle
+			best_distance = distance
+	return best.get_train() if best != null else ([] as Array[Vehicle])
 
 
 ## Lo mismo que un clic en la ranura `slot` (sirve para las pruebas).
@@ -160,7 +233,8 @@ func _build() -> void:
 	# Fondo oscuro a pantalla completa. Se queda con todos los clics (MOUSE_FILTER_STOP):
 	# así un clic fuera del panel no le devuelve el mouse a la cámara.
 	var shade := ColorRect.new()
-	shade.color = Color(0.0, 0.0, 0.0, 0.45)
+	# Más oscuro que los carteles de pantalla, para que no se confundan (tarea 62.8).
+	shade.color = Color(0.0, 0.0, 0.0, 0.7)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(shade)
@@ -171,14 +245,29 @@ func _build() -> void:
 	shade.add_child(center)
 
 	var panel := PanelContainer.new()
+	panel.theme = _make_theme()
 	center.add_child(panel)
 	var margin := MarginContainer.new()
 	for side: String in ["left", "right", "top", "bottom"]:
 		margin.add_theme_constant_override("margin_" + side, 16)
 	panel.add_child(margin)
+	var outer := VBoxContainer.new()
+	outer.add_theme_constant_override("separation", 10)
+	margin.add_child(outer)
+	_tabs = TabContainer.new()
+	# Sin foco: el TAB siempre cierra (no navega entre pestañas).
+	_tabs.get_tab_bar().focus_mode = Control.FOCUS_NONE
+	_tabs.tab_changed.connect(func(_tab: int) -> void: _refresh_texts())
+	outer.add_child(_tabs)
+	# La mochila ocupa la misma caja que la agenda y el tren: también va en una caja con barra.
+	var backpack_scroll := ScrollContainer.new()
+	backpack_scroll.custom_minimum_size = TEXT_SIZE
+	backpack_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_tabs.add_child(backpack_scroll)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 10)
-	margin.add_child(column)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	backpack_scroll.add_child(column)
 
 	_title = Label.new()
 	column.add_child(_title)
@@ -198,9 +287,76 @@ func _build() -> void:
 	_status = Label.new()
 	column.add_child(_status)
 	var help := Label.new()
-	help.text = "Clic en una ranura: a la mano · TAB, G o Esc: cerrar"
+	help.text = "Clic en una ranura: a la mano"
 	help.modulate = Color(1.0, 1.0, 1.0, 0.6)
 	column.add_child(help)
+
+	_agenda = _make_text_tab()
+	_train = _make_text_tab()
+	for index: int in TAB_NAMES.size():
+		_tabs.set_tab_title(index, "%d · %s" % [index + 1, TAB_NAMES[index]])
+	var keys := Label.new()
+	keys.text = "1, 2, 3: pestañas · TAB, G o Esc: cerrar"
+	keys.modulate = Color(1.0, 1.0, 1.0, 0.6)
+	outer.add_child(keys)
+
+
+# El tema de la ventana: crema clarito con tinta oscura, pestañas y ranuras que se distinguen.
+func _make_theme() -> Theme:
+	var theme := Theme.new()
+	theme.set_stylebox(&"panel", &"PanelContainer", _box(CREAM, CREAM, 8, 0))
+	theme.set_stylebox(&"panel", &"TabContainer", _box(CREAM, BORDER, 4, 1))
+	theme.set_stylebox(&"tab_selected", &"TabContainer", _box(CREAM, BORDER, 4, 1))
+	theme.set_stylebox(&"tab_unselected", &"TabContainer", _box(CREAM_DARK, BORDER, 4, 1))
+	theme.set_stylebox(&"tab_hovered", &"TabContainer", _box(CREAM_HOVER, BORDER, 4, 1))
+	for color_name: StringName in [&"font_selected_color", &"font_unselected_color", &"font_hovered_color"]:
+		theme.set_color(color_name, &"TabContainer", INK)
+	theme.set_color(&"font_color", &"Label", INK)
+	theme.set_color(&"default_color", &"RichTextLabel", INK)
+	theme.set_stylebox(&"normal", &"Button", _box(CREAM_DARK, BORDER, 4, 2))
+	theme.set_stylebox(&"hover", &"Button", _box(CREAM_HOVER, BORDER, 4, 2))
+	theme.set_stylebox(&"pressed", &"Button", _box(CREAM, BORDER, 4, 2))
+	for color_name: StringName in [&"font_color", &"font_hover_color", &"font_pressed_color", &"font_focus_color"]:
+		theme.set_color(color_name, &"Button", INK)
+	return theme
+
+
+static func _box(fill: Color, border: Color, radius: int, border_width: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = fill
+	box.border_color = border
+	box.set_border_width_all(border_width)
+	box.set_corner_radius_all(radius)
+	box.set_content_margin_all(6.0)
+	return box
+
+
+# Una pestaña de texto con barra para bajar (agenda y tren).
+func _make_text_tab() -> RichTextLabel:
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = TEXT_SIZE
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_tabs.add_child(scroll)
+	var text := RichTextLabel.new()
+	text.bbcode_enabled = true
+	text.fit_content = true
+	text.scroll_active = false
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.add_theme_font_size_override("normal_font_size", 17)
+	text.add_theme_font_size_override("bold_font_size", 17)
+	scroll.add_child(text)
+	return text
+
+
+# Vuelve a escribir la agenda y el tren (al abrir y al cambiar de pestaña).
+func _refresh_texts() -> void:
+	if _agenda == null or not is_inside_tree():
+		return
+	var extra := PackedStringArray()
+	if agenda_extra.is_valid():
+		extra = agenda_extra.call()
+	_agenda.text = AgendaText.agenda(GameState.missions, GameState.production, AutoTrains.find_in(get_tree()), extra)
+	_train.text = AgendaText.train(find_player_train(), GameState.missions)
 
 
 func _make_button() -> Button:

@@ -10,7 +10,7 @@ extends Node3D
 ## empezar), encerrada por dos árboles caídos (grupo troncos_olavarria, en o_a y en o_s). Don
 ## Ernesto, el jefe de estación, da "La vía tapada" y el hacha. Los vagones son regalos vacíos
 ## (WagonGift) que carga el jugador: una plataforma en Azul al despejar o_a (troncos del monte),
-## otra en Sierras Bayas al cumplir la de los troncos (piedra con la barreta de Azul) y un vagón
+## otra en Sierras Bayas al cumplir la de los troncos (piedra con el pico de Azul) y un vagón
 ## cerrado en Olavarría al cumplir la de la piedra (cemento).
 ## Tarea 62.6 (D122): mesa giratoria en la punta libre de Azul (Azul/Vias.turntable) y la T adelanta
 ## el reloj hasta un poco antes de la próxima salida de un tren automático (sin trenes, hasta las
@@ -18,8 +18,20 @@ extends Node3D
 ## Tarea 62.7 (D123): el jugador guarda solo en la mochila lo que levanta (Player/Grabber
 ## .prefer_backpack) y con Q y la mano vacía junto al vagón le pasa la mochila; la piedra se
 ## pica con el pico (en Azul, con una marca arriba que se apaga al levantarlo).
+## Tarea 62.8 (D124): pantalla lo más limpia posible, con carteles chicos sobre fondo oscuro:
+## arriba a la izquierda día, hora y plata; a la izquierda al medio "TAB: Inventario" y
+## "H: Teclas" (H abre la lista de teclas, una por renglón); arriba a la derecha la misión que
+## sigue (un paso por renglón) y los regalos sin enganchar; abajo al centro lo que hay cerca para
+## la F y el último aviso. Lo demás va a la pestaña Agenda del TAB y la carga, a la pestaña Tren.
 
-const CONTROLES: String = "WASD: caminar · E: agarrar · clic: golpear (hacha, pico) · F: cabina, tablero, mercado, taller o hablar · O: puertas del coche (en la cabina)\nLo que levantás va solo a la mochila · Q con la mano vacía junto al vagón: le pasa la mochila\nT: hasta la próxima salida de un tren (provisorio, para probar) · H: esconde o muestra este texto"
+const CONTROLES: String = "WASD: caminar\nE: agarrar (va a la mochila)\nClic: golpear (hacha, pico)\nQ con la mano vacía junto al vagón: pasarle la mochila\nF: cabina, tablero, mercado, taller o hablar\nO: puertas del coche (en la cabina)\nT: hasta la próxima salida de un tren\nTAB: inventario\nH: esconder las teclas"
+const AYUDA: String = "TAB: Inventario\nH: Teclas"
+const HUD_FONT_SIZE: int = 16
+## Letra del cartel de la misión y cuántas letras entran por renglón: queda angosto y alto.
+const MISSION_FONT_SIZE: int = 12
+const MISSION_CHARS: int = 28
+## Margen de los carteles de pantalla al borde.
+const HUD_MARGIN: int = 16
 ## Pesos con que arranca la partida (D119): alcanzan para el cemento del coche de regalo.
 const START_MONEY: int = 150
 const STATIONS: Array[StringName] = [&"azul", &"olavarria", &"sierras_bayas"]
@@ -41,6 +53,12 @@ const SKIP_MORNING_HOUR: float = 7.0
 ## Último aviso de la mochila y hasta cuándo se muestra (segundos de Time).
 var _aviso: String = ""
 var _aviso_hasta: float = 0.0
+var _mostrar_teclas: bool = false
+# Los otros carteles de pantalla (los arma _armar_hud): las teclas a la izquierda al medio, la
+# misión arriba a la derecha y abajo al centro lo que hay cerca para la F y el último aviso.
+var _hud_teclas: Label
+var _hud_mision: Label
+var _hud_abajo: Label
 
 
 func _ready() -> void:
@@ -55,6 +73,10 @@ func _ready() -> void:
 		agarrador.prefer_backpack = true
 		agarrador.backpack_unloaded.connect(func(cantidad: int) -> void: _avisar("Pasaste %d de la mochila al vagón" % cantidad))
 		agarrador.grab_failed.connect(func(motivo: StringName) -> void: _avisar(InventoryUI.failure_text(motivo)))
+	for hijo: Node in _player.get_children():
+		if hijo is InventoryUI:
+			(hijo as InventoryUI).agenda_extra = _renglones_de_agenda
+	_armar_hud()
 	# Las vías de estación y el acople de los vagones se arman diferidos.
 	for _i: int in 3:
 		await get_tree().physics_frame
@@ -84,7 +106,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		KEY_T:
 			_adelantar_reloj()
 		KEY_H:
-			_hud.visible = not _hud.visible
+			_mostrar_teclas = not _mostrar_teclas
 
 
 # Hasta un poco antes de la próxima salida de un tren automático (tarea 62.6); sin trenes, hasta
@@ -109,41 +131,109 @@ func _avisar(texto: String) -> void:
 func _process(_delta: float) -> void:
 	if _marca_pico.visible and not is_instance_valid(_pico):
 		_marca_pico.visible = false
-	if not _hud.visible:
-		return
+	_hud.text = "Día %d / %s\n$%d" % [GameState.clock.current_day, GameClock.format_time(GameState.clock.time_of_day), GameState.money]
+	_hud.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_MINSIZE, HUD_MARGIN)
+	_hud_teclas.text = CONTROLES if _mostrar_teclas else AYUDA
+	_hud_teclas.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT, Control.PRESET_MODE_MINSIZE, HUD_MARGIN)
+	var derecha: PackedStringArray = []
+	var mision: String = _mision_que_sigue()
+	if mision != "":
+		derecha.append(mision)
+	for nodo: Node in get_tree().get_nodes_in_group(WagonGift.GROUP):
+		var regalo := nodo as WagonGift
+		var vagon: Wagon = regalo.get_wagon() if regalo != null else null
+		if vagon != null and vagon.front == null and vagon.rear == null:
+			derecha.append("%s\nesperando en la vía, engánchalo" % regalo.describe())
+	_mostrar(_hud_mision, _envolver("\n\n".join(derecha), MISSION_CHARS), Control.PRESET_TOP_RIGHT)
+	var abajo: PackedStringArray = []
+	if _aviso != "" and Time.get_ticks_msec() / 1000.0 < _aviso_hasta:
+		abajo.append(_aviso)
+	var cerca: Interactable = Interactable.find_nearest(get_tree(), _player.global_position, _player)
+	if cerca != null:
+		abajo.append("F: " + cerca.get_prompt())
+	if _player.is_in_cab():
+		# En la cabina abajo al centro van las teclas de manejo (CabHud).
+		abajo.clear()
+	_mostrar(_hud_abajo, "\n".join(abajo), Control.PRESET_CENTER_BOTTOM)
+
+
+# Escribe un cartel y lo pone en su lugar, achicado al texto; sin texto lo esconde.
+func _mostrar(cartel: Label, texto: String, lugar: Control.LayoutPreset) -> void:
+	cartel.visible = texto != ""
+	if cartel.visible:
+		cartel.text = texto
+		cartel.set_anchors_and_offsets_preset(lugar, Control.PRESET_MODE_MINSIZE, HUD_MARGIN)
+
+
+# Fondo oscuro y letra más grande para los carteles de pantalla.
+func _armar_hud() -> void:
+	_estilo_de_cartel(_hud)
+	_hud_teclas = _nuevo_cartel("Teclas")
+	_hud_mision = _nuevo_cartel("Mision")
+	_hud_mision.add_theme_font_size_override(&"font_size", MISSION_FONT_SIZE)
+	_hud_abajo = _nuevo_cartel("Cerca")
+	_hud_abajo.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+
+# Corta cada renglón en palabras para que no pase de `ancho` letras.
+static func _envolver(texto: String, ancho: int) -> String:
+	var salida: PackedStringArray = []
+	for renglon: String in texto.split("\n"):
+		var actual: String = ""
+		for palabra: String in renglon.split(" ", false):
+			if actual != "" and actual.length() + 1 + palabra.length() > ancho:
+				salida.append(actual)
+				actual = "  " + palabra
+			else:
+				actual = palabra if actual == "" else actual + " " + palabra
+		salida.append(actual)
+	return "\n".join(salida)
+
+
+func _estilo_de_cartel(cartel: Label) -> void:
+	var fondo := StyleBoxFlat.new()
+	fondo.bg_color = Color(0.0, 0.0, 0.0, 0.5)
+	fondo.set_corner_radius_all(6)
+	fondo.set_content_margin_all(8.0)
+	cartel.add_theme_stylebox_override(&"normal", fondo)
+	cartel.add_theme_font_size_override(&"font_size", HUD_FONT_SIZE)
+	cartel.add_theme_constant_override(&"outline_size", 4)
+	cartel.add_theme_color_override(&"font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+	cartel.size = Vector2.ZERO
+
+
+func _nuevo_cartel(nombre: String) -> Label:
+	var cartel := Label.new()
+	cartel.name = nombre
+	_estilo_de_cartel(cartel)
+	_hud.get_parent().add_child(cartel)
+	return cartel
+
+
+# La primera misión en curso con algo por hacer, en el orden de STATIONS: el título y debajo un
+# paso por renglón.
+func _mision_que_sigue() -> String:
 	var tablero: MissionBoard = GameState.missions
-	var modelo: ProductionModel = GameState.production
-	var lineas: PackedStringArray = [CONTROLES, "Día %d · %s · $%d" % [GameState.clock.current_day, GameClock.format_time(GameState.clock.time_of_day), GameState.money]]
 	for station_id: StringName in STATIONS:
-		if not modelo.has_station(station_id):
-			continue
-		var faltan: Dictionary[StringName, int] = modelo.get_missing(station_id)
-		var texto: String = "%s · nivel %d de %d" % [tablero.station_name(station_id), modelo.get_level(station_id), modelo.get_data(station_id).get_max_level()]
-		if modelo.get_days_to_grow(station_id) > 0 and faltan.is_empty():
-			texto += " · creciendo (%d de %d días)" % [modelo.get_growth_progress(station_id), modelo.get_days_to_grow(station_id)]
-		lineas.append(texto)
 		for mision: Mission in tablero.get_active_missions(station_id):
 			var pasos: PackedStringArray = tablero.get_pending_steps(mision)
+			if pasos.is_empty():
+				continue
 			var titulo: String = tablero.get_title(mision) if mision.main else mision.data.title
-			lineas.append("   %s%s" % [titulo, (": " + ", ".join(pasos)) if not pasos.is_empty() else ""])
+			return "Ahora: %s\n• %s" % [titulo, "\n• ".join(pasos)]
+	return ""
+
+
+# Lo que la agenda del TAB suma en el Hito A: el coche de regalo.
+func _renglones_de_agenda() -> PackedStringArray:
+	var renglones: PackedStringArray = []
+	var tablero: MissionBoard = GameState.missions
 	var coche: PassengerTraffic.CoachState = GameState.passengers.coach_state
 	if coche == PassengerTraffic.CoachState.REPAIRING and _taller != null:
 		var faltan_coche: PackedStringArray = []
 		for item_id: StringName in _taller.get_remaining():
 			faltan_coche.append("%d %s" % [_taller.get_remaining()[item_id], tablero.name_of(item_id)])
-		lineas.append("Coche de pasajeros: en el taller de Olavarría, detrás del andén (faltan %s; el cemento se compra en el mercado)" % ", ".join(faltan_coche))
+		renglones.append("Coche de pasajeros: en el taller de Olavarría, detrás del andén (faltan %s; el cemento se compra en el mercado)" % ", ".join(faltan_coche))
 	elif coche != PassengerTraffic.CoachState.NONE:
-		lineas.append("Coche de pasajeros: " + PassengerTraffic.coach_state_name(coche))
-	for flujo: ProductionFlow in modelo.get_flows():
-		lineas.append("Flujo: %s · entregó %d" % [flujo.describe(), flujo.last_delivered])
-	for nodo: Node in get_tree().get_nodes_in_group(WagonGift.GROUP):
-		var regalo := nodo as WagonGift
-		var vagon: Wagon = regalo.get_wagon() if regalo != null else null
-		if vagon != null and vagon.front == null and vagon.rear == null:
-			lineas.append("%s · esperando en la vía, engánchalo" % regalo.describe())
-	var cerca: Interactable = Interactable.find_nearest(get_tree(), _player.global_position, _player)
-	if cerca != null:
-		lineas.append("F: " + cerca.get_prompt())
-	if _aviso != "" and Time.get_ticks_msec() / 1000.0 < _aviso_hasta:
-		lineas.insert(2, "» " + _aviso)
-	_hud.text = "\n".join(lineas)
+		renglones.append("Coche de pasajeros: " + PassengerTraffic.coach_state_name(coche))
+	return renglones
