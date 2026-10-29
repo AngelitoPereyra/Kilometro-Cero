@@ -1,23 +1,18 @@
 [gd_resource type="Resource" script_class="MissionData" format=3]
 
-[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="1_amt"]
-[ext_resource type="Resource" path="res://data/items/limestone.tres" id="2_piedra"]
 [ext_resource type="Script" path="res://scripts/missions/mission_data.gd" id="3_mis"]
-
-[sub_resource type="Resource" id="Premio_piedra"]
-script = ExtResource("1_amt")
-item = ExtResource("2_piedra")
-amount = 20
+[ext_resource type="Script" path="res://scripts/stations/occupation_data.gd" id="4_ofi"]
+[ext_resource type="Resource" path="res://data/occupations/canteros.tres" id="5_canteros"]
 
 [resource]
 script = ExtResource("3_mis")
 id = &"cantera_vieja"
 title = "La cantera vieja"
-intro = "Antes había dos frentes de piedra. El de allá atrás lo cerraron cuando levantaron el desvío, y se le vinieron las piedras encima a la vía. Si la despejás con el pico, volvemos a sacar piedra de los dos lados y alcanza para el pueblo y para la ciudad."
-outro = "¡Mirá cómo suena el martillo otra vez! Con los dos frentes trabajando, de acá sale el doble de piedra."
+intro = "Antes había dos frentes de piedra. El de allá atrás lo cerraron cuando levantaron el desvío, y se le vinieron las piedras encima a la vía. Si la despejás con el pico, vuelven dos familias de canteros que se fueron y sacamos piedra de los dos lados: alcanza para el pueblo y para la ciudad. Eso sí, van a hacer falta más troncos de Azul para los puntales."
+outro = "¡Mirá cómo suena el martillo otra vez! Llegaron los Ferreyra y los Godoy: con los dos frentes trabajando, de acá sale el doble de piedra."
 station_id = &"sierras_bayas"
 kind = 1
 segment_id = &"s_c"
 min_level = 2
 reward_money = 300
-reward_production = Array[ExtResource("1_amt")]([SubResource("Premio_piedra")])
+reward_families = Array[ExtResource("4_ofi")]([ExtResource("5_canteros"), ExtResource("5_canteros")])

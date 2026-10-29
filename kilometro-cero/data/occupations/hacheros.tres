@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="OccupationData" format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/occupation_data.gd" id="1_ofi"]
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
+[ext_resource type="Resource" path="res://data/items/log.tres" id="i_log"]
+
+[sub_resource type="Resource" id="Da_log"]
+script = ExtResource("2_amt")
+item = ExtResource("i_log")
+amount = 10
+
+[resource]
+script = ExtResource("1_ofi")
+id = &"hacheros"
+display_name = "hacheros"
+kind = 1
+produces = Array[ExtResource("2_amt")]([SubResource("Da_log")])
+requires_trait = &"monte"
+description = "Hachan el monte: 10 troncos por familia y por día. Los habilita el rasgo monte en cualquier bioma."

@@ -56,6 +56,9 @@ func reset_production() -> void:
 		production.level_changed.disconnect(_on_production_level_changed)
 	production = ProductionModel.new()
 	production.connection_check = _are_connected
+	# Todos los oficios, también los que habilita solo un rasgo (hacheros con monte, tarea 62b.2).
+	for occupation: OccupationData in OccupationData.load_all():
+		production.add_occupation(occupation)
 	production.level_changed.connect(_on_production_level_changed)
 	economy = Economy.new(production)
 	missions = MissionBoard.new(production)
@@ -141,6 +144,10 @@ func _on_mission_completed(mission: Mission) -> void:
 		for entry: ItemAmount in mission.data.reward_production:
 			if entry != null:
 				economy.register_item(entry.item)
+		# Y las familias de premio pueden producir algo nuevo (tarea 62b.2).
+		for occupation: OccupationData in mission.data.reward_families:
+			if occupation != null:
+				economy.register_occupation(occupation)
 	EventBus.mission_completed.emit(mission.id)
 
 

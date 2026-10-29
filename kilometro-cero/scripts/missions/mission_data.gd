@@ -37,7 +37,11 @@ const KIND_NAMES: Array[String] = ["entrega", "habilitar tramo", "despejar zona"
 @export var reward_money: int = 0
 ## Producción por día que se suma para siempre (ProductionModel.add_production_bonus).
 @export var reward_production: Array[ItemAmount] = []
-## Estación que recibe la producción extra (vacío: station_id).
+## Familias con oficio que llegan para siempre al cumplirla (tarea 62b.2, D129): una por
+## entrada, de origen extra (ProductionModel.add_family, sin mirar bioma, rasgos ni tope). La
+## cantera vieja suma 2 familias de canteros en Sierras Bayas.
+@export var reward_families: Array[OccupationData] = []
+## Estación que recibe la producción extra y las familias (vacío: station_id).
 @export var reward_station: StringName
 ## Herramientas clave que da el poblador al dar la misión (tarea 62.5): el jefe de estación de
 ## Olavarría da el hacha con la de la vía tapada.
@@ -74,6 +78,9 @@ func validate() -> PackedStringArray:
 	for entry: ItemAmount in delivery + reward_production:
 		if entry == null or entry.item == null:
 			problems.append("'%s' tiene una cantidad sin objeto" % id)
+	for occupation: OccupationData in reward_families:
+		if occupation == null or occupation.id == &"":
+			problems.append("'%s' tiene una familia de premio sin oficio" % id)
 	if requires.has(id):
 		problems.append("'%s' se pide a sí misma" % id)
 	return problems

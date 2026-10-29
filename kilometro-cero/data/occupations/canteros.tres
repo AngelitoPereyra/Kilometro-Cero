@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="OccupationData" format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/occupation_data.gd" id="1_ofi"]
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
+[ext_resource type="Resource" path="res://data/items/log.tres" id="i_log"]
+[ext_resource type="Resource" path="res://data/items/limestone.tres" id="i_limestone"]
+
+[sub_resource type="Resource" id="Pide_log"]
+script = ExtResource("2_amt")
+item = ExtResource("i_log")
+amount = 5
+
+[sub_resource type="Resource" id="Da_limestone"]
+script = ExtResource("2_amt")
+item = ExtResource("i_limestone")
+amount = 10
+
+[resource]
+script = ExtResource("1_ofi")
+id = &"canteros"
+display_name = "canteros"
+kind = 1
+needs = Array[ExtResource("2_amt")]([SubResource("Pide_log")])
+produces = Array[ExtResource("2_amt")]([SubResource("Da_limestone")])
+requires_trait = &"cantera"
+description = "Pican la piedra de la cantera: con 5 troncos para los puntales dan 10 piedras por familia y por día."

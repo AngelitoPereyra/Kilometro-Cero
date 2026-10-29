@@ -11,7 +11,8 @@ extends RefCounted
 ##   Si ningún productor tiene libre lo suficiente, queda esperando: ahí entran las secundarias.
 ## - Secundarias: se registran desde sus datos (MissionGiver), quedan disponibles al llegar la
 ##   estación a su nivel y con las previas cumplidas, se toman hablando con un poblador y al
-##   cumplirse suman producción extra permanente (y pesos, que cobra GameState).
+##   cumplirse suman producción extra permanente o familias con oficio (tarea 62b.2) y pesos,
+##   que cobra GameState.
 ## Las entregas se aprueban en el tablero de la estación (StationBoard): nada se entrega solo.
 ## - Pasajeros (tarea 60b): una principal de pasajeros (ItemData.PASSENGER_TAG) se entrega
 ##   abriendo las puertas del coche en la estación (PassengerTraffic), no en el tablero. La de
@@ -58,6 +59,8 @@ func _init(model: ProductionModel = null) -> void:
 	production.level_changed.connect(func(_station_id: StringName, _level: int) -> void: refresh())
 	production.flow_added.connect(func(_flow: ProductionFlow) -> void: refresh())
 	production.flow_removed.connect(func(_flow: ProductionFlow) -> void: refresh())
+	# Una familia nueva cambia lo que pide y lo que da la estación (tarea 62b.2).
+	production.family_added.connect(func(_station_id: StringName, _occupation: OccupationData, _origin: int) -> void: refresh())
 	production.day_processed.connect(refresh)
 
 
@@ -191,11 +194,20 @@ func find_item(item_id: StringName) -> ItemData:
 		var item: ItemData = production.get_data(station_id).find_item(item_id)
 		if item != null:
 			return item
+	# Los oficios registrados (también los que habilita solo un rasgo, tarea 62b.2).
+	for occupation: OccupationData in production.get_occupations():
+		var known: ItemData = occupation.find_item(item_id)
+		if known != null:
+			return known
 	for mission: Mission in _missions.values():
 		if mission.data != null:
 			for entry: ItemAmount in mission.data.delivery + mission.data.reward_production:
 				if entry != null and entry.item != null and entry.item.id == item_id:
 					return entry.item
+			for occupation: OccupationData in mission.data.reward_families:
+				var found: ItemData = occupation.find_item(item_id) if occupation != null else null
+				if found != null:
+					return found
 	return null
 
 
@@ -471,6 +483,10 @@ func _complete(mission: Mission) -> void:
 		for entry: ItemAmount in mission.data.reward_production:
 			if entry != null and entry.item != null:
 				production.add_production_bonus(mission.data.get_reward_station(), entry.item.id, entry.amount)
+		# Las familias de premio (tarea 62b.2): su oficio puede no estar registrado todavía.
+		for occupation: OccupationData in mission.data.reward_families:
+			if occupation != null and production.add_occupation(occupation):
+				production.add_family(mission.data.get_reward_station(), occupation.id, ProductionModel.FamilyOrigin.EXTRA)
 	mission_completed.emit(mission)
 	_dirty = true
 

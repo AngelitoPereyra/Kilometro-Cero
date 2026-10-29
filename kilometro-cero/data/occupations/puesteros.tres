@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="OccupationData" format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/occupation_data.gd" id="1_ofi"]
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
+[ext_resource type="Resource" path="res://data/items/hides.tres" id="i_hides"]
+
+[sub_resource type="Resource" id="Da_hides"]
+script = ExtResource("2_amt")
+item = ExtResource("i_hides")
+amount = 2
+
+[resource]
+script = ExtResource("1_ofi")
+id = &"puesteros"
+display_name = "puesteros"
+kind = 1
+produces = Array[ExtResource("2_amt")]([SubResource("Da_hides")])
+requires_trait = &"campo"
+description = "Crían vacunos en el campo: 2 cueros por familia y por día."

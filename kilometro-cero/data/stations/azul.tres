@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/stations/station_level_data.gd" id="1_lvl"]
 [ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
 [ext_resource type="Script" path="res://scripts/stations/station_data.gd" id="3_sta"]
+[ext_resource type="Resource" path="res://data/biomes/sierras.tres" id="4_bio"]
 [ext_resource type="Resource" path="res://data/items/cement.tres" id="i_cement"]
 [ext_resource type="Resource" path="res://data/items/limestone.tres" id="i_limestone"]
 [ext_resource type="Resource" path="res://data/items/log.tres" id="i_log"]
@@ -28,7 +29,7 @@ amount = 5
 script = ExtResource("1_lvl")
 needs = Array[ExtResource("2_amt")]([SubResource("Cant_2_settlers")])
 days_to_grow = 1
-description = "Pueblo casi vacío: el monte creció y el hachero que queda apenas saca 10 troncos por día."
+description = "Pueblo casi vacío: el monte creció y el último hachero apenas saca 10 troncos por día."
 
 [sub_resource type="Resource" id="Cant_3_limestone"]
 script = ExtResource("2_amt")
@@ -40,18 +41,13 @@ script = ExtResource("2_amt")
 item = ExtResource("i_cement")
 amount = 5
 
-[sub_resource type="Resource" id="Cant_5_log"]
-script = ExtResource("2_amt")
-item = ExtResource("i_log")
-amount = 10
-
 [sub_resource type="Resource" id="Nivel2"]
 script = ExtResource("1_lvl")
 needs = Array[ExtResource("2_amt")]([SubResource("Cant_3_limestone"), SubResource("Cant_4_cement")])
 days_to_grow = 2
-extra_production = Array[ExtResource("2_amt")]([SubResource("Cant_5_log")])
+families = 2
 market = true
-description = "Llegaron los colonos: más hacheros en el monte (10 troncos más) y abre el almacén de ramos generales."
+description = "Llegaron los colonos: una familia de puesteros en el campo y una de hacheros en el monte, y abre el almacén de ramos generales. Para las casas de material piden piedra y cemento."
 
 [sub_resource type="Resource" id="Nivel3"]
 script = ExtResource("1_lvl")
@@ -64,5 +60,7 @@ id = &"azul"
 display_name = "Azul"
 type = 1
 region = &"hito_a"
+biome = ExtResource("4_bio")
+traits = Array[StringName]([&"monte", &"campo"])
 production = Array[ExtResource("2_amt")]([SubResource("Cant_1_travelers"), SubResource("Cant_0_log")])
 levels = Array[ExtResource("1_lvl")]([SubResource("Nivel1"), SubResource("Nivel2"), SubResource("Nivel3")])

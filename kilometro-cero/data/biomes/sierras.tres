@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="BiomeData" format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/biome_data.gd" id="1_bio"]
+[ext_resource type="Resource" path="res://data/occupations/canteros.tres" id="o_canteros"]
+[ext_resource type="Resource" path="res://data/occupations/caleros.tres" id="o_caleros"]
+[ext_resource type="Resource" path="res://data/occupations/puesteros.tres" id="o_puesteros"]
+[ext_resource type="Resource" path="res://data/occupations/tamberos.tres" id="o_tamberos"]
+[ext_resource type="Resource" path="res://data/occupations/curtidores.tres" id="o_curtidores"]
+[ext_resource type="Script" path="res://scripts/stations/occupation_data.gd" id="2_ofi"]
+[ext_resource type="Script" path="res://scripts/storage/item_data.gd" id="3_item"]
+[ext_resource type="Resource" path="res://data/items/log.tres" id="i_log"]
+
+[resource]
+script = ExtResource("1_bio")
+id = &"sierras"
+display_name = "Sierras"
+own = Array[ExtResource("2_ofi")]([ExtResource("o_canteros"), ExtResource("o_caleros"), ExtResource("o_puesteros")])
+possible = Array[ExtResource("2_ofi")]([ExtResource("o_tamberos"), ExtResource("o_curtidores")])
+natural_demands = Array[ExtResource("3_item")]([ExtResource("i_log")])

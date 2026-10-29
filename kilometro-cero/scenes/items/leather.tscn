@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/items/word_item.gd" id="1_item"]
+[ext_resource type="Script" path="res://scripts/components/holdable.gd" id="2_hold"]
+[ext_resource type="Script" path="res://scripts/components/placeable.gd" id="3_place"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_objeto"]
+albedo_color = Color(0.38, 0.22, 0.12, 1)
+roughness = 1.0
+
+[sub_resource type="BoxMesh" id="Mesh_objeto"]
+size = Vector3(0.5, 0.05, 0.35)
+
+[sub_resource type="BoxShape3D" id="Shape_objeto"]
+size = Vector3(0.5, 0.05, 0.35)
+
+[node name="CueroCurtido" type="RigidBody3D"]
+script = ExtResource("1_item")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+material_override = SubResource("Mat_objeto")
+mesh = SubResource("Mesh_objeto")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_objeto")
+
+[node name="Holdable" type="Node" parent="."]
+script = ExtResource("2_hold")
+
+[node name="Placeable" type="Node" parent="."]
+script = ExtResource("3_place")

@@ -1,32 +1,19 @@
 [gd_resource type="Resource" script_class="StationData" format=3]
 
 [ext_resource type="Script" path="res://scripts/stations/station_level_data.gd" id="1_lvl"]
-[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
 [ext_resource type="Script" path="res://scripts/stations/station_data.gd" id="3_sta"]
-[ext_resource type="Resource" path="res://data/items/limestone.tres" id="i_limestone"]
-[ext_resource type="Resource" path="res://data/items/log.tres" id="i_log"]
-
-[sub_resource type="Resource" id="Cant_1_log"]
-script = ExtResource("2_amt")
-item = ExtResource("i_log")
-amount = 10
+[ext_resource type="Resource" path="res://data/biomes/sierras.tres" id="4_bio"]
 
 [sub_resource type="Resource" id="Nivel1"]
 script = ExtResource("1_lvl")
-needs = Array[ExtResource("2_amt")]([SubResource("Cant_1_log")])
 days_to_grow = 1
-description = "Cantera parada: sin madera para los puntales y los hornos no se trabaja."
-
-[sub_resource type="Resource" id="Cant_2_limestone"]
-script = ExtResource("2_amt")
-item = ExtResource("i_limestone")
-amount = 20
+families = 2
+description = "Cantera parada: dos familias de canteros sin troncos para los puntales."
 
 [sub_resource type="Resource" id="Nivel2"]
 script = ExtResource("1_lvl")
-extra_production = Array[ExtResource("2_amt")]([SubResource("Cant_2_limestone")])
 market = true
-description = "La cantera trabaja: salen 20 piedras por día y se venden en su mercado."
+description = "La cantera trabaja: la piedra sale por tren y se vende en su mercado."
 
 [resource]
 script = ExtResource("3_sta")
@@ -34,4 +21,6 @@ id = &"sierras_bayas"
 display_name = "Sierras Bayas"
 type = 2
 region = &"hito_a"
+biome = ExtResource("4_bio")
+traits = Array[StringName]([&"cantera"])
 levels = Array[ExtResource("1_lvl")]([SubResource("Nivel1"), SubResource("Nivel2")])

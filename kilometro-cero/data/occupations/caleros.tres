@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="OccupationData" format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/occupation_data.gd" id="1_ofi"]
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
+[ext_resource type="Resource" path="res://data/items/limestone.tres" id="i_limestone"]
+[ext_resource type="Resource" path="res://data/items/cement.tres" id="i_cement"]
+
+[sub_resource type="Resource" id="Pide_limestone"]
+script = ExtResource("2_amt")
+item = ExtResource("i_limestone")
+amount = 10
+
+[sub_resource type="Resource" id="Da_cement"]
+script = ExtResource("2_amt")
+item = ExtResource("i_cement")
+amount = 5
+
+[resource]
+script = ExtResource("1_ofi")
+id = &"caleros"
+display_name = "caleros"
+kind = 2
+needs = Array[ExtResource("2_amt")]([SubResource("Pide_limestone")])
+produces = Array[ExtResource("2_amt")]([SubResource("Da_cement")])
+requires_trait = &"horno"
+description = "Queman la piedra en los hornos: con 10 piedras dan 5 bolsas de cemento por familia y por día."

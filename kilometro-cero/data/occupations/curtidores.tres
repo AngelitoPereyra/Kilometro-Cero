@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="OccupationData" format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/occupation_data.gd" id="1_ofi"]
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
+[ext_resource type="Resource" path="res://data/items/hides.tres" id="i_hides"]
+[ext_resource type="Resource" path="res://data/items/leather.tres" id="i_leather"]
+
+[sub_resource type="Resource" id="Pide_hides"]
+script = ExtResource("2_amt")
+item = ExtResource("i_hides")
+amount = 2
+
+[sub_resource type="Resource" id="Da_leather"]
+script = ExtResource("2_amt")
+item = ExtResource("i_leather")
+amount = 1
+
+[resource]
+script = ExtResource("1_ofi")
+id = &"curtidores"
+display_name = "curtidores"
+kind = 2
+needs = Array[ExtResource("2_amt")]([SubResource("Pide_hides")])
+produces = Array[ExtResource("2_amt")]([SubResource("Da_leather")])
+description = "Curten los cueros en los piletones: con 2 cueros dan 1 cuero curtido por familia y por día."

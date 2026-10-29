@@ -45,6 +45,9 @@ func add_station(data: StationData) -> void:
 		return
 	for entry: ItemAmount in _amounts_of(data):
 		register_item(entry.item)
+	# Lo que piden y dan los oficios registrados en el modelo (bioma y rasgos, tarea 62b.2).
+	for occupation: OccupationData in production.get_occupations():
+		register_occupation(occupation)
 	if _stock.has(data.id):
 		return
 	_stock[data.id] = {}
@@ -57,6 +60,15 @@ func add_station(data: StationData) -> void:
 func register_item(item: ItemData) -> void:
 	if item != null and item.id != &"":
 		_items[item.id] = item
+
+
+## Recuerda los objetos que pide y da un oficio (tarea 62b.2).
+func register_occupation(occupation: OccupationData) -> void:
+	if occupation == null:
+		return
+	for entry: ItemAmount in occupation.needs + occupation.produces:
+		if entry != null:
+			register_item(entry.item)
 
 
 func get_item(item_id: StringName) -> ItemData:

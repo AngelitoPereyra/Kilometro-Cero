@@ -3,13 +3,15 @@ extends Resource
 ## Un oficio (D129, tarea 62b.1): lo que hace una familia de una estación ("hacheros",
 ## "canteros"). Cada familia necesita y produce por día lo de su oficio; sin todos sus insumos
 ## no produce (los canteros sin troncos no pican). Es una definición: no guarda estado (las
-## familias viven en el ProductionModel). Datos: data/occupations/*.tres (tarea 62b.2).
+## familias viven en el ProductionModel). Datos: data/occupations/*.tres (tarea 62b.2; load_all los junta).
 
 ## Para el orden de asignación de D129: primero la comida que falta, después la materia prima
 ## del lugar y por último el procesado.
 enum Kind { FOOD, RAW, PROCESSED }
 
 const KIND_NAMES: Array[String] = ["comida", "materia prima", "procesado"]
+## Carpeta de los oficios (tarea 62b.2).
+const FOLDER: String = "res://data/occupations"
 
 @export var id: StringName
 ## Cómo se nombran las familias de este oficio ("hacheros").
@@ -29,6 +31,19 @@ const KIND_NAMES: Array[String] = ["comida", "materia prima", "procesado"]
 
 static func kind_name(value: Kind) -> String:
 	return KIND_NAMES[value]
+
+
+## Todos los oficios de una carpeta de datos (tarea 62b.2). GameState los registra en el modelo
+## al empezar, así los que habilita solo un rasgo (hacheros con monte) también se asignan.
+static func load_all(folder: String = FOLDER) -> Array[OccupationData]:
+	var result: Array[OccupationData] = []
+	for file: String in ResourceLoader.list_directory(folder):
+		if not file.ends_with(".tres"):
+			continue
+		var occupation := load(folder.path_join(file)) as OccupationData
+		if occupation != null:
+			result.append(occupation)
+	return result
 
 
 ## Insumos de una familia por día (id de objeto -> unidades).

@@ -3,8 +3,7 @@
 [ext_resource type="Script" path="res://scripts/stations/station_level_data.gd" id="1_lvl"]
 [ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
 [ext_resource type="Script" path="res://scripts/stations/station_data.gd" id="3_sta"]
-[ext_resource type="Resource" path="res://data/items/cement.tres" id="i_cement"]
-[ext_resource type="Resource" path="res://data/items/limestone.tres" id="i_limestone"]
+[ext_resource type="Resource" path="res://data/biomes/sierras.tres" id="4_bio"]
 [ext_resource type="Resource" path="res://data/items/settlers.tres" id="i_settlers"]
 [ext_resource type="Resource" path="res://data/items/teacher.tres" id="i_teacher"]
 [ext_resource type="Resource" path="res://data/items/travelers.tres" id="i_travelers"]
@@ -19,32 +18,12 @@ script = ExtResource("2_amt")
 item = ExtResource("i_travelers")
 amount = 10
 
-[sub_resource type="Resource" id="Cant_3_cement"]
-script = ExtResource("2_amt")
-item = ExtResource("i_cement")
-amount = 5
-
-[sub_resource type="Resource" id="Cant_4_limestone"]
-script = ExtResource("2_amt")
-item = ExtResource("i_limestone")
-amount = 10
-
 [sub_resource type="Resource" id="Nivel1"]
 script = ExtResource("1_lvl")
-needs = Array[ExtResource("2_amt")]([SubResource("Cant_4_limestone")])
 days_to_grow = 1
+families = 2
 market = true
-description = "Ciudad apagada: los hornos de cemento casi parados por falta de piedra. El mercado sigue abierto."
-
-[sub_resource type="Resource" id="Cant_5_limestone"]
-script = ExtResource("2_amt")
-item = ExtResource("i_limestone")
-amount = 10
-
-[sub_resource type="Resource" id="Cant_6_cement"]
-script = ExtResource("2_amt")
-item = ExtResource("i_cement")
-amount = 10
+description = "Ciudad apagada: dos familias de caleros con los hornos parados por falta de piedra. El mercado sigue abierto."
 
 [sub_resource type="Resource" id="Cant_7_teacher"]
 script = ExtResource("2_amt")
@@ -53,36 +32,26 @@ amount = 1
 
 [sub_resource type="Resource" id="Nivel2"]
 script = ExtResource("1_lvl")
-needs = Array[ExtResource("2_amt")]([SubResource("Cant_5_limestone")])
 days_to_grow = 2
-extra_production = Array[ExtResource("2_amt")]([SubResource("Cant_6_cement"), SubResource("Cant_7_teacher")])
+extra_production = Array[ExtResource("2_amt")]([SubResource("Cant_7_teacher")])
+families = 1
 market = true
 workshop = true
-description = "Vuelven los hornos: más cemento, el taller y la escuela normal que forma maestras."
-
-[sub_resource type="Resource" id="Cant_8_limestone"]
-script = ExtResource("2_amt")
-item = ExtResource("i_limestone")
-amount = 10
+description = "Vuelven los hornos: llega otra familia de caleros (pide 10 piedras más), abre el taller y la escuela normal forma maestras."
 
 [sub_resource type="Resource" id="Nivel3"]
 script = ExtResource("1_lvl")
-needs = Array[ExtResource("2_amt")]([SubResource("Cant_8_limestone")])
-days_to_grow = 2
 market = true
 workshop = true
-description = "Barrios nuevos y más movimiento."
-
-[sub_resource type="Resource" id="Nivel4"]
-script = ExtResource("1_lvl")
-market = true
-workshop = true
-description = "La ciudad en marcha."
+description = "Barrios nuevos y más movimiento: la ciudad en marcha."
 
 [resource]
 script = ExtResource("3_sta")
 id = &"olavarria"
 display_name = "Olavarría"
+type = 0
 region = &"hito_a"
-production = Array[ExtResource("2_amt")]([SubResource("Cant_1_settlers"), SubResource("Cant_2_travelers"), SubResource("Cant_3_cement")])
-levels = Array[ExtResource("1_lvl")]([SubResource("Nivel1"), SubResource("Nivel2"), SubResource("Nivel3"), SubResource("Nivel4")])
+biome = ExtResource("4_bio")
+traits = Array[StringName]([&"horno"])
+production = Array[ExtResource("2_amt")]([SubResource("Cant_1_settlers"), SubResource("Cant_2_travelers")])
+levels = Array[ExtResource("1_lvl")]([SubResource("Nivel1"), SubResource("Nivel2"), SubResource("Nivel3")])

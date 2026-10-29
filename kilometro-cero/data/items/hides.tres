@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Script" path="res://scripts/storage/item_data.gd" id="1_item"]
+[ext_resource type="PackedScene" path="res://scenes/items/hides.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_item")
+id = &"hides"
+display_name = "cuero"
+size_class = 1
+unit_weight = 10.0
+tags = Array[StringName]([&"hides"])
+base_value = 25.0
+cargo_name = "cueros"
+scene = ExtResource("2_scene")
