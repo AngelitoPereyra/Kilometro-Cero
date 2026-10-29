@@ -245,7 +245,7 @@ func _build() -> void:
 	shade.add_child(center)
 
 	var panel := PanelContainer.new()
-	panel.theme = _make_theme()
+	panel.theme = make_theme()
 	center.add_child(panel)
 	var margin := MarginContainer.new()
 	for side: String in ["left", "right", "top", "bottom"]:
@@ -301,8 +301,9 @@ func _build() -> void:
 	outer.add_child(keys)
 
 
-# El tema de la ventana: crema clarito con tinta oscura, pestañas y ranuras que se distinguen.
-func _make_theme() -> Theme:
+## El tema de la ventana: crema clarito con tinta oscura, pestañas y ranuras que se distinguen.
+## También lo usa la ventana del mercado (MarketUI, tarea 62.9b).
+static func make_theme() -> Theme:
 	var theme := Theme.new()
 	theme.set_stylebox(&"panel", &"PanelContainer", _box(CREAM, CREAM, 8, 0))
 	theme.set_stylebox(&"panel", &"TabContainer", _box(CREAM, BORDER, 4, 1))

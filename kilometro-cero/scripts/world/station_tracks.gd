@@ -9,7 +9,8 @@ extends Node3D
 ## de línea tienen que terminar en las puntas, sobre la principal (RailNetwork une a menos de 1 m).
 ## Las vías de cruce se habilitan en orden: `base_track_count` al empezar (contando la principal)
 ## y, con `grow_with_flows`, una más cada `flows_per_track` flujos que tocan la estación por encima
-## de los que entran (la ciudad). Las de carga están siempre.
+## de los que entran (la ciudad). Las de carga y las bahías de carga del jugador (tarea 62.9a,
+## D125: lejos de la principal, para el punto de carga; los automáticos no las usan) están siempre.
 ## En juego, en cada punta donde no llega ningún tramo pone una cola de maniobras (tarea 61b.3):
 ## una vía corta hacia afuera para que la locomotora pueda pasar de una vía a otra y rodear su
 ## tren; con `turntable`, al final de la cola hay una mesa giratoria para dar vuelta la locomotora,
@@ -50,6 +51,12 @@ const TURNTABLE_RADIUS: float = 7.0
 @export var freight_offsets: PackedFloat32Array = PackedFloat32Array():
 	set(value):
 		freight_offsets = value
+		_queue_build()
+## X de cada bahía de carga del jugador (tarea 62.9a, D125), "Bahia1", "Bahia2"...; siempre
+## habilitadas.
+@export var bay_offsets: PackedFloat32Array = PackedFloat32Array():
+	set(value):
+		bay_offsets = value
 		_queue_build()
 ## Vías habilitadas al empezar, contando la principal (sin las de carga).
 @export_range(1, 10) var base_track_count: int = 2:
@@ -92,7 +99,7 @@ func _process(delta: float) -> void:
 	refresh_enabled()
 
 
-## Las vías generadas: la principal primero, después las de cruce y las de carga.
+## Las vías generadas: la principal primero, después las de cruce, las de carga y las bahías.
 func get_tracks() -> Array[StationTrack]:
 	return _tracks.duplicate()
 
@@ -194,6 +201,8 @@ func _build() -> void:
 		_add_track("Cruce%d" % (i + 1), StationTrack.Role.SIDING, siding_offsets[i], "" if siding_offsets.size() == 1 else "vía de cruce %d" % (i + 1))
 	for i: int in freight_offsets.size():
 		_add_track("Carga%d" % (i + 1), StationTrack.Role.FREIGHT, freight_offsets[i], "" if freight_offsets.size() == 1 else "vía de carga %d" % (i + 1))
+	for i: int in bay_offsets.size():
+		_add_track("Bahia%d" % (i + 1), StationTrack.Role.BAY, bay_offsets[i], "" if bay_offsets.size() == 1 else "bahía de carga %d" % (i + 1))
 	_enabled_count = 0
 	_apply_count(desired_track_count(0))
 

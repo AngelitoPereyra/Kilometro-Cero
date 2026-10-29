@@ -160,6 +160,11 @@ func _probar_guardado() -> void:
 
 func _probar_escena() -> void:
 	GameState.money = START_MONEY
+	# Desde la 62.6 la mochila básica guarda troncos de a uno; esta prueba es de antes y cuenta
+	# solo con la plataforma: una mochila igual pero sin grandes.
+	var sin_grandes := (_player.get_backpack().data.duplicate() as BackpackData)
+	sin_grandes.large_stack_limit = 0
+	_player.get_backpack().setup(sin_grandes)
 	var mercado_pueblo: Market = _pueblo.get_node("Mercado")
 	var mercado_maderera: Market = _maderera.get_node("Mercado")
 	_comprobar(_ciudad.get_node("Mercado") is Market and mercado_maderera.is_open(), "Las tres plantillas tienen Mercado; el de la maderera está abierto")
@@ -195,6 +200,7 @@ func _probar_escena() -> void:
 	_comprobar(mercado_pueblo.sell(&"log", Market.ALL, _player) == 20 and _flatcar.get_cargo().get_total() == 0 and GameState.money == 580, "Vender todo: se descargan los 20 troncos y se cobran $240")
 	_comprobar(_ventas.back() == [&"pueblo", &"log", -20, 240] and GameState.economy.get_stock_of(&"pueblo", &"log") == 20, "Se avisó la venta y el pueblo los tiene en stock")
 	_comprobar(mercado_pueblo.buy(&"log", 5, _player) == 5 and GameState.money == 505 and _flatcar.get_cargo().get_total() == 5, "Recomprar 5 cuesta $15 cada uno")
+	_comprobar(mercado_pueblo.wagon_amount_to_buy(&"log", _player) == 15 and mercado_pueblo.wagon_amount_to_sell(&"log", _player) == 5, "Comprar vagón llena los 15 que faltan y Vender vagón vacía los 5 (62.9b, sin bahía: el tren detenido)")
 	var tablero: StationBoard = _pueblo.get_node("Tablero")
 	_comprobar(tablero.get_available() == _dic({&"log": 5}), "El tablero sigue viendo la carga del tren")
 

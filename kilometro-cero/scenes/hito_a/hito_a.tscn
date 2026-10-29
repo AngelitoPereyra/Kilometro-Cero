@@ -38,6 +38,8 @@
 [ext_resource type="Resource" path="res://data/missions/la_via_tapada.tres" id="36_via"]
 [ext_resource type="PackedScene" path="res://scenes/items/pickaxe.tscn" id="37_pic"]
 [ext_resource type="Resource" path="res://data/items/pickaxe.tres" id="38_picd"]
+[ext_resource type="Script" path="res://scripts/stations/loading_bay.gd" id="39_bah"]
+[ext_resource type="Script" path="res://scripts/world/station_track.gd" id="40_est"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Cielo_mat"]
 sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
@@ -112,6 +114,39 @@ size = Vector3(10, 3.5, 6)
 [sub_resource type="StandardMaterial3D" id="Mat_piedra"]
 albedo_color = Color(0.82, 0.8, 0.72, 1)
 
+[sub_resource type="Curve3D" id="Curva_ramal_sb"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 22, 7, 0, 70, 22, 0, 0, 0, 0, 0, -33, 0, 110, 0, 0, 0, 0, 0, 0, -93, 0, 110),
+"tilts": PackedFloat32Array(0, 0, 0)
+}
+point_count = 3
+
+[sub_resource type="Curve3D" id="Curva_bahia1_sb"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -93, 0, 110, 0, 0, 0, 0, 0, 0, -143, 0, 110),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[sub_resource type="Curve3D" id="Curva_bahia2_sb"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, -12, 0, 0, -93, 0, 110, 12, 0, 0, 0, 0, 0, -117, 0, 117, 0, 0, 0, 0, 0, 0, -143, 0, 117),
+"tilts": PackedFloat32Array(0, 0, 0)
+}
+point_count = 3
+
+[sub_resource type="StandardMaterial3D" id="Mat_local"]
+albedo_color = Color(0.78, 0.62, 0.45, 1)
+
+[sub_resource type="BoxMesh" id="Malla_local"]
+size = Vector3(5, 3.2, 3.5)
+
+[sub_resource type="StandardMaterial3D" id="Mat_bahia"]
+albedo_color = Color(0.55, 0.47, 0.36, 1)
+
+[sub_resource type="BoxMesh" id="Malla_bahia"]
+size = Vector3(3, 0.9, 30)
+
 [sub_resource type="BoxMesh" id="Malla_pila"]
 size = Vector3(4, 1.4, 3)
 
@@ -159,6 +194,110 @@ repair_cost = Array[ExtResource("30_cant")]([SubResource("Costo_cemento")])
 
 [node name="Vias" parent="Azul"]
 turntable = true
+
+[node name="Vias" parent="Olavarria"]
+bay_offsets = PackedFloat32Array(42)
+
+[node name="PuntoDeCarga" type="Node3D" parent="Olavarria"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.5, 0, 0)
+script = ExtResource("39_bah")
+
+[node name="Plataforma" type="MeshInstance3D" parent="Olavarria/PuntoDeCarga"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+material_override = SubResource("Mat_bahia")
+mesh = SubResource("Malla_bahia")
+
+[node name="Texto" type="Label3D" parent="Olavarria/PuntoDeCarga"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
+billboard = 1
+font_size = 40
+outline_size = 10
+text = "Punto de carga"
+
+[node name="Ramal" type="Path3D" parent="SierrasBayas"]
+curve = SubResource("Curva_ramal_sb")
+
+[node name="Via" type="Node" parent="SierrasBayas/Ramal"]
+script = ExtResource("40_est")
+role = 4
+display_name = "ramal de carga"
+spring_exit = true
+condition = 1.0
+
+[node name="TrackBuilder" type="Node3D" parent="SierrasBayas/Ramal" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_cons")
+module_mesh = SubResource("Modulo_via")
+segment = NodePath("../Via")
+
+[node name="Bahia1" type="Path3D" parent="SierrasBayas"]
+curve = SubResource("Curva_bahia1_sb")
+
+[node name="Via" type="Node" parent="SierrasBayas/Bahia1"]
+script = ExtResource("40_est")
+role = 4
+display_name = "bahía de carga 1"
+spring_exit = true
+condition = 1.0
+
+[node name="TrackBuilder" type="Node3D" parent="SierrasBayas/Bahia1" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_cons")
+module_mesh = SubResource("Modulo_via")
+segment = NodePath("../Via")
+
+[node name="Bahia2" type="Path3D" parent="SierrasBayas"]
+curve = SubResource("Curva_bahia2_sb")
+
+[node name="Via" type="Node" parent="SierrasBayas/Bahia2"]
+script = ExtResource("40_est")
+role = 4
+display_name = "bahía de carga 2"
+spring_exit = true
+condition = 1.0
+
+[node name="TrackBuilder" type="Node3D" parent="SierrasBayas/Bahia2" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_cons")
+module_mesh = SubResource("Modulo_via")
+segment = NodePath("../Via")
+
+[node name="PuntoDeCarga" type="Node3D" parent="SierrasBayas"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -120, 0, 106.5)
+script = ExtResource("39_bah")
+
+[node name="Plataforma" type="MeshInstance3D" parent="SierrasBayas/PuntoDeCarga"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+material_override = SubResource("Mat_bahia")
+mesh = SubResource("Malla_bahia")
+
+[node name="Texto" type="Label3D" parent="SierrasBayas/PuntoDeCarga"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
+billboard = 1
+font_size = 40
+outline_size = 10
+text = "Punto de carga"
+
+[node name="Mercado" parent="Olavarria"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -30, 0, 26)
+
+[node name="Local" type="MeshInstance3D" parent="Olavarria/Mercado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -2.4)
+material_override = SubResource("Mat_local")
+mesh = SubResource("Malla_local")
+
+[node name="Mercado" parent="Azul"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -28, 0, -16)
+
+[node name="Local" type="MeshInstance3D" parent="Azul/Mercado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -2.4)
+material_override = SubResource("Mat_local")
+mesh = SubResource("Malla_local")
+
+[node name="Mercado" parent="SierrasBayas"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -18, 0, 16)
+
+[node name="Local" type="MeshInstance3D" parent="SierrasBayas/Mercado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, -2.4)
+material_override = SubResource("Mat_local")
+mesh = SubResource("Malla_local")
 
 [node name="Escuela" parent="Azul/Niveles/Nivel3"]
 item_id = &"sin_uso"

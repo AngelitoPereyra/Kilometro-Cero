@@ -1,14 +1,14 @@
 @tool
 class_name StationTrack
 extends TrackSegment
-## Una vía de una estación (tarea 61b, D112): la principal, una de cruce, la de carga o una cola
-## de maniobras. No es un tramo de la red: no tiene `segment_id` ni estaciones en las puntas; es
+## Una vía de una estación (tarea 61b, D112): la principal, una de cruce, la de carga, una cola
+## de maniobras o la bahía de carga del jugador (tarea 62.9a, D125: los automáticos no la usan). No es un tramo de la red: no tiene `segment_id` ni estaciones en las puntas; es
 ## de la estación que la contiene. Sus puntas se unen con los tramos de línea y con las otras vías
 ## de la estación por cercanía, y donde se juntan tres puntas hay un cambio (RailNetwork los arma).
 ## Mientras no está habilitada (una vía de ciudad que todavía no creció), no se ve y ningún cambio
 ## lleva a ella. Normalmente las arma StationTracks; también se puede poner a mano en un Path3D.
 
-enum Role { MAIN, SIDING, FREIGHT, HEADSHUNT }
+enum Role { MAIN, SIDING, FREIGHT, HEADSHUNT, BAY }
 
 signal enabled_changed(enabled: bool)
 
@@ -72,6 +72,8 @@ static func role_name(value: Role) -> String:
 			return "vía de carga"
 		Role.HEADSHUNT:
 			return "cola de maniobras"
+		Role.BAY:
+			return "bahía de carga"
 	return "vía principal"
 
 

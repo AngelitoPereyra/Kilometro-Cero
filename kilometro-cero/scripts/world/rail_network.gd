@@ -493,10 +493,19 @@ func validate() -> PackedStringArray:
 			# Tarea 61b: a una estación con vías propias, el tramo tiene que llegar a una punta.
 			for at_end: bool in [false, true]:
 				var station: StringName = track.to_station if at_end else track.from_station
-				if has_station_tracks(station) and track.get_track_path() != null \
+				# Una estación con solo vías puestas a mano (el ramal de carga, tarea 62.9a) todavía
+				# no armó las suyas (StationTracks las suma después): no se avisa.
+				if _has_main_track(station) and track.get_track_path() != null \
 						and track.get_track_path().is_inside_tree() and not has_links(track.get_track_path(), at_end):
 					warnings.append("el tramo %s no llega a una punta de las vías de %s (a menos de %.0f m): ahí el tren salta como antes." % [segment_id, station, JOIN_DISTANCE])
 	return warnings
+
+
+func _has_main_track(station: StringName) -> bool:
+	for station_track: StationTrack in get_station_tracks(station):
+		if station_track.enabled and station_track.is_main():
+			return true
+	return false
 
 
 ## Las vías de una estación (tarea 61b), habilitadas o no.

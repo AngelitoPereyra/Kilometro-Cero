@@ -2540,7 +2540,9 @@ func _turn_plan(network: RailNetwork, run: AutoTrainRun) -> Dictionary:
 	var others: Array[StationTrack] = []
 	for station_track: StationTrack in network.get_station_tracks(AutoTrainRun.piece_station(piece)):
 		var other: Path3D = station_track.get_track_path()
-		if not station_track.enabled or other == path or station_track.role == StationTrack.Role.HEADSHUNT:
+		# La bahía de carga es del jugador (tarea 62.9a): no se usa para rodear el tren.
+		if not station_track.enabled or other == path or station_track.role == StationTrack.Role.HEADSHUNT \
+				or station_track.role == StationTrack.Role.BAY:
 			continue
 		if not _links_to(network, other, far_at_end, beyond_far[0]) or not _links_to(network, other, not far_at_end, beyond_near[0]):
 			continue

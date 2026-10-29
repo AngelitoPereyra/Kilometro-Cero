@@ -6,18 +6,22 @@ extends RefCounted
 ## consulta y se tira: no guarda nada.
 ## Orden: para sacar, vagones, mano (solo entera) y mochila; para guardar, vagones y mochila
 ## (en la mano no se compra: lo grande va al tren).
+## Sin `with_wagons` (tarea 62.9a: el mercado de una estación con bahía de carga) solo cuentan la
+## mano y la mochila; los vagones los maneja el punto de carga (LoadingBay).
 
 ## Unidades que se piden de más para medir el lugar libre.
 const ROOM_PROBE: int = 9999
 
 var station: Station
 var player: Player
+var with_wagons: bool = true
 
 
 ## `who` null: el jugador que esté en la zona de la estación (o nadie).
-func _init(at: Station, who: Player = null) -> void:
+func _init(at: Station, who: Player = null, wagons: bool = true) -> void:
 	station = at
 	player = who
+	with_wagons = wagons
 	if player == null and station != null:
 		player = station.get_present_player()
 
@@ -25,7 +29,7 @@ func _init(at: Station, who: Player = null) -> void:
 ## Las cargas de los vagones de los trenes detenidos en la estación.
 func get_cargos() -> Array[StorageContainer]:
 	var cargos: Array[StorageContainer] = []
-	if station == null:
+	if station == null or not with_wagons:
 		return cargos
 	for head: Vehicle in station.get_stopped_trains():
 		for vehicle: Vehicle in head.get_train():
