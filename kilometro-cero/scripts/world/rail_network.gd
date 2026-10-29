@@ -69,6 +69,9 @@ var _syncing: bool = false
 var _blockers: Dictionary = {}
 # segment_id -> State al que vuelve cuando se va el último bloqueo.
 var _state_before_block: Dictionary = {}
+# Tramos que estuvieron cortados y se abrieron (tarea 62b.3): segment_id -> true. Sobreviven a
+# rebuild() y clear(), como los bloqueos.
+var _opened: Dictionary = {}
 # station_id -> Array con sus StationTrack (tarea 61b; sin tipo: pueden quedar borradas).
 var _station_tracks: Dictionary = {}
 # "curva:punta" -> Array de [Path3D, bool entra por el final]: por dónde sigue esa punta.
@@ -271,9 +274,18 @@ func set_state(segment_id: StringName, value: TrackSegment.State) -> bool:
 		return false
 	if value != TrackSegment.State.CUT and is_blocked(segment_id):
 		return false
+	var was_cut: bool = is_cut(segment_id)
 	# Alcanza con la primera: _on_track_state_changed copia a la otra y avisa.
 	tracks[0].state = value
+	if was_cut and value != TrackSegment.State.CUT:
+		_opened[segment_id] = true
 	return true
+
+
+## Si el tramo estuvo cortado y se abrió (tarea 62b.3: lo abrió el jugador, despejando o
+## reparando). Lo usan las principales para saber si hace falta un viaje inaugural.
+func was_opened(segment_id: StringName) -> bool:
+	return _opened.has(segment_id)
 
 
 func is_cut(segment_id: StringName) -> bool:

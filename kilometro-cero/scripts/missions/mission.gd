@@ -6,6 +6,10 @@ extends RefCounted
 ##   Pide una primera carga de FIRST_DELIVERY_DAYS días de consumo y, con la conexión abierta
 ##   y un productor con producción libre, crea el flujo permanente.
 ## - Secundaria: viene de un MissionData (entrega, habilitar tramo o despejar zona).
+## - Principal con aviso (tarea 62b.3, D128): si la estación tiene quien da sus principales
+##   (MissionGiver.main_station), el jugador abre el camino y le avisa (`reported`); el
+##   Ferrocarril manda la primera carga en un tren prestado que maneja el jugador (`inaugural`)
+##   o, si el camino ya lo estrenó un tren, la manda solo.
 
 ## LOCKED: todavía no se puede conseguir. AVAILABLE: un poblador la ofrece. ACTIVE: en curso.
 ## COMPLETED: cumplida.
@@ -33,6 +37,12 @@ var flow: ProductionFlow
 var data: MissionData
 ## Secundaria: si el poblador ya contó el cierre (MissionGiver).
 var outro_told: bool = false
+## Principal con aviso (tarea 62b.3): ya se le avisó a quien la da que el camino está habilitado.
+var reported: bool = false
+## Principal con aviso: la primera carga va en el tren prestado (viaje inaugural, en curso).
+var inaugural: bool = false
+## Principal con aviso: la estación productora elegida al avisar (de ahí sale el tren prestado).
+var source_id: StringName
 
 
 ## Id de la principal de una estación y un objeto: "main:pueblo:log".
@@ -130,6 +140,9 @@ func to_dict() -> Dictionary:
 	if main:
 		values["item"] = String(item_id)
 		values["amount"] = flow_amount
+		values["reported"] = reported
+		values["inaugural"] = inaugural
+		values["source"] = String(source_id)
 	return values
 
 
@@ -144,6 +157,9 @@ static func main_from_dict(values: Dictionary) -> Mission:
 func apply_dict(values: Dictionary) -> void:
 	state = int(values.get("state", state)) as State
 	outro_told = bool(values.get("outro_told", false))
+	reported = bool(values.get("reported", false))
+	inaugural = bool(values.get("inaugural", false))
+	source_id = StringName(values.get("source", ""))
 	delivered.clear()
 	var saved_delivered: Dictionary = values.get("delivered", {})
 	for key: String in saved_delivered:

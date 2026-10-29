@@ -151,6 +151,8 @@ func place_wagon() -> Wagon:
 	var visual := wagon.get_node_or_null(^"Visual") as Node3D
 	if visual != null:
 		GrowthCelebration.pop(visual)
+	# Lo pone el viejo en la maqueta (tarea 62b.3): con humo.
+	SmokePuff.at_vehicles([wagon])
 	print("WagonGift: %s (en %s)." % [describe(), path.name])
 	given.emit(wagon)
 	return wagon

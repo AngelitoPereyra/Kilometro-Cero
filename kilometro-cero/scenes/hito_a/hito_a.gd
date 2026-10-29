@@ -23,6 +23,11 @@ extends Node3D
 ## "H: Teclas" (H abre la lista de teclas, una por renglón); arriba a la derecha la misión que
 ## sigue (un paso por renglón) y los regalos sin enganchar; abajo al centro lo que hay cerca para
 ## la F y el último aviso. Lo demás va a la pestaña Agenda del TAB y la carga, a la pestaña Tren.
+## Tarea 62b.3 (D127, D128): las principales se avisan a quien las da (Don Ernesto en Olavarría,
+## Doña Clara en Azul, Ramírez en Sierras Bayas: MissionGiver.main_station) y la primera carga la
+## trae el Ferrocarril; si el camino tiene un tramo que abrió el jugador sin estrenar, en un tren
+## prestado que maneja el jugador (TrenesPrestados). Se sacaron los regalos de vagón de Sierras
+## Bayas y Olavarría (eran para las primeras cargas); queda la plataforma de Azul.
 
 const CONTROLES: String = "WASD: caminar\nE: agarrar (va a la mochila)\nClic: golpear (hacha, pico)\nQ con la mano vacía junto al vagón: pasarle la mochila\nF: cabina, tablero, mercado, taller o hablar\nO: puertas del coche (en la cabina)\nT: hasta la próxima salida de un tren\nTAB: inventario\nH: esconder las teclas"
 const AYUDA: String = "TAB: Inventario\nH: Teclas"
@@ -144,6 +149,9 @@ func _process(_delta: float) -> void:
 		var vagon: Wagon = regalo.get_wagon() if regalo != null else null
 		if vagon != null and vagon.front == null and vagon.rear == null:
 			derecha.append("%s\nesperando en la vía, engánchalo" % regalo.describe())
+	var prestados: BorrowedTrains = BorrowedTrains.find_in(get_tree())
+	if prestados != null:
+		derecha.append_array(prestados.get_waiting_lines())
 	_mostrar(_hud_mision, _envolver("\n\n".join(derecha), MISSION_CHARS), Control.PRESET_TOP_RIGHT)
 	var abajo: PackedStringArray = []
 	if _aviso != "" and Time.get_ticks_msec() / 1000.0 < _aviso_hasta:

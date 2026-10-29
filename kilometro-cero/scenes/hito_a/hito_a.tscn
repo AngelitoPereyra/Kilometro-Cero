@@ -40,6 +40,7 @@
 [ext_resource type="Resource" path="res://data/items/pickaxe.tres" id="38_picd"]
 [ext_resource type="Script" path="res://scripts/stations/loading_bay.gd" id="39_bah"]
 [ext_resource type="Script" path="res://scripts/world/station_track.gd" id="40_est"]
+[ext_resource type="Script" path="res://scripts/vehicles/borrowed_trains.gd" id="41_pres"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Cielo_mat"]
 sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
@@ -520,6 +521,7 @@ text = "PICO
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0.6, -42)
 speaker = "Don Ernesto, el jefe de estación"
 missions = Array[ExtResource("27_md")]([ExtResource("36_via")])
+main_station = &"olavarria"
 
 [node name="Vecina" parent="." instance=ExtResource("26_pob")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.6, 532)
@@ -531,12 +533,22 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 1, -478)
 speaker = "Don Aurelio, el cantero"
 missions = Array[ExtResource("27_md")]([ExtResource("29_can")])
 
+[node name="DonaClara" parent="." instance=ExtResource("26_pob")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.6, 550)
+speaker = "Doña Clara, de la comisión de fomento de Azul"
+main_station = &"azul"
+
+[node name="Ramirez" parent="." instance=ExtResource("26_pob")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.6, -460)
+speaker = "Ramírez, el capataz de Sierras Bayas"
+main_station = &"sierras_bayas"
+
 [node name="RegaloAzul" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 545)
 script = ExtResource("33_reg")
 wagon_scene = ExtResource("9_plat")
 wagon_name = "una plataforma vacía"
-hint = "Cargala con troncos del monte (hacha) y llevalos a Sierras Bayas"
+hint = "Tu plataforma: cargala con troncos del monte (hacha) para vender o para las obras"
 open_segment = &"o_a"
 giver_name = "Azul"
 
@@ -546,37 +558,9 @@ font_size = 40
 outline_size = 10
 text = "Regalo"
 
-[node name="RegaloSierrasBayas" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -470)
-script = ExtResource("33_reg")
-wagon_scene = ExtResource("9_plat")
-wagon_name = "una plataforma vacía"
-hint = "Cargala con piedra de la cantera (pico, en Azul) y llevala a Olavarría"
-mission_station = &"sierras_bayas"
-mission_item = &"log"
-giver_name = "Sierras Bayas"
-
-[node name="Texto" type="Label3D" parent="RegaloSierrasBayas"]
-billboard = 1
-font_size = 40
-outline_size = 10
-text = "Regalo"
-
-[node name="RegaloOlavarria" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, -30)
-script = ExtResource("33_reg")
-wagon_scene = ExtResource("10_cerr")
-mission_station = &"olavarria"
-mission_item = &"limestone"
-wagon_name = "un vagón cerrado vacío"
-hint = "Para el cemento: compralo en el mercado y llevalo a Azul"
-giver_name = "Olavarría"
-
-[node name="Texto" type="Label3D" parent="RegaloOlavarria"]
-billboard = 1
-font_size = 40
-outline_size = 10
-text = "Regalo"
+[node name="TrenesPrestados" type="Node" parent="." node_paths=PackedStringArray("player_train")]
+script = ExtResource("41_pres")
+player_train = NodePath("../OlavarriaSierrasBayas/Locomotive")
 
 [node name="Player" parent="." instance=ExtResource("11_jug")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.7, -12)

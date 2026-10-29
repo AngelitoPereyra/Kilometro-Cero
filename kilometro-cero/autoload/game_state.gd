@@ -66,6 +66,7 @@ func reset_production() -> void:
 	missions.route_length = _route_length
 	missions.segment_check = _is_segment_open
 	missions.zone_count = _count_zone
+	missions.opened_check = _was_opened
 	missions.mission_available.connect(func(mission: Mission) -> void: EventBus.mission_available.emit(mission.id))
 	missions.mission_started.connect(func(mission: Mission) -> void: EventBus.mission_started.emit(mission.id))
 	missions.mission_progressed.connect(func(mission: Mission) -> void: EventBus.mission_progressed.emit(mission.id))
@@ -122,6 +123,12 @@ func _route_length(route: Array) -> float:
 func _is_segment_open(segment_id: StringName) -> bool:
 	var network: RailNetwork = RailNetwork.find_in(get_tree())
 	return network != null and network.has_segment(segment_id) and not network.is_cut(segment_id)
+
+
+# Si el jugador abrió el tramo (tarea 62b.3): estuvo cortado y ahora no.
+func _was_opened(segment_id: StringName) -> bool:
+	var network: RailNetwork = RailNetwork.find_in(get_tree())
+	return network != null and network.was_opened(segment_id)
 
 
 # Lo que queda en un grupo, sin contar lo que se está borrando.

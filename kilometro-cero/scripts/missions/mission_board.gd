@@ -17,6 +17,14 @@ extends RefCounted
 ## - Pasajeros (tarea 60b): una principal de pasajeros (ItemData.PASSENGER_TAG) se entrega
 ##   abriendo las puertas del coche en la estación (PassengerTraffic), no en el tablero. La de
 ##   un especialista pide una primera carga de uno solo. Sus flujos van y vuelven (round_trip).
+## - Principales con aviso (tarea 62b.3, D128): en una estación con quien da sus principales
+##   (`register_main_giver`, lo hace MissionGiver.main_station) el jugador no lleva la primera
+##   carga. Etapas (`get_stage`): abrir el camino, avisarle (`report`) y, si el camino tiene un
+##   tramo que abrió el jugador (`opened_check`) y que todavía no estrenó ningún tren
+##   (`is_christened`), el viaje inaugural: el Ferrocarril arma el tren prestado en el productor ya
+##   cargado (`inaugural_started`; lo pone BorrowedTrains) y el jugador lo maneja y entrega como
+##   siempre (tablero o puertas). Si no, al avisar se cumple sola. Cada principal cumplida estrena
+##   los tramos de su camino.
 
 ## Una misión nueva: una principal que nace (ya activa) o una secundaria que se puede conseguir.
 signal mission_available(mission: Mission)
@@ -27,6 +35,12 @@ signal mission_progressed(mission: Mission)
 signal mission_completed(mission: Mission)
 ## Una principal que ya no hace falta (otro flujo cubrió ese consumo).
 signal mission_removed(mission: Mission)
+## Se avisó una principal y su primera carga va en el tren prestado (tarea 62b.3).
+signal inaugural_started(mission: Mission)
+
+## Etapa de una principal con aviso (tarea 62b.3): abrir el camino, avisarle a quien la da,
+## viaje inaugural en curso, cumplida (o por cumplirse sola).
+enum Stage { OPEN_ROUTE, REPORT, INAUGURAL, DONE }
 
 var production: ProductionModel
 ## Tramos del camino más corto entre dos estaciones, también por los cortados:
@@ -43,6 +57,9 @@ var zone_count: Callable = Callable()
 ## la primera entrega es la del jugador y el tren sale recién al otro día. Apagado (como antes de
 ## la 62.4) empieza enseguida; lo prende la escena del Hito A.
 var flows_start_next_day: bool = false
+## Si el jugador abrió un tramo (estuvo cortado y ahora no, tarea 62b.3): func(segment_id) -> bool.
+## Vacío: ninguno (nunca hay viaje inaugural).
+var opened_check: Callable = Callable()
 
 # id -> misión, en orden de creación.
 var _missions: Dictionary[StringName, Mission] = {}
@@ -52,6 +69,10 @@ var _saved: Dictionary = {}
 var _main_counts: Dictionary = {}
 var _refreshing: bool = false
 var _dirty: bool = false
+# Estación -> nombre de quien da sus principales (tarea 62b.3).
+var _main_givers: Dictionary[StringName, String] = {}
+# Tramos que ya estrenó un tren del Ferrocarril (tarea 62b.3).
+var _christened: Dictionary[StringName, bool] = {}
 
 
 func _init(model: ProductionModel = null) -> void:
@@ -141,6 +162,106 @@ func clear() -> void:
 	_missions.clear()
 	_saved.clear()
 	_main_counts.clear()
+	_main_givers.clear()
+	_christened.clear()
+
+
+# --- Principales con aviso (tarea 62b.3, D128) ---
+
+
+## Anota quién da las principales de una estación (lo hace MissionGiver.main_station al empezar).
+## Desde ahí, sus principales piden aviso.
+func register_main_giver(station_id: StringName, speaker: String) -> void:
+	if station_id == &"":
+		return
+	_main_givers[station_id] = speaker
+	refresh()
+
+
+func has_main_giver(station_id: StringName) -> bool:
+	return _main_givers.has(station_id)
+
+
+## El nombre de quien da las principales de la estación ("Doña Clara"), o vacío.
+func get_main_giver(station_id: StringName) -> String:
+	return _main_givers.get(station_id, "")
+
+
+## Si la principal pide aviso (su estación tiene quien la da).
+func needs_report(mission: Mission) -> bool:
+	return mission != null and mission.main and _main_givers.has(mission.station_id)
+
+
+## Si la misión recibe entregas del jugador: todas, salvo las principales con aviso que no están
+## en el viaje inaugural (su carga la trae el Ferrocarril).
+func accepts_deliveries(mission: Mission) -> bool:
+	return mission != null and (not needs_report(mission) or mission.inaugural)
+
+
+## La etapa de una principal con aviso. Las demás: DONE si está cumplida y OPEN_ROUTE si no.
+func get_stage(mission: Mission) -> Stage:
+	if mission == null or mission.is_completed() or (mission.reported and not mission.inaugural):
+		return Stage.DONE
+	if mission.inaugural:
+		return Stage.INAUGURAL
+	if not needs_report(mission):
+		return Stage.OPEN_ROUTE
+	var source: StringName = find_source(mission)
+	if source == &"" or not production.are_connected(source, mission.station_id):
+		return Stage.OPEN_ROUTE
+	return Stage.REPORT
+
+
+## Si ya se le puede avisar (camino abierto y productor con lo necesario).
+func can_report(mission: Mission) -> bool:
+	return mission != null and mission.is_active() and needs_report(mission) and get_stage(mission) == Stage.REPORT
+
+
+## Avisa que el camino está habilitado. Con un tramo abierto por el jugador sin estrenar empieza el
+## viaje inaugural (`inaugural_started`); si no, el Ferrocarril manda la carga y la principal se
+## cumple. False si todavía no se podía avisar.
+func report(mission_id: StringName) -> bool:
+	var mission: Mission = get_mission(mission_id)
+	if not can_report(mission):
+		return false
+	var source: StringName = find_source(mission)
+	mission.source_id = source
+	mission.reported = true
+	mission.inaugural = not get_unchristened_segments(source, mission.station_id).is_empty()
+	if mission.inaugural:
+		inaugural_started.emit(mission)
+	else:
+		for item_id: StringName in mission.required:
+			mission.delivered[item_id] = mission.required[item_id]
+	refresh()
+	return true
+
+
+## Los tramos del camino entre dos estaciones que abrió el jugador y que todavía no estrenó ningún
+## tren (los del viaje inaugural).
+func get_unchristened_segments(from: StringName, to: StringName) -> Array[StringName]:
+	var result: Array[StringName] = []
+	var route: Variant = _find_route(from, to)
+	if route == null or not opened_check.is_valid():
+		return result
+	for segment_id: StringName in route:
+		if bool(opened_check.call(segment_id)) and not is_christened(segment_id):
+			result.append(segment_id)
+	return result
+
+
+## Si un tren del Ferrocarril ya pasó por el tramo (una principal cumplida lo tenía en su camino).
+func is_christened(segment_id: StringName) -> bool:
+	return _christened.has(segment_id)
+
+
+## Marca como estrenados los tramos del camino entre dos estaciones.
+func christen_route(from: StringName, to: StringName) -> void:
+	var route: Variant = _find_route(from, to)
+	if route == null:
+		return
+	for segment_id: StringName in route:
+		_christened[segment_id] = true
 
 
 # --- Entregas ---
@@ -152,6 +273,8 @@ func plan_delivery(station_id: StringName, available: Dictionary[StringName, int
 	var plan: Dictionary[StringName, int] = {}
 	var wanted: Dictionary[StringName, int] = {}
 	for mission: Mission in get_active_missions(station_id):
+		if not accepts_deliveries(mission):
+			continue
 		var remaining: Dictionary[StringName, int] = mission.get_remaining()
 		for item_id: StringName in remaining:
 			wanted[item_id] = wanted.get(item_id, 0) + remaining[item_id]
@@ -169,6 +292,8 @@ func deliver(station_id: StringName, item_id: StringName, amount: int) -> int:
 	for mission: Mission in get_active_missions(station_id):
 		if accepted >= amount:
 			break
+		if not accepts_deliveries(mission):
+			continue
 		var taken: int = mission.add_delivery(item_id, amount - accepted)
 		if taken > 0:
 			accepted += taken
@@ -241,7 +366,7 @@ func get_passenger_missions_from(station_id: StringName) -> Array[Mission]:
 ## pasajeros o una secundaria de entrega que pide gente (tarea 62). Vacío si no espera a nadie.
 func get_passenger_needs(mission: Mission) -> Dictionary[StringName, int]:
 	var needs: Dictionary[StringName, int] = {}
-	if mission == null or not mission.is_active() or mission.kind != MissionData.Kind.DELIVERY:
+	if mission == null or not mission.is_active() or mission.kind != MissionData.Kind.DELIVERY or not accepts_deliveries(mission):
 		return needs
 	var remaining: Dictionary[StringName, int] = mission.get_remaining()
 	for item_id: StringName in remaining:
@@ -316,6 +441,9 @@ func get_title(mission: Mission) -> String:
 func find_source(mission: Mission) -> StringName:
 	if mission == null or not mission.main:
 		return &""
+	# Avisada (tarea 62b.3): la que se eligió al avisar, de donde sale el tren prestado.
+	if mission.reported and mission.source_id != &"":
+		return mission.source_id
 	var best: StringName = &""
 	var best_connected: bool = false
 	var best_length: float = INF
@@ -357,6 +485,8 @@ func get_pending_steps(mission: Mission) -> PackedStringArray:
 	var steps: PackedStringArray = []
 	if mission == null or mission.is_completed():
 		return steps
+	if needs_report(mission):
+		return _report_steps(mission)
 	if mission.main:
 		var source: StringName = find_source(mission)
 		if source == &"":
@@ -383,6 +513,35 @@ func get_pending_steps(mission: Mission) -> PackedStringArray:
 				steps.append("Traer %d %s desde %s (abrí las puertas del coche en las dos estaciones)" % [remaining[item_id], name_of(item_id), station_name(source_id)])
 		else:
 			steps.append("Entregar %d %s" % [remaining[item_id], name_of(item_id)])
+	return steps
+
+
+# Los pasos de una principal con aviso (tarea 62b.3).
+func _report_steps(mission: Mission) -> PackedStringArray:
+	var steps: PackedStringArray = []
+	var source: StringName = find_source(mission)
+	var giver: String = get_main_giver(mission.station_id)
+	match get_stage(mission):
+		Stage.OPEN_ROUTE:
+			if source == &"":
+				steps.append("Producción insuficiente: nadie tiene %d %s por día libres" % [mission.flow_amount, name_of(mission.item_id)])
+				return steps
+			var cut: Array[StringName] = get_cut_segments(mission)
+			for segment_id: StringName in cut:
+				steps.append("Habilitar el tramo %s (hacia %s)" % [segment_id, station_name(source)])
+			if cut.is_empty():
+				steps.append("Conectar con %s" % station_name(source))
+			steps.append("Después, avisarle a %s en %s" % [giver, station_name(mission.station_id)])
+		Stage.REPORT:
+			steps.append("Avisarle a %s en %s que el camino a %s está habilitado" % [giver, station_name(mission.station_id), station_name(source)])
+		Stage.INAUGURAL:
+			steps.append("Llevar el tren prestado de %s a %s (el maquinista está enfermo)" % [station_name(source), station_name(mission.station_id)])
+			var remaining: Dictionary[StringName, int] = mission.get_remaining()
+			for item_id: StringName in remaining:
+				if is_passenger(item_id):
+					steps.append("Abrir las puertas del coche en %s (%d %s)" % [station_name(mission.station_id), remaining[item_id], name_of(item_id)])
+				else:
+					steps.append("Entregar %d %s en el tablero de %s" % [remaining[item_id], name_of(item_id), station_name(mission.station_id)])
 	return steps
 
 
@@ -423,7 +582,10 @@ func _update_main_missions() -> void:
 			mission_removed.emit(mission)
 			continue
 		var first: int = first_delivery(mission.item_id, amount)
-		if amount != mission.flow_amount or mission.required.get(mission.item_id, 0) != first:
+		if mission.reported:
+			# Avisada (tarea 62b.3): la carga ya salió (o está en el tren prestado); solo el flujo cambia.
+			mission.flow_amount = amount
+		elif amount != mission.flow_amount or mission.required.get(mission.item_id, 0) != first:
 			mission.flow_amount = amount
 			mission.required = {mission.item_id: first}
 			mission.delivered[mission.item_id] = mini(mission.delivered.get(mission.item_id, 0), first)
@@ -478,7 +640,11 @@ func _is_ready(mission: Mission) -> bool:
 func _complete(mission: Mission) -> void:
 	mission.state = Mission.State.COMPLETED
 	if mission.main:
-		mission.flow = production.add_flow(find_source(mission), mission.station_id, mission.item_id, mission.flow_amount, is_passenger(mission.item_id), flows_start_next_day)
+		var source: StringName = find_source(mission)
+		mission.flow = production.add_flow(source, mission.station_id, mission.item_id, mission.flow_amount, is_passenger(mission.item_id), flows_start_next_day)
+		mission.inaugural = false
+		# Su camino ya lo estrenó un tren (tarea 62b.3): el prestado o el del flujo.
+		christen_route(source, mission.station_id)
 	elif mission.data != null:
 		for entry: ItemAmount in mission.data.reward_production:
 			if entry != null and entry.item != null:
@@ -521,7 +687,10 @@ func to_dict() -> Dictionary:
 	# Las secundarias guardadas que esta escena no registró se conservan.
 	for mission_id: StringName in _saved:
 		missions.append(_saved[mission_id])
-	return {"missions": missions, "main_counts": _main_counts.duplicate()}
+	var christened: Array = []
+	for segment_id: StringName in _christened:
+		christened.append(String(segment_id))
+	return {"missions": missions, "main_counts": _main_counts.duplicate(), "christened": christened}
 
 
 ## Carga el estado. Las principales vuelven solas; las secundarias se unen a sus datos al
@@ -534,6 +703,9 @@ func load_dict(values: Dictionary) -> void:
 	_missions.clear()
 	_saved.clear()
 	_main_counts = (values.get("main_counts", {}) as Dictionary).duplicate()
+	_christened.clear()
+	for segment_id: Variant in values.get("christened", []):
+		_christened[StringName(str(segment_id))] = true
 	for entry: Dictionary in values.get("missions", []):
 		if bool(entry.get("main", false)):
 			var mission: Mission = Mission.main_from_dict(entry)

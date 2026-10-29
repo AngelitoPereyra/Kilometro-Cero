@@ -82,6 +82,8 @@ extends Node
 ## con `park_hidden`, un tren parado en su punta se guarda HIDE_AFTER_HOURS después de llegar (no
 ## ocupa vía ni se ve) y vuelve SHOW_BEFORE_HOURS antes de su salida, en una vía libre de su
 ## estación (si no hay, espera). El primer viaje de un tren nuevo sale a su horario.
+## Con humo (tarea 62b.3, D128): un tren a la vista se guarda con una nube de humo (SmokePuff) y,
+## si aparece a la vista al volver, aparece con humo.
 
 signal train_added(run: AutoTrainRun)
 signal train_removed(run: AutoTrainRun)
@@ -154,6 +156,8 @@ const LOST_SECONDS: float = 2.0
 ## Con park_hidden (tarea 62.4): horas después de llegar en que se guarda y antes de salir en que vuelve.
 const HIDE_AFTER_HOURS: float = 0.5
 const SHOW_BEFORE_HOURS: float = 0.5
+## Un tren que vuelve de guardado y aparece antes de esto (horas) lo hace con humo (tarea 62b.3).
+const SHOW_SMOKE_HOURS: float = 0.1
 ## Acelerador de la locomotora mientras maniobra y segundos que tarda la mesa en girar.
 const MANEUVER_THROTTLE: float = 0.6
 const TURN_SECONDS: float = 4.0
@@ -204,6 +208,9 @@ var _lost: Dictionary = {}
 ## Troncales (tarea 61d): id del viaje -> {"line": ids de la línea, "low" y "high": las puntas
 ## que usan sus flujos, "flows", "passengers", "service"}.
 var _trunk_targets: Dictionary = {}
+# Trenes que volvieron de guardados (tarea 62b.3): run.id -> hora en que volvieron. Si aparecen
+# enseguida, aparecen con humo.
+var _shown_at: Dictionary = {}
 var _signature: String = ""
 var _next_id: int = 1
 var _refresh_left: float = 0.0
@@ -515,6 +522,9 @@ func _start_run(run: AutoTrainRun) -> void:
 	else:
 		# El primer viaje sale apenas nace el flujo; después sigue su horario.
 		run.due = now + AutoTrainRun.MIN_DWELL_HOURS
+	if not run.hidden:
+		# Un tren nuevo a la vista aparece con humo (tarea 62b.3).
+		_shown_at[run.id] = now
 	_runs.append(run)
 	train_added.emit(run)
 
@@ -1237,6 +1247,8 @@ func _hide(run: AutoTrainRun) -> void:
 	if run.needs_turn:
 		# Guardado da la vuelta solo.
 		_finish_turn(run, _turn_is_plain(run))
+	if is_spawned(run):
+		SmokePuff.at_vehicles(get_train(run))
 	_despawn(run)
 	_release_tokens(run)
 	run.leg.clear()
@@ -1276,6 +1288,7 @@ func _try_show(run: AutoTrainRun) -> void:
 		run.hidden = true
 		return
 	run.waiting = ""
+	_shown_at[run.id] = now_hours()
 	_update_signals()
 
 
@@ -2304,6 +2317,11 @@ func _spawn(run: AutoTrainRun) -> void:
 	loco.brake = 0.0 if run.is_moving() else 1.0
 	loco.model_yaw = PI if run.loco_flipped else 0.0
 	_trains[run.id] = train
+	# Recién vuelto de guardado (tarea 62b.3): aparece con humo.
+	if _shown_at.has(run.id):
+		if now_hours() - float(_shown_at[run.id]) < SHOW_SMOKE_HOURS:
+			SmokePuff.at_vehicles(train)
+		_shown_at.erase(run.id)
 	# Si estaba dando la vuelta lejos, ahora la hace de verdad.
 	run.turn_until = -1.0
 	_set_label(run)
