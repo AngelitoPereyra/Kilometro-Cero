@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="MissionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="1_amt"]
+[ext_resource type="Resource" path="res://data/items/honey.tres" id="2_mie"]
+[ext_resource type="Script" path="res://scripts/missions/mission_data.gd" id="3_mis"]
+
+[sub_resource type="Resource" id="Pide_miel"]
+script = ExtResource("1_amt")
+item = ExtResource("2_mie")
+amount = 3
+
+[resource]
+script = ExtResource("3_mis")
+id = &"miel_don_ernesto"
+title = "Miel para Don Ernesto"
+intro = "Mi señora hace pastelitos para la fiesta del pueblo y no consigue miel en ningún almacén. En el monte de Azul hay panales en los troncos huecos: se sacan con la mano, despacito, y vuelven a llenarse en un día. Traeme 3 frascos y te los pago al triple de lo que valen."
+outro = "¡Miel de monte! Esto no se consigue en ningún lado. Mi señora te va a guardar los mejores pastelitos."
+station_id = &"olavarria"
+delivery = Array[ExtResource("1_amt")]([SubResource("Pide_miel")])
+requires = Array[StringName]([&"la_via_tapada"])
+pays_market_multiplier = 3.0

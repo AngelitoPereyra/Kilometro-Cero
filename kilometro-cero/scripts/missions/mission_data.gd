@@ -8,6 +8,12 @@ extends Resource
 ## Obra (tarea 62b.4, D127, D130): los materiales de `delivery` no se entregan en el tablero sino
 ## en su obra (ConstructionSite), y solo los que trae el jugador; al cumplirse la obra cambia la
 ## escena (las carpas pasan a ser casas).
+## Encargo y mudanza (tarea 62b.6, D130), las dos son entregas (DELIVERY):
+## - Encargo: pocas unidades de algo específico que además se pagan a `pays_market_multiplier`
+##   veces el precio de mercado (MissionBoard.get_order_payment).
+## - Mudanza: una familia con oficio (`reward_family`, con su nombre) que se queda a vivir en la
+##   estación al cumplirla, como familia del jugador (cuenta para el tope de D129). Si viaja en el
+##   coche, `passenger_from` dice dónde espera (sube gratis aunque esa estación no la produzca).
 ## Datos: data/missions/*.tres.
 
 ## Entregar objetos en la estación, habilitar un tramo, despejar una zona o levantar una obra.
@@ -50,6 +56,17 @@ const KIND_NAMES: Array[String] = ["entrega", "habilitar tramo", "despejar zona"
 ## Herramientas clave que da el poblador al dar la misión (tarea 62.5): el jefe de estación de
 ## Olavarría da el hacha con la de la vía tapada.
 @export var gives_tools: Array[KeyItemData] = []
+## Encargo (tarea 62b.6, D130): además de `reward_money` paga lo entregado a este múltiplo del
+## precio de mercado (2: el doble). 0: no es un encargo.
+@export_range(0.0, 10.0, 0.5) var pays_market_multiplier: float = 0.0
+## Mudanza (tarea 62b.6): la familia que se queda en la estación de premio al cumplirla, como
+## familia del jugador (ProductionModel.add_player_family). Vacío: ninguna.
+@export var reward_family: OccupationData
+## Cómo se llama esa familia ("los Etchegaray", "Doña Rosa"): lo muestra la pestaña Vecinos.
+@export var reward_family_name: String = ""
+## Mudanza en el coche: la estación donde espera la gente que pide `delivery` (sube gratis al
+## abrir las puertas ahí, aunque no la produzca). Vacío: la más cercana que la produce.
+@export var passenger_from: StringName
 
 
 static func kind_name(value: Kind) -> String:
@@ -58,6 +75,16 @@ static func kind_name(value: Kind) -> String:
 
 func get_reward_station() -> StringName:
 	return reward_station if reward_station != &"" else station_id
+
+
+## Si es un encargo (paga a múltiplo del mercado).
+func is_order() -> bool:
+	return pays_market_multiplier > 0.0
+
+
+## Si es una mudanza (deja una familia del jugador).
+func is_move() -> bool:
+	return reward_family != null
 
 
 ## Problemas de los datos (vacío si está todo bien). MissionGiver los avisa al empezar.
@@ -88,6 +115,12 @@ func validate() -> PackedStringArray:
 	for occupation: OccupationData in reward_families:
 		if occupation == null or occupation.id == &"":
 			problems.append("'%s' tiene una familia de premio sin oficio" % id)
+	if reward_family != null and reward_family.id == &"":
+		problems.append("'%s' trae una familia sin oficio" % id)
+	if reward_family != null and reward_family_name.is_empty():
+		problems.append("'%s' trae una familia sin nombre" % id)
+	if is_order() and kind != Kind.DELIVERY:
+		problems.append("'%s' paga como encargo y no es de entrega" % id)
 	if requires.has(id):
 		problems.append("'%s' se pide a sí misma" % id)
 	return problems

@@ -14,6 +14,8 @@ extends RefCounted
 ## 3. Suben gratis los que faltan para las principales que salen de esa estación (reservados),
 ##    primero los especialistas.
 ## 4. Con los lugares que quedan suben sobrantes del stock, que pagan FARE cada uno al subir.
+## La familia de una mudanza (tarea 62b.6) espera en su estación aunque no esté en el stock: sube
+## gratis en el paso 3 (MissionBoard.boards_without_stock).
 ## También lleva el coche que regala la ciudad (D103): aparece en reparación en el taller de la
 ## ciudad con el primer pedido de pasajeros, se repara con materiales (CoachGift) y sale una sola
 ## vez por partida.
@@ -143,11 +145,15 @@ func plan_exchange(station_id: StringName, aboard: Dictionary[StringName, int], 
 	var seats: int = capacity - _sum(left)
 	# 3. Suben gratis los que faltan para las misiones que salen de acá.
 	var needed: Dictionary[StringName, int] = {}
+	# Los que esperan fuera del stock (la familia de una mudanza, tarea 62b.6).
+	var waiting: Dictionary[StringName, int] = {}
 	for mission: Mission in missions.get_passenger_missions_from(station_id):
 		var mission_needs: Dictionary[StringName, int] = missions.get_passenger_needs(mission)
 		for item_id: StringName in mission_needs:
 			if missions.passenger_source(mission, item_id) == station_id:
 				needed[item_id] = needed.get(item_id, 0) + mission_needs[item_id]
+				if missions.boards_without_stock(mission):
+					waiting[item_id] = waiting.get(item_id, 0) + mission_needs[item_id]
 	# Primero los especialistas: son pocos y abren edificios.
 	var order: Array[StringName] = []
 	for item_id: StringName in needed:
@@ -156,7 +162,7 @@ func plan_exchange(station_id: StringName, aboard: Dictionary[StringName, int], 
 		else:
 			order.append(item_id)
 	for item_id: StringName in order:
-		var amount: int = mini(mini(needed[item_id] - left.get(item_id, 0), economy.get_stock_of(station_id, item_id)), seats)
+		var amount: int = mini(mini(needed[item_id] - left.get(item_id, 0), economy.get_stock_of(station_id, item_id) + waiting.get(item_id, 0)), seats)
 		if amount > 0:
 			board_free[item_id] = amount
 			seats -= amount
@@ -198,7 +204,10 @@ func apply_exchange(station_id: StringName, plan: Dictionary) -> int:
 	for key: String in ["board_free", "board_paid"]:
 		var boarded: Dictionary = plan.get(key, {})
 		for item_id: StringName in boarded:
-			economy.add_stock(station_id, item_id, -int(boarded[item_id]))
+			# Solo sale del stock lo que estaba (la familia de una mudanza esperaba afuera).
+			var from_stock: int = mini(int(boarded[item_id]), economy.get_stock_of(station_id, item_id))
+			if from_stock > 0:
+				economy.add_stock(station_id, item_id, -from_stock)
 	plan["work"] = work
 	exchanged.emit(station_id, plan)
 	return int(plan.get("fare", 0))

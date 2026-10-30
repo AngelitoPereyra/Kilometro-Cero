@@ -31,6 +31,11 @@ extends RefCounted
 ##   nada en el tablero: sus materiales se llevan a su ConstructionSite (`plan_build`,
 ##   `deliver_build`), que solo toma lo que trae el jugador (nunca lo de un automático ni del tren
 ##   prestado). Con todo entregado se cumple como cualquier secundaria.
+## - Encargos y mudanzas (tarea 62b.6, D130): un encargo paga además lo entregado a un múltiplo del
+##   precio de mercado (`get_order_payment`, con `price_check`); una mudanza deja al cumplirse una
+##   familia del jugador con nombre (ProductionModel.add_player_family) y solo se desbloquea si la
+##   estación todavía tiene lugar para ella (tope de D129). La gente de una mudanza espera en
+##   `MissionData.passenger_from` y sube gratis al abrir las puertas ahí.
 
 ## Una misión nueva: una principal que nace (ya activa) o una secundaria que se puede conseguir.
 signal mission_available(mission: Mission)
@@ -68,6 +73,9 @@ var flows_start_next_day: bool = false
 ## Si el jugador abrió un tramo (estuvo cortado y ahora no, tarea 62b.3): func(segment_id) -> bool.
 ## Vacío: ninguno (nunca hay viaje inaugural).
 var opened_check: Callable = Callable()
+## Precio de mercado de un objeto en una estación, para los encargos (tarea 62b.6):
+## func(station_id, item_id) -> int. Vacío o 0: el valor base del objeto (ItemData.base_value).
+var price_check: Callable = Callable()
 
 # id -> misión, en orden de creación.
 var _missions: Dictionary[StringName, Mission] = {}
@@ -105,6 +113,9 @@ func register_side(mission_data: MissionData) -> Mission:
 		known.data = mission_data
 		return known
 	var mission: Mission = Mission.create_side(mission_data)
+	# La familia de una mudanza tiene que estar registrada para ver si hay lugar (tarea 62b.6).
+	if mission_data.reward_family != null and production.get_occupation(mission_data.reward_family.id) == null:
+		production.add_occupation(mission_data.reward_family)
 	if _saved.has(mission_data.id):
 		mission.apply_dict(_saved[mission_data.id])
 		_saved.erase(mission_data.id)
@@ -412,6 +423,63 @@ func get_build_progress(mission: Mission) -> float:
 	return float(done) / float(total) if total > 0 else 0.0
 
 
+# --- Encargos y mudanzas (tarea 62b.6) ---
+
+
+## Si la secundaria es un encargo (paga a múltiplo del mercado).
+func is_order(mission: Mission) -> bool:
+	return mission != null and mission.data != null and mission.data.is_order()
+
+
+## Si la secundaria es una mudanza (deja una familia del jugador).
+func is_move(mission: Mission) -> bool:
+	return mission != null and mission.data != null and mission.data.is_move()
+
+
+## Lo que paga un encargo por lo que pide: múltiplo × precio de mercado en su estación × unidades.
+## 0 si no es un encargo.
+func get_order_payment(mission: Mission) -> int:
+	if not is_order(mission):
+		return 0
+	var total: float = 0.0
+	for item_id: StringName in mission.required:
+		total += float(get_market_price(mission.station_id, item_id) * mission.required[item_id])
+	return roundi(total * mission.data.pays_market_multiplier)
+
+
+## El precio de mercado de un objeto en una estación (price_check); sin consulta o sin precio, su
+## valor base.
+func get_market_price(station_id: StringName, item_id: StringName) -> int:
+	var price: int = int(price_check.call(station_id, item_id)) if price_check.is_valid() else 0
+	if price <= 0:
+		var item: ItemData = find_item(item_id)
+		price = roundi(item.base_value) if item != null else 0
+	return price
+
+
+## Los pesos que cobra el jugador al cumplir una secundaria: los fijos más lo del encargo (cumplida,
+## lo que se cobró: el precio del mercado puede cambiar después).
+func get_reward_money(mission: Mission) -> int:
+	if mission == null or mission.data == null:
+		return 0
+	if mission.is_completed():
+		return mission.paid
+	return mission.data.reward_money + get_order_payment(mission)
+
+
+## Si una mudanza tiene lugar en su estación (tope del jugador, D129). True si no es una mudanza.
+func has_room_for_family(mission: Mission) -> bool:
+	if not is_move(mission):
+		return true
+	return production.can_add_player_family(mission.data.get_reward_station(), mission.data.reward_family.id)
+
+
+## Si la gente de la misión sube gratis aunque la estación no la tenga en su stock (la familia de
+## una mudanza espera en `passenger_from`).
+func boards_without_stock(mission: Mission) -> bool:
+	return mission != null and not mission.main and mission.data != null and mission.data.passenger_from != &""
+
+
 # --- Textos ---
 
 
@@ -438,7 +506,10 @@ func find_item(item_id: StringName) -> ItemData:
 			for entry: ItemAmount in mission.data.delivery + mission.data.reward_production:
 				if entry != null and entry.item != null and entry.item.id == item_id:
 					return entry.item
-			for occupation: OccupationData in mission.data.reward_families:
+			var families: Array[OccupationData] = mission.data.reward_families.duplicate()
+			if mission.data.reward_family != null:
+				families.append(mission.data.reward_family)
+			for occupation: OccupationData in families:
 				var found: ItemData = occupation.find_item(item_id) if occupation != null else null
 				if found != null:
 					return found
@@ -492,6 +563,9 @@ func passenger_source(mission: Mission, item_id: StringName) -> StringName:
 		return &""
 	if mission.main:
 		return find_source(mission) if mission.item_id == item_id else &""
+	# Mudanza (tarea 62b.6): la familia espera donde dicen sus datos.
+	if mission.data != null and mission.data.passenger_from != &"":
+		return mission.data.passenger_from
 	var best: StringName = &""
 	var best_connected: bool = false
 	var best_length: float = INF
@@ -616,14 +690,19 @@ func get_pending_steps(mission: Mission) -> PackedStringArray:
 				steps.append("Despejar la zona (quedan %d)" % left)
 	var remaining: Dictionary[StringName, int] = mission.get_remaining()
 	for item_id: StringName in remaining:
-		if mission.main and is_passenger(item_id):
-			var source_id: StringName = find_source(mission)
+		if is_passenger(item_id) and (mission.main or mission.kind == MissionData.Kind.DELIVERY):
+			# Las secundarias con gente también (la maestra, la familia de una mudanza; tarea 62b.6).
+			var source_id: StringName = passenger_source(mission, item_id)
 			if source_id != &"":
 				steps.append("Traer %d %s desde %s (abrí las puertas del coche en las dos estaciones)" % [remaining[item_id], name_of(item_id), station_name(source_id)])
+			elif not mission.main:
+				steps.append("Traer %d %s en el coche" % [remaining[item_id], name_of(item_id)])
 		elif is_build(mission):
 			steps.append("Llevar %d %s a la obra (F en su cartel)" % [remaining[item_id], name_of(item_id)])
 		else:
 			steps.append("Entregar %d %s" % [remaining[item_id], name_of(item_id)])
+	if is_order(mission) and not remaining.is_empty():
+		steps.append("Paga $%d al entregar todo" % get_reward_money(mission))
 	return steps
 
 
@@ -725,7 +804,8 @@ func _unlock_side_missions() -> void:
 			if not is_completed(required_id):
 				ready = false
 				break
-		if ready:
+		# Una mudanza espera a que la estación tenga lugar para otra familia del jugador (D129).
+		if ready and has_room_for_family(mission):
 			mission.state = Mission.State.AVAILABLE
 			mission_available.emit(mission)
 
@@ -751,7 +831,10 @@ func _is_ready(mission: Mission) -> bool:
 
 
 func _complete(mission: Mission) -> void:
+	# Lo que paga se fija antes de los premios: la familia nueva puede cambiar los precios.
+	var paid: int = get_reward_money(mission)
 	mission.state = Mission.State.COMPLETED
+	mission.paid = paid
 	if mission.main:
 		var source: StringName = find_source(mission)
 		mission.flow = production.add_flow(source, mission.station_id, mission.item_id, mission.flow_amount, is_passenger(mission.item_id), flows_start_next_day)
@@ -766,6 +849,14 @@ func _complete(mission: Mission) -> void:
 		for occupation: OccupationData in mission.data.reward_families:
 			if occupation != null and production.add_occupation(occupation):
 				production.add_family(mission.data.get_reward_station(), occupation.id, ProductionModel.FamilyOrigin.EXTRA)
+		# La familia de una mudanza se queda como vecina del jugador (tarea 62b.6). Si el lugar se
+		# ocupó mientras tanto, llega igual (no se pierde lo hecho) pero sin pasar el tope.
+		var family: OccupationData = mission.data.reward_family
+		if family != null and production.add_occupation(family):
+			var reward_station: StringName = mission.data.get_reward_station()
+			if not production.add_player_family(reward_station, family.id, mission.data.reward_family_name):
+				push_warning("MissionBoard: '%s' no tenía lugar para otra familia del jugador; %s llega como familia extra." % [reward_station, mission.data.reward_family_name])
+				production.add_family(reward_station, family.id, ProductionModel.FamilyOrigin.EXTRA, mission.data.reward_family_name)
 	mission_completed.emit(mission)
 	_dirty = true
 

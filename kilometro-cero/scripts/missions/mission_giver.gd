@@ -14,6 +14,8 @@ extends Interactable
 ## prestado (se pide en el tablero del productor).
 ## Lo que dice se ve en su Label3D "Globo" durante SPEECH_TIME; el resto del tiempo el globo
 ## muestra "!" si tiene algo para dar o contar. La interfaz definitiva llega con la tarea 67.
+## Mudanza (tarea 62b.6): con `move_after` cumplida, el poblador se muda a `move_to` con humo (los
+## Etchegaray esperan en Olavarría y, cumplida la mudanza, viven en Azul y cuentan el cierre ahí).
 
 ## Dijo algo (para la interfaz).
 signal said(text: String)
@@ -28,9 +30,14 @@ const SPEECH_TIME: float = 10.0
 @export var missions: Array[MissionData] = []
 ## La estación cuyas principales da (tarea 62b.3). Vacío: ninguna.
 @export var main_station: StringName = &""
+## Se muda cuando esta misión queda cumplida (tarea 62b.6). Vacío: no se mueve.
+@export var move_after: MissionData
+## Adónde se muda (se para en su posición).
+@export var move_to: Node3D
 
 var _bubble: Label3D
 var _speech_left: float = 0.0
+var _moved: bool = false
 
 
 func _ready() -> void:
@@ -49,6 +56,8 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if not _moved and should_move():
+		move_now()
 	if _speech_left > 0.0:
 		_speech_left -= delta
 		if _speech_left <= 0.0:
@@ -59,6 +68,28 @@ func _process(delta: float) -> void:
 
 func get_prompt() -> String:
 	return "Hablar con " + (speaker if not speaker.is_empty() else String(name))
+
+
+## Si ya se tiene que mudar (su misión de mudanza está cumplida y todavía no se mudó).
+func should_move() -> bool:
+	return not _moved and move_after != null and move_to != null and GameState.missions.is_completed(move_after.id)
+
+
+## Se muda a `move_to` con humo en los dos lugares (también al cargar una partida con la mudanza
+## hecha). False si no tiene adónde.
+func move_now() -> bool:
+	if move_to == null or not is_inside_tree():
+		return false
+	_moved = true
+	var scene_root: Node = get_tree().current_scene if get_tree().current_scene != null else get_parent()
+	SmokePuff.spawn(scene_root, global_position + Vector3(0.0, 1.0, 0.0))
+	global_position = move_to.global_position
+	SmokePuff.spawn(scene_root, global_position + Vector3(0.0, 1.0, 0.0), 1.0, false)
+	return true
+
+
+func has_moved() -> bool:
+	return _moved
 
 
 ## Su nombre corto para los pasos de las misiones: "Doña Clara" de "Doña Clara, de la comisión".

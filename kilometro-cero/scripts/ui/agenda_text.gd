@@ -1,8 +1,8 @@
 class_name AgendaText
 extends RefCounted
-## Los textos de las pestañas "Agenda" y "Tren" del TAB (tarea 62.8, D124). Lógica pura: arma
-## BBCode para un RichTextLabel con lo que recibe; InventoryUI le pasa el tablero, el modelo,
-## los automáticos y el tren del jugador.
+## Los textos de las pestañas "Agenda", "Tren" y "Vecinos" del TAB (tareas 62.8 y 62b.6, D124 y
+## D130). Lógica pura: arma BBCode para un RichTextLabel con lo que recibe; InventoryUI le pasa el
+## tablero, el modelo, los automáticos y el tren del jugador.
 
 ## Para el fondo crema de la ventana (tarea 62.8).
 const COLOR_TITLE: String = "#7a4a12"
@@ -100,6 +100,67 @@ static func cargo_text(cargo: StorageContainer, board: MissionBoard) -> String:
 		var stack: ItemStack = cargo.peek(index)
 		if stack != null and stack.item != null:
 			amounts[stack.item.id] = amounts.get(stack.item.id, 0) + stack.quantity
+	var parts: PackedStringArray = []
+	for item_id: StringName in amounts:
+		parts.append("%d %s" % [amounts[item_id], board.name_of(item_id) if board != null else String(item_id)])
+	return ", ".join(parts)
+
+
+## La libreta de vecinos (tarea 62b.6, D130): por estación que acepta familias del jugador, los
+## lugares ocupados y cada familia que trajo con su oficio, lo que da, lo que pide y si hoy trabaja.
+static func neighbors(board: MissionBoard, model: ProductionModel) -> String:
+	if board == null or model == null:
+		return dim("Sin datos de las estaciones.")
+	var lines: PackedStringArray = [title("Vecinos que trajiste")]
+	var count: int = 0
+	var places: PackedStringArray = []
+	for station_id: StringName in model.get_station_ids():
+		var data: StationData = model.get_data(station_id)
+		var families: Array[Dictionary] = model.get_player_family_list(station_id)
+		var room: int = data.get_max_player_occupations() if data != null else 0
+		if room <= 0 and families.is_empty():
+			continue
+		places.append("%s %d de %d" % [board.station_name(station_id), families.size(), room])
+		if families.is_empty():
+			continue
+		lines.append("[b]%s[/b] · %d de %d %s" % [board.station_name(station_id), families.size(), room, "lugar ocupado" if room == 1 else "lugares ocupados"])
+		for family: Dictionary in families:
+			lines.append(neighbor_line(board, model, family))
+			count += 1
+	if count == 0:
+		lines.append(dim("Todavía no trajiste a nadie. Las mudanzas y algunos encargos suman vecinos a los pueblos: como máximo 1 por pueblo y 3 por ciudad."))
+	if not places.is_empty():
+		lines.append("")
+		lines.append(dim("Lugares: " + " · ".join(places)))
+	return "\n".join(lines)
+
+
+## "• los Etchegaray, tamberos: dan 5 leche por día · trabajando" o, sin insumos, "piden 2 cuero
+## por día · sin trabajar: no les llega lo que piden".
+static func neighbor_line(board: MissionBoard, model: ProductionModel, family: Dictionary) -> String:
+	var occupation: OccupationData = model.get_occupation(family.get("occupation", &""))
+	var family_name: String = str(family.get("name", ""))
+	var job: String = occupation.display_name if occupation != null else str(family.get("occupation", ""))
+	var text: String = "• [b]%s[/b], %s" % [family_name if family_name != "" else "una familia", job]
+	var parts: PackedStringArray = []
+	if occupation != null:
+		var needs: Dictionary[StringName, int] = occupation.get_needs()
+		if not needs.is_empty():
+			parts.append("piden " + amounts_text(needs, board) + " por día")
+		var gives: Dictionary[StringName, int] = occupation.get_production()
+		if not gives.is_empty():
+			parts.append("dan " + amounts_text(gives, board) + " por día")
+	if not parts.is_empty():
+		text += ": " + ", ".join(parts)
+	if bool(family.get("working", false)):
+		text += " · [color=%s]trabajando[/color]" % COLOR_OK
+	else:
+		text += " · [color=%s]sin trabajar: no les llega lo que piden[/color]" % COLOR_TITLE
+	return text
+
+
+## "2 cuero, 5 leche".
+static func amounts_text(amounts: Dictionary[StringName, int], board: MissionBoard) -> String:
 	var parts: PackedStringArray = []
 	for item_id: StringName in amounts:
 		parts.append("%d %s" % [amounts[item_id], board.name_of(item_id) if board != null else String(item_id)])

@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="MissionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="1_amt"]
+[ext_resource type="Resource" path="res://data/items/family.tres" id="2_fam"]
+[ext_resource type="Script" path="res://scripts/missions/mission_data.gd" id="3_mis"]
+[ext_resource type="Resource" path="res://data/occupations/tamberos.tres" id="4_tam"]
+
+[sub_resource type="Resource" id="Pide_familia"]
+script = ExtResource("1_amt")
+item = ExtResource("2_fam")
+amount = 1
+
+[resource]
+script = ExtResource("3_mis")
+id = &"los_etchegaray"
+title = "Los Etchegaray"
+intro = "Somos los Etchegaray. Teníamos un tambo cerca de Tandil, pero se nos inundó el campo y vendimos casi todo. Dicen que en Azul hay pasto y que ya levantaron casas. ¿Nos llevás en el coche? Te esperamos en el andén: abrí las puertas acá y después en Azul."
+outro = "¡Qué lindo campo! Ya armamos el corral y las vacas se acomodaron solas. Desde mañana sale leche de Azul: cinco tarros por día, para el que los quiera."
+station_id = &"azul"
+delivery = Array[ExtResource("1_amt")]([SubResource("Pide_familia")])
+min_level = 2
+requires = Array[StringName]([&"primeras_casas"])
+reward_money = 100
+reward_family = ExtResource("4_tam")
+reward_family_name = "los Etchegaray"
+passenger_from = &"olavarria"

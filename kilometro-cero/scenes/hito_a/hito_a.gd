@@ -28,8 +28,16 @@ extends Node3D
 ## trae el Ferrocarril; si el camino tiene un tramo que abrió el jugador sin estrenar, en un tren
 ## prestado que maneja el jugador (TrenesPrestados). Se sacaron los regalos de vagón de Sierras
 ## Bayas y Olavarría (eran para las primeras cargas); queda la plataforma de Azul.
+## Tarea 62b.6 (D130): secundarias del tren propio. Don Ernesto también pide "Miel para Don Ernesto"
+## (encargo: 3 frascos de los panales del monte de Azul, Bosquecito/Panal1 a 3, que se juntan con
+## las manos y vuelven en 24 h); Doña Rosa, viuda del curtidor (Olavarría), pide "Cueros para Doña
+## Rosa" (encargo de 6 cueros de Azul al doble del mercado) y se queda como curtidora; los
+## Etchegaray (Olavarría) piden "Los Etchegaray" (mudanza en el coche a Azul, después de las
+## primeras casas) y al llegar se mudan con humo a LlegadaEtchegaray, en Azul. La vecina de Azul que
+## pide la maestra ahora es Doña Elvira (Doña Rosa es la de Olavarría). Las familias que trae el
+## jugador se ven en la pestaña Vecinos del TAB.
 
-const CONTROLES: String = "WASD: caminar\nE: agarrar (va a la mochila)\nClic: golpear (hacha, pico)\nQ con la mano vacía junto al vagón: pasarle la mochila\nF: cabina, tablero, mercado, taller o hablar\nO: puertas del coche (en la cabina)\nT: hasta la próxima salida de un tren\nTAB: inventario\nH: esconder las teclas"
+const CONTROLES: String = "WASD: caminar\nE: agarrar (va a la mochila)\nClic: golpear (hacha, pico) o juntar miel\nQ con la mano vacía junto al vagón: pasarle la mochila\nF: cabina, tablero, mercado, taller o hablar\nO: puertas del coche (en la cabina)\nT: hasta la próxima salida de un tren\nTAB: inventario\nH: esconder las teclas"
 const AYUDA: String = "TAB: Inventario\nH: Teclas"
 const HUD_FONT_SIZE: int = 16
 ## Letra del cartel de la misión y cuántas letras entran por renglón: queda angosto y alto.
@@ -236,8 +244,8 @@ func _mision_que_sigue() -> String:
 		for mision: Mission in tablero.get_side_missions(station_id):
 			if mision.state == Mission.State.AVAILABLE:
 				disponible = true
-			elif mision.is_active() and tablero.is_build(mision):
-				# Obra (tarea 62b.4): cuánto falta llevar a su cartel.
+			elif mision.is_active() and not mision.get_remaining().is_empty():
+				# Obra (tarea 62b.4), encargo o mudanza (62b.6): cuánto falta llevar.
 				var faltan: PackedStringArray = []
 				var restan: Dictionary[StringName, int] = mision.get_remaining()
 				for objeto: StringName in restan:

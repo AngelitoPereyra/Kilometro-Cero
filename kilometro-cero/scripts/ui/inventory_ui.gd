@@ -12,12 +12,14 @@ extends CanvasLayer
 ## flujos y horarios de los automáticos) y "Tren" (el tren del jugador vagón por vagón, con lo que
 ## lleva cada uno). Los textos los arma AgendaText; `agenda_extra` (opcional, lo pone la escena)
 ## devuelve renglones más para la agenda. Con la ventana abierta, 1, 2 y 3 cambian de pestaña.
+## Tarea 62b.6 (D130): cuarta pestaña, "Vecinos" (tecla 4): las familias que trajo el jugador, con su
+## oficio y lo que piden (AgendaText.neighbors).
 
 signal toggled(is_open: bool)
 
-enum Tab { BACKPACK, AGENDA, TRAIN }
+enum Tab { BACKPACK, AGENDA, TRAIN, NEIGHBORS }
 
-const TAB_NAMES: Array[String] = ["Mochila", "Agenda", "Tren"]
+const TAB_NAMES: Array[String] = ["Mochila", "Agenda", "Tren", "Vecinos"]
 const TEXT_SIZE: Vector2 = Vector2(760.0, 460.0)
 ## Colores de la ventana (tarea 62.8, pedido de Batmi): fondo crema clarito, tinta oscura, ranuras
 ## de un crema más tostado con borde marrón para que se vean.
@@ -49,6 +51,7 @@ var _slot_buttons: Array[Button] = []
 var _tabs: TabContainer
 var _agenda: RichTextLabel
 var _train: RichTextLabel
+var _neighbors: RichTextLabel
 # El último tren que manejó el jugador: se sigue mostrando al bajarse.
 var _last_train_head: Vehicle
 
@@ -116,7 +119,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif _open and event is InputEventKey and event.is_pressed() and not event.is_echo():
 		var key: Key = (event as InputEventKey).physical_keycode
-		if key >= KEY_1 and key <= KEY_3:
+		if key >= KEY_1 and key <= KEY_4:
 			show_tab(key - KEY_1)
 			get_viewport().set_input_as_handled()
 
@@ -145,7 +148,7 @@ func set_open(value: bool) -> void:
 	toggled.emit(value)
 
 
-## Muestra la pestaña `tab` (Tab.BACKPACK, AGENDA o TRAIN) y rearma su texto.
+## Muestra la pestaña `tab` (Tab.BACKPACK, AGENDA, TRAIN o NEIGHBORS) y rearma su texto.
 func show_tab(tab: int) -> void:
 	if _tabs == null or tab < 0 or tab >= _tabs.get_tab_count():
 		return
@@ -164,6 +167,10 @@ func get_agenda_text() -> String:
 
 func get_train_text() -> String:
 	return _train.text if _train != null else ""
+
+
+func get_neighbors_text() -> String:
+	return _neighbors.text if _neighbors != null else ""
 
 
 ## El tren del jugador: el de la cabina donde está o, si no, el último que manejó, o el de la
@@ -293,10 +300,11 @@ func _build() -> void:
 
 	_agenda = _make_text_tab()
 	_train = _make_text_tab()
+	_neighbors = _make_text_tab()
 	for index: int in TAB_NAMES.size():
 		_tabs.set_tab_title(index, "%d · %s" % [index + 1, TAB_NAMES[index]])
 	var keys := Label.new()
-	keys.text = "1, 2, 3: pestañas · TAB, G o Esc: cerrar"
+	keys.text = "1 a 4: pestañas · TAB, G o Esc: cerrar"
 	keys.modulate = Color(1.0, 1.0, 1.0, 0.6)
 	outer.add_child(keys)
 
@@ -349,7 +357,7 @@ func _make_text_tab() -> RichTextLabel:
 	return text
 
 
-# Vuelve a escribir la agenda y el tren (al abrir y al cambiar de pestaña).
+# Vuelve a escribir la agenda, el tren y los vecinos (al abrir y al cambiar de pestaña).
 func _refresh_texts() -> void:
 	if _agenda == null or not is_inside_tree():
 		return
@@ -358,6 +366,7 @@ func _refresh_texts() -> void:
 		extra = agenda_extra.call()
 	_agenda.text = AgendaText.agenda(GameState.missions, GameState.production, AutoTrains.find_in(get_tree()), extra)
 	_train.text = AgendaText.train(find_player_train(), GameState.missions)
+	_neighbors.text = AgendaText.neighbors(GameState.missions, GameState.production)
 
 
 func _make_button() -> Button:

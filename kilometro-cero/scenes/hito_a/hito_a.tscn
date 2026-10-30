@@ -47,6 +47,10 @@
 [ext_resource type="Script" path="res://scripts/world/track_lot.gd" id="45_lote"]
 [ext_resource type="Script" path="res://scripts/world/speed_zone.gd" id="46_prec"]
 [ext_resource type="PackedScene" path="res://scenes/parcels/galpon_ferroviario.tscn" id="47_galf"]
+[ext_resource type="PackedScene" path="res://scenes/world/honey_comb.tscn" id="48_panal"]
+[ext_resource type="Resource" path="res://data/missions/miel_don_ernesto.tres" id="49_miel"]
+[ext_resource type="Resource" path="res://data/missions/cueros_dona_rosa.tres" id="50_cueros"]
+[ext_resource type="Resource" path="res://data/missions/los_etchegaray.tres" id="51_etche"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Cielo_mat"]
 sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
@@ -447,6 +451,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 0, 1030)
 [node name="Arbol10" parent="Bosquecito" instance=ExtResource("20_bos")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 1052)
 
+[node name="Panal1" parent="Bosquecito" instance=ExtResource("48_panal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 1036)
+
+[node name="Panal2" parent="Bosquecito" instance=ExtResource("48_panal")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 44, 0, 1044)
+
+[node name="Panal3" parent="Bosquecito" instance=ExtResource("48_panal")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 26, 0, 1060)
+
 [node name="Cantera" type="Node3D" parent="."]
 
 [node name="Afloramiento1" parent="Cantera" instance=ExtResource("21_afl")]
@@ -526,12 +539,12 @@ text = "PICO
 [node name="JefeDeEstacion" parent="." instance=ExtResource("26_pob")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0.6, -42)
 speaker = "Don Ernesto, el jefe de estación"
-missions = Array[ExtResource("27_md")]([ExtResource("36_via")])
+missions = Array[ExtResource("27_md")]([ExtResource("36_via"), ExtResource("49_miel")])
 main_station = &"olavarria"
 
 [node name="Vecina" parent="." instance=ExtResource("26_pob")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.6, 1032)
-speaker = "Doña Rosa, vecina de Azul"
+speaker = "Doña Elvira, vecina de Azul"
 missions = Array[ExtResource("27_md")]([ExtResource("28_mae")])
 
 [node name="Cantero" parent="." instance=ExtResource("26_pob")]
@@ -544,6 +557,21 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.6, 1050)
 speaker = "Doña Clara, de la comisión de fomento de Azul"
 missions = Array[ExtResource("27_md")]([ExtResource("43_casas")])
 main_station = &"azul"
+
+[node name="DonaRosa" parent="." instance=ExtResource("26_pob")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0.6, 34)
+speaker = "Doña Rosa, viuda del curtidor"
+missions = Array[ExtResource("27_md")]([ExtResource("50_cueros")])
+
+[node name="Etchegaray" parent="." node_paths=PackedStringArray("move_to") instance=ExtResource("26_pob")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0.6, -20)
+speaker = "Los Etchegaray, tamberos sin campo"
+missions = Array[ExtResource("27_md")]([ExtResource("51_etche")])
+move_after = ExtResource("51_etche")
+move_to = NodePath("../LlegadaEtchegaray")
+
+[node name="LlegadaEtchegaray" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.6, 1062)
 
 [node name="ObraCasas" parent="Azul" instance=ExtResource("42_obra")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -16, 0, 20)

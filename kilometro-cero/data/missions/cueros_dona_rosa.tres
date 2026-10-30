@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="MissionData" format=3]
+
+[ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="1_amt"]
+[ext_resource type="Resource" path="res://data/items/hides.tres" id="2_cue"]
+[ext_resource type="Script" path="res://scripts/missions/mission_data.gd" id="3_mis"]
+[ext_resource type="Resource" path="res://data/occupations/curtidores.tres" id="4_cur"]
+
+[sub_resource type="Resource" id="Pide_cueros"]
+script = ExtResource("1_amt")
+item = ExtResource("2_cue")
+amount = 6
+
+[resource]
+script = ExtResource("3_mis")
+id = &"cueros_dona_rosa"
+title = "Cueros para Doña Rosa"
+intro = "Mi marido era curtidor y me dejó los piletones, pero sin cueros no hay trabajo. Los puesteros de Azul tienen cueros: el almacén de allá los vende. Traeme 6 y te los pago al doble de lo que valen en el mercado. Si sale bien, me quedo curtiendo."
+outro = "¡Huelen a trabajo! Desde mañana prendo los piletones. Voy a necesitar 2 cueros por día: decile a Don Ernesto que los pida a Azul, que los puesteros tienen de sobra."
+station_id = &"olavarria"
+delivery = Array[ExtResource("1_amt")]([SubResource("Pide_cueros")])
+min_level = 2
+pays_market_multiplier = 2.0
+reward_family = ExtResource("4_cur")
+reward_family_name = "Doña Rosa"

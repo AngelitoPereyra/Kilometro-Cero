@@ -59,7 +59,8 @@ func setup(new_data: BackpackData) -> void:
 
 ## ¿Este tipo de objeto puede ir en la mochila? (pequeño o mediano, D86)
 func accepts(item: ItemData) -> bool:
-	return data != null and item != null and data.stack_limit(item.size_class) > 0
+	# Los pasajeros nunca van a la mochila (tarea 60b); desde que entran grandes (62.6) hay que decirlo.
+	return data != null and item != null and not ItemData.is_passenger(item) and data.stack_limit(item.size_class) > 0
 
 
 ## Guarda lo que entre. Devuelve el sobrante (un ItemStack nuevo) o null si entró todo.
@@ -197,7 +198,7 @@ func _store(stack: ItemStack, commit: bool) -> int:
 
 
 func _is_storable(stack: ItemStack) -> bool:
-	return stack != null and stack.item != null and stack.quantity > 0
+	return stack != null and stack.item != null and stack.quantity > 0 and not ItemData.is_passenger(stack.item)
 
 
 func _is_valid_slot(slot: int) -> bool:

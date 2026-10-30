@@ -6,7 +6,7 @@
 script = ExtResource("1_wdata")
 cargo_type = 2
 capacity = 40
-accepted_tags = Array[StringName]([&"cement"])
+accepted_tags = Array[StringName]([&"cement", &"hides", &"leather", &"milk", &"honey"])
 id = &"boxcar"
 display_name = "vagón cerrado"
 length = 10.0

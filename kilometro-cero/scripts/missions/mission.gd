@@ -46,6 +46,9 @@ var offered: bool = false
 var inaugural: bool = false
 ## Principal con aviso: la estación productora elegida al avisar (de ahí sale el tren prestado).
 var source_id: StringName
+## Secundaria cumplida: los pesos que se cobraron (tarea 62b.6: un encargo queda con el precio del
+## momento en que se cumplió).
+var paid: int = 0
 
 
 ## Id de la principal de una estación y un objeto: "main:pueblo:log".
@@ -139,6 +142,7 @@ func to_dict() -> Dictionary:
 		"state": state,
 		"delivered": saved_delivered,
 		"outro_told": outro_told,
+		"paid": paid,
 	}
 	if main:
 		values["item"] = String(item_id)
@@ -161,6 +165,7 @@ static func main_from_dict(values: Dictionary) -> Mission:
 func apply_dict(values: Dictionary) -> void:
 	state = int(values.get("state", state)) as State
 	outro_told = bool(values.get("outro_told", false))
+	paid = int(values.get("paid", 0))
 	reported = bool(values.get("reported", false))
 	offered = bool(values.get("offered", false))
 	inaugural = bool(values.get("inaugural", false))

@@ -2,7 +2,8 @@ class_name ToolUser
 extends Node
 ## Usa las herramientas clave (tarea 55, D83 y D91): con el clic izquierdo (`use_tool`) golpea
 ## lo más cercano que se pueda trabajar (un ToolTarget: Clearable u Harvestable) si el jugador
-## tiene la herramienta que pide. No hay que elegirla: tenerla alcanza.
+## tiene la herramienta que pide. No hay que elegirla: tenerla alcanza. Lo que no pide herramienta
+## (los panales de miel, tarea 62b.6) se trabaja con las manos.
 ## Hijo directo de Player. No actúa en la cabina ni con los controles apagados.
 
 ## Cada golpe que se dio. `finished` es true si con ese golpe se terminó.
@@ -77,10 +78,10 @@ func try_use() -> bool:
 		use_failed.emit(&"nothing_near", "")
 		return false
 	var key_items: KeyItems = _player.get_key_items()
-	if key_items == null or not key_items.has(target.get_required_tool_id()):
+	var tool_id: StringName = target.get_required_tool_id()
+	if tool_id != &"" and (key_items == null or not key_items.has(tool_id)):
 		use_failed.emit(&"missing_tool", target.get_required_tool_name())
 		return false
-	var tool_id: StringName = target.get_required_tool_id()
 	var done: bool = target.hit()
 	EventBus.tool_used.emit(tool_id)
 	used.emit(target, done)

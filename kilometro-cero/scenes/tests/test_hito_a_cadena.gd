@@ -74,7 +74,7 @@ func _probar_archivos() -> void:
 	var plataforma := load("res://data/vehicles/flatcar.tres") as WagonData
 	_comprobar(plataforma != null and plataforma.accepted_tags.has(&"stone") and plataforma.accepted_tags.has(&"log"), "La plataforma lleva piedra y troncos")
 	var cerrado := load("res://data/vehicles/boxcar.tres") as WagonData
-	_comprobar(cerrado != null and cerrado.cargo_type == WagonData.CargoType.BOXCAR and cerrado.capacity == 40 and cerrado.accepted_tags.size() == 1 and cerrado.accepted_tags.has(&"cement"), "Vagón cerrado: 40 bolsas de cemento")
+	_comprobar(cerrado != null and cerrado.cargo_type == WagonData.CargoType.BOXCAR and cerrado.capacity == 40 and cerrado.accepted_tags == ([&"cement", &"hides", &"leather", &"milk", &"honey"] as Array[StringName]), "Vagón cerrado: 40 de cemento, cueros, cuero curtido, leche o miel (62b.6)")
 	var escena := load("res://scenes/vehicles/boxcar.tscn") as PackedScene
 	var vagon: Wagon = (escena.instantiate() as Wagon) if escena != null else null
 	_comprobar(vagon != null and vagon.data == cerrado, "boxcar.tscn es un Wagon con boxcar.tres")

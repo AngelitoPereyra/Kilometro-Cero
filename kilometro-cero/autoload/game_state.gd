@@ -67,6 +67,8 @@ func reset_production() -> void:
 	missions.segment_check = _is_segment_open
 	missions.zone_count = _count_zone
 	missions.opened_check = _was_opened
+	# Los encargos pagan a múltiplo del precio del mercado de su estación (tarea 62b.6).
+	missions.price_check = economy.get_buy_price
 	missions.mission_available.connect(func(mission: Mission) -> void: EventBus.mission_available.emit(mission.id))
 	missions.mission_started.connect(func(mission: Mission) -> void: EventBus.mission_started.emit(mission.id))
 	missions.mission_progressed.connect(func(mission: Mission) -> void: EventBus.mission_progressed.emit(mission.id))
@@ -146,7 +148,8 @@ func _refresh_missions() -> void:
 
 func _on_mission_completed(mission: Mission) -> void:
 	if mission.data != null:
-		add_money(mission.data.reward_money)
+		# Con lo que paga un encargo (tarea 62b.6).
+		add_money(missions.get_reward_money(mission))
 		# La producción extra puede ser de algo nuevo: el mercado tiene que conocerlo.
 		for entry: ItemAmount in mission.data.reward_production:
 			if entry != null:
@@ -155,6 +158,8 @@ func _on_mission_completed(mission: Mission) -> void:
 		for occupation: OccupationData in mission.data.reward_families:
 			if occupation != null:
 				economy.register_occupation(occupation)
+		if mission.data.reward_family != null:
+			economy.register_occupation(mission.data.reward_family)
 	EventBus.mission_completed.emit(mission.id)
 
 

@@ -72,7 +72,8 @@ var _bonus: Dictionary[StringName, Dictionary] = {}
 # occupation_id -> OccupationData: los oficios conocidos (los del bioma de cada estación se suman
 # solos; los que habilita un rasgo hay que registrarlos con add_occupation).
 var _occupations: Dictionary[StringName, OccupationData] = {}
-# station_id -> familias en orden de llegada: {"occupation": StringName, "origin": FamilyOrigin}.
+# station_id -> familias en orden de llegada: {"occupation": StringName, "origin": FamilyOrigin,
+# "name": String} (el nombre solo lo tienen las que trajo el jugador, tarea 62b.6).
 # Puede tener estaciones sin datos todavía (cargadas de un guardado).
 var _families: Dictionary[StringName, Array] = {}
 
@@ -249,6 +250,33 @@ func get_player_families(station_id: StringName) -> Array[StringName]:
 	return result
 
 
+## Las familias de la estación en orden de llegada (tarea 62b.6, para la pestaña Vecinos): cada una
+## {"occupation": StringName, "origin": FamilyOrigin, "name": String, "working": bool (hoy tiene
+## todos sus insumos)}.
+func get_family_list(station_id: StringName) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var families: Array = _families.get(station_id, [])
+	var flags: Array = _solve().active.get(station_id, [])
+	for index: int in families.size():
+		var family: Dictionary = families[index]
+		result.append({
+			"occupation": family["occupation"],
+			"origin": int(family["origin"]),
+			"name": str(family.get("name", "")),
+			"working": index < flags.size() and bool(flags[index]),
+		})
+	return result
+
+
+## Las familias que trajo el jugador, como get_family_list.
+func get_player_family_list(station_id: StringName) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for family: Dictionary in get_family_list(station_id):
+		if int(family["origin"]) == FamilyOrigin.PLAYER:
+			result.append(family)
+	return result
+
+
 ## Los oficios de las familias que hoy no trabajan porque les faltan insumos (o porque su oficio
 ## no está registrado).
 func get_idle_families(station_id: StringName) -> Array[StringName]:
@@ -331,13 +359,13 @@ func assign_occupation(station_id: StringName, origin: FamilyOrigin = FamilyOrig
 
 ## Suma una familia de un oficio elegido, sin mirar bioma, rasgos ni tope (la recompensa de una
 ## misión: "Sierras Bayas suma 2 familias de canteros"). Devuelve false si no conoce la estación
-## o el oficio.
-func add_family(station_id: StringName, occupation_id: StringName, origin: FamilyOrigin = FamilyOrigin.EXTRA) -> bool:
+## o el oficio. `family_name`: cómo se llama (tarea 62b.6; vacío: sin nombre).
+func add_family(station_id: StringName, occupation_id: StringName, origin: FamilyOrigin = FamilyOrigin.EXTRA, family_name: String = "") -> bool:
 	var occupation: OccupationData = get_occupation(occupation_id)
 	if not has_station(station_id) or occupation == null:
 		push_warning("ProductionModel: no se puede sumar una familia de '%s' a '%s'." % [occupation_id, station_id])
 		return false
-	_push_family(station_id, occupation, origin)
+	_push_family(station_id, occupation, origin, family_name)
 	family_added.emit(station_id, occupation, origin)
 	return true
 
@@ -361,12 +389,12 @@ func can_add_player_family(station_id: StringName, occupation_id: StringName) ->
 
 
 ## Suma una familia traída por el jugador (mudanza). Devuelve false si no se puede
-## (can_add_player_family).
-func add_player_family(station_id: StringName, occupation_id: StringName) -> bool:
+## (can_add_player_family). `family_name`: "los Etchegaray" (tarea 62b.6).
+func add_player_family(station_id: StringName, occupation_id: StringName, family_name: String = "") -> bool:
 	if not can_add_player_family(station_id, occupation_id):
 		return false
 	var occupation: OccupationData = get_occupation(occupation_id)
-	_push_family(station_id, occupation, FamilyOrigin.PLAYER)
+	_push_family(station_id, occupation, FamilyOrigin.PLAYER, family_name)
 	family_added.emit(station_id, occupation, FamilyOrigin.PLAYER)
 	return true
 
@@ -566,7 +594,7 @@ func to_dict() -> Dictionary:
 	for station_id: StringName in _families:
 		var entries: Array = []
 		for family: Dictionary in _families[station_id]:
-			entries.append({"occupation": String(family["occupation"]), "origin": int(family["origin"])})
+			entries.append({"occupation": String(family["occupation"]), "origin": int(family["origin"]), "name": str(family.get("name", ""))})
 		families[String(station_id)] = entries
 	return {"levels": levels, "progress": progress, "flows": flows, "next_flow_id": _next_flow_id, "bonus": bonus, "families": families}
 
@@ -594,7 +622,7 @@ func load_dict(values: Dictionary) -> void:
 	for key: String in saved_families:
 		var entries: Array = []
 		for family: Dictionary in saved_families[key]:
-			entries.append({"occupation": StringName(str(family.get("occupation", ""))), "origin": int(family.get("origin", FamilyOrigin.LEVEL))})
+			entries.append({"occupation": StringName(str(family.get("occupation", ""))), "origin": int(family.get("origin", FamilyOrigin.LEVEL)), "name": str(family.get("name", ""))})
 		_families[StringName(key)] = entries
 	for entry: Dictionary in values.get("flows", []):
 		_flows.append(ProductionFlow.from_dict(entry))
@@ -640,9 +668,9 @@ func _emit_families(station_id: StringName, added: Array[OccupationData], origin
 		family_added.emit(station_id, occupation, origin)
 
 
-func _push_family(station_id: StringName, occupation: OccupationData, origin: FamilyOrigin) -> void:
+func _push_family(station_id: StringName, occupation: OccupationData, origin: FamilyOrigin, family_name: String = "") -> void:
 	var families: Array = _families.get(station_id, [])
-	families.append({"occupation": occupation.id, "origin": origin})
+	families.append({"occupation": occupation.id, "origin": origin, "name": family_name})
 	_families[station_id] = families
 
 

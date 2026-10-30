@@ -4,9 +4,12 @@ extends ToolTarget
 ## el hacha y deja troncos (el mismo tronco que en una estación de carga). Hijo del cuerpo que
 ## se ve (por ejemplo, un StaticBody3D). Al talarlo, el cuerpo se esconde y deja de chocar;
 ## con `regrow_hours` mayor que 0 vuelve a aparecer después de ese tiempo de juego.
+## También sirve sin herramienta (tarea 62b.6): el panal de miel del monte se junta con las manos.
 
 ## Horas de juego hasta que vuelve a crecer. 0: no vuelve.
 @export_range(0.0, 240.0, 1.0, "suffix:h") var regrow_hours: float = 24.0
+## Cómo se dice lo que se hace ("talar", "juntar miel").
+@export var action_name: String = "talar"
 
 var _hours_since_harvest: float = 0.0
 # Capas del cuerpo antes de esconderlo, para devolvérselas al crecer.
@@ -14,7 +17,7 @@ var _saved_layer: int = 0
 
 
 func get_action_name() -> String:
-	return "talar"
+	return action_name
 
 
 func _ready() -> void:

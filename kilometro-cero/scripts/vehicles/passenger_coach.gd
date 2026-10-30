@@ -106,6 +106,9 @@ func exchange() -> Dictionary:
 		var entering: Dictionary = plan[key]
 		for item_id: StringName in entering:
 			var item: ItemData = GameState.economy.get_item(item_id)
+			# La familia de una mudanza no está en ningún mercado (tarea 62b.6).
+			if item == null:
+				item = GameState.missions.find_item(item_id)
 			var leftover: ItemStack = cargo.try_store(ItemStack.new(item, int(entering[item_id])))
 			if leftover != null:
 				push_warning("PassengerCoach: no entraron %d %s." % [leftover.quantity, item_id])
