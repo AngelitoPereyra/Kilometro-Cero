@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/stations/occupation_data.gd" id="1_ofi"]
 [ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
 [ext_resource type="Resource" path="res://data/items/milk.tres" id="i_milk"]
+[ext_resource type="PackedScene" path="res://scenes/parcels/tambo.tscn" id="p_parcela"]
 
 [sub_resource type="Resource" id="Da_milk"]
 script = ExtResource("2_amt")
@@ -16,4 +17,5 @@ display_name = "tamberos"
 kind = 0
 produces = Array[ExtResource("2_amt")]([SubResource("Da_milk")])
 requires_trait = &"campo"
+landscape_scene = ExtResource("p_parcela")
 description = "Ordeñan en el tambo: 5 tarros de leche por familia y por día."

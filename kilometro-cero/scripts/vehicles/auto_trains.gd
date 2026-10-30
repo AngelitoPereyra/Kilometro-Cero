@@ -114,7 +114,7 @@ const TRUNK_PASSENGERS: String = "pasajeros"
 const DEFAULT_TRACK_ROLES: Array = [StationTrack.Role.FREIGHT, StationTrack.Role.SIDING, StationTrack.Role.MAIN]
 const PASSENGER_TRACK_ROLES: Array = [StationTrack.Role.MAIN, StationTrack.Role.SIDING, StationTrack.Role.FREIGHT]
 ## Acelerador con que andan (fracción de la velocidad máxima), también lejos del jugador.
-const AUTO_THROTTLE: float = 0.7
+const AUTO_THROTTLE: float = 0.336
 ## Primer horario de ida y cuántas horas después sale el tren siguiente (provisorio).
 const FIRST_HOUR: float = 7.0
 const HOUR_STEP: float = 2.0
@@ -159,7 +159,7 @@ const SHOW_BEFORE_HOURS: float = 0.5
 ## Un tren que vuelve de guardado y aparece antes de esto (horas) lo hace con humo (tarea 62b.3).
 const SHOW_SMOKE_HOURS: float = 0.1
 ## Acelerador de la locomotora mientras maniobra y segundos que tarda la mesa en girar.
-const MANEUVER_THROTTLE: float = 0.6
+const MANEUVER_THROTTLE: float = 0.288
 const TURN_SECONDS: float = 4.0
 ## Metros que la locomotora pasa de una punta (además de su largo) para que el cambio quede libre.
 const CLEAR_MARGIN: float = 3.0

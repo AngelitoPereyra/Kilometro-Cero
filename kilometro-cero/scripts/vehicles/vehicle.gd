@@ -56,6 +56,10 @@ const MODEL_PARTS: Array[NodePath] = [^"Visual", ^"CuerpoFisico", ^"Faro", ^"Far
 
 ## Acelerador pedido: 1.0 adelante a fondo, -1.0 marcha atrás, 0.0 soltar.
 var throttle: float = 0.0
+## El acelerador es una fracción de `data.max_speed` y no del límite de ahora: cada marcha pide una
+## velocidad fija y la vía o la zona de precaución solo la topan (marchas en km/h de la Cab, ajuste
+## de la tarea 62b.5). Lo pone la Cab; los automáticos no lo usan.
+var absolute_throttle: bool = false
 ## Freno pedido: 0.0 suelto, 1.0 a fondo. Mientras frena, el acelerador no empuja (tarea 52).
 var brake: float = 0.0
 ## Velocidad actual en m/s sobre la curva; negativa = marcha atrás.
@@ -133,14 +137,17 @@ func simulate(delta: float) -> void:
 	if front != null:
 		return
 	var limit: float = get_max_speed()
+	var input: float = throttle
+	if absolute_throttle and not automatic and limit > 0.0 and limit < INF:
+		input = clampf(throttle * data.max_speed / limit, -1.0, 1.0)
 	if brake > 0.0:
 		speed = move_toward(speed, 0.0, data.braking * clampf(brake, 0.0, 1.0) * delta)
 	elif absf(speed) > limit:
 		# Si la vía obliga a ir más despacio, frena de verdad (no alcanza con dejarlo rodar).
-		speed = step_speed(speed, throttle, limit, data.acceleration, data.braking, delta)
+		speed = step_speed(speed, input, limit, data.acceleration, data.braking, delta)
 	else:
 		# Sin freno, bajar el acelerador solo deja rodar: lo frena el rozamiento.
-		speed = step_speed(speed, throttle, limit, data.acceleration, data.coast_deceleration, delta)
+		speed = step_speed(speed, input, limit, data.acceleration, data.coast_deceleration, delta)
 	_advance(speed * delta)
 
 
@@ -149,11 +156,15 @@ func get_track_condition() -> float:
 	return segment.get_effective_condition() if segment != null else 1.0
 
 
-## Velocidad máxima permitida ahora mismo: la del más lento del tren, según la vía que pisa.
+## Velocidad máxima permitida ahora mismo: la del más lento del tren, según la vía que pisa. Un tren
+## que no es automático tampoco pasa el tope de la zona de precaución que pisa (SpeedZone, tarea 62b.5).
 func get_max_speed() -> float:
 	var limit: float = INF
-	for vehicle: Vehicle in get_train():
+	var train: Array[Vehicle] = get_train()
+	for vehicle: Vehicle in train:
 		limit = minf(limit, vehicle.data.get_max_speed(vehicle.get_track_condition()))
+	if not automatic and SpeedZone.has_zones():
+		limit = minf(limit, SpeedZone.limit_for(train))
 	return limit
 
 

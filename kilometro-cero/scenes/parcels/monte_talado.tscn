@@ -1,0 +1,1126 @@
+[gd_scene format=3]
+
+[sub_resource type="BoxMesh" id="S1"]
+size = Vector3(99, 0.06, 99)
+
+[sub_resource type="StandardMaterial3D" id="S2"]
+albedo_color = Color(0.4, 0.45, 0.25, 1)
+
+[sub_resource type="CylinderMesh" id="S3"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.5179
+
+[sub_resource type="StandardMaterial3D" id="S4"]
+albedo_color = Color(0.45, 0.32, 0.2, 1)
+
+[sub_resource type="SphereMesh" id="S5"]
+radius = 2.2
+height = 4.4
+
+[sub_resource type="StandardMaterial3D" id="S6"]
+albedo_color = Color(0.22, 0.42, 0.2, 1)
+
+[sub_resource type="CylinderMesh" id="S7"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.2171
+
+[sub_resource type="CylinderMesh" id="S8"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 6.4769
+
+[sub_resource type="CylinderMesh" id="S9"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.9926
+
+[sub_resource type="CylinderMesh" id="S10"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.5792
+
+[sub_resource type="CylinderMesh" id="S11"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.4088
+
+[sub_resource type="CylinderMesh" id="S12"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 6.3143
+
+[sub_resource type="CylinderMesh" id="S13"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.224
+
+[sub_resource type="CylinderMesh" id="S14"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.1719
+
+[sub_resource type="CylinderMesh" id="S15"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.5529
+
+[sub_resource type="CylinderMesh" id="S16"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.7595
+
+[sub_resource type="CylinderMesh" id="S17"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 6.4422
+
+[sub_resource type="CylinderMesh" id="S18"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 6.2447
+
+[sub_resource type="CylinderMesh" id="S19"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 6.1161
+
+[sub_resource type="CylinderMesh" id="S20"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.5411
+
+[sub_resource type="CylinderMesh" id="S21"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.6582
+
+[sub_resource type="CylinderMesh" id="S22"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.7494
+
+[sub_resource type="CylinderMesh" id="S23"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.1869
+
+[sub_resource type="CylinderMesh" id="S24"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.3215
+
+[sub_resource type="CylinderMesh" id="S25"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.7769
+
+[sub_resource type="CylinderMesh" id="S26"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.1257
+
+[sub_resource type="CylinderMesh" id="S27"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 6.0457
+
+[sub_resource type="CylinderMesh" id="S28"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.7392
+
+[sub_resource type="CylinderMesh" id="S29"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.0741
+
+[sub_resource type="CylinderMesh" id="S30"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.6322
+
+[sub_resource type="CylinderMesh" id="S31"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 6.4682
+
+[sub_resource type="CylinderMesh" id="S32"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.2698
+
+[sub_resource type="CylinderMesh" id="S33"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.6247
+
+[sub_resource type="CylinderMesh" id="S34"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.4127
+
+[sub_resource type="CylinderMesh" id="S35"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.9061
+
+[sub_resource type="CylinderMesh" id="S36"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.1604
+
+[sub_resource type="CylinderMesh" id="S37"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.9225
+
+[sub_resource type="CylinderMesh" id="S38"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.4411
+
+[sub_resource type="CylinderMesh" id="S39"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 5.2493
+
+[sub_resource type="CylinderMesh" id="S40"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.3033
+
+[sub_resource type="CylinderMesh" id="S41"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 4.6639
+
+[sub_resource type="CylinderMesh" id="S42"]
+top_radius = 0.4
+bottom_radius = 0.4
+height = 0.5
+
+[sub_resource type="CylinderMesh" id="S43"]
+top_radius = 0.38
+bottom_radius = 0.38
+height = 0.02
+
+[sub_resource type="StandardMaterial3D" id="S44"]
+albedo_color = Color(0.85, 0.72, 0.5, 1)
+
+[sub_resource type="CylinderMesh" id="S45"]
+top_radius = 0.25
+bottom_radius = 0.25
+height = 3.5
+
+[sub_resource type="BoxMesh" id="S46"]
+size = Vector3(5, 2.6, 4)
+
+[sub_resource type="StandardMaterial3D" id="S47"]
+albedo_color = Color(0.5, 0.36, 0.22, 1)
+
+[sub_resource type="BoxMesh" id="S48"]
+size = Vector3(5.6, 0.15, 4.6)
+
+[sub_resource type="StandardMaterial3D" id="S49"]
+albedo_color = Color(0.6, 0.62, 0.64, 1)
+
+[sub_resource type="BoxMesh" id="S50"]
+size = Vector3(0.8, 1.6, 0.05)
+
+[sub_resource type="StandardMaterial3D" id="S51"]
+albedo_color = Color(0.15, 0.15, 0.15, 1)
+
+[sub_resource type="BoxMesh" id="S52"]
+size = Vector3(2, 0.6, 4)
+
+[sub_resource type="CylinderMesh" id="S53"]
+top_radius = 0.6
+bottom_radius = 0.6
+height = 0.12
+
+[sub_resource type="StandardMaterial3D" id="S54"]
+albedo_color = Color(0.7, 0.55, 0.35, 1)
+
+[node name="MonteTalado" type="Node3D"]
+editor_description = "Parcela de los hacheros (tarea 62b.5): una hectárea de monte, con el frente talado, tocones, pilas de troncos, rancho y carro. Frente hacia +Z (la vía)."
+
+[node name="Suelo" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Malla" type="MeshInstance3D" parent="Suelo"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+material_override = SubResource("S2")
+mesh = SubResource("S1")
+
+[node name="Monte" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Arbol1T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -41.0118, 2.759, -45.2302)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Arbol1C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -41.0118, 6.7179, -45.2302)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol2T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.46, 2.6085, -44.4715)
+material_override = SubResource("S4")
+mesh = SubResource("S7")
+
+[node name="Arbol2C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.46, 6.4171, -44.4715)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol3T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.3593, 3.2385, -44.8016)
+material_override = SubResource("S4")
+mesh = SubResource("S8")
+
+[node name="Arbol3C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.3593, 7.6769, -44.8016)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol4T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.0339, 2.9963, -42.8429)
+material_override = SubResource("S4")
+mesh = SubResource("S9")
+
+[node name="Arbol4C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.0339, 7.1926, -42.8429)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol5T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4785, 2.2896, -46.1493)
+material_override = SubResource("S4")
+mesh = SubResource("S10")
+
+[node name="Arbol5C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4785, 5.7792, -46.1493)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol6T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.7483, 2.2044, -45.401)
+material_override = SubResource("S4")
+mesh = SubResource("S11")
+
+[node name="Arbol6C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.7483, 5.6088, -45.401)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol7T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.973, 3.1571, -44.2859)
+material_override = SubResource("S4")
+mesh = SubResource("S12")
+
+[node name="Arbol7C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21.973, 7.5143, -44.2859)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol8T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.9542, 2.112, -45.6832)
+material_override = SubResource("S4")
+mesh = SubResource("S13")
+
+[node name="Arbol8C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.9542, 5.424, -45.6832)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol9T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43.3134, 2.086, -43.8138)
+material_override = SubResource("S4")
+mesh = SubResource("S14")
+
+[node name="Arbol9C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43.3134, 5.3719, -43.8138)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol10T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43.0201, 2.7764, -35.0907)
+material_override = SubResource("S4")
+mesh = SubResource("S15")
+
+[node name="Arbol10C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43.0201, 6.7529, -35.0907)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol11T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.3398, 2.8798, -34.0669)
+material_override = SubResource("S4")
+mesh = SubResource("S16")
+
+[node name="Arbol11C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31.3398, 6.9595, -34.0669)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol12T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.5446, 3.2211, -33.4168)
+material_override = SubResource("S4")
+mesh = SubResource("S17")
+
+[node name="Arbol12C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.5446, 7.6422, -33.4168)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol13T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.3137, 3.1223, -35.1105)
+material_override = SubResource("S4")
+mesh = SubResource("S18")
+
+[node name="Arbol13C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.3137, 7.4447, -35.1105)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol14T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2581, 3.0581, -37.2925)
+material_override = SubResource("S4")
+mesh = SubResource("S19")
+
+[node name="Arbol14C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2581, 7.3161, -37.2925)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol15T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.8561, 2.7706, -36.6373)
+material_override = SubResource("S4")
+mesh = SubResource("S20")
+
+[node name="Arbol15C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10.8561, 6.7411, -36.6373)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol16T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.0532, 2.3291, -33.0185)
+material_override = SubResource("S4")
+mesh = SubResource("S21")
+
+[node name="Arbol16C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 23.0532, 5.8582, -33.0185)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol17T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.1775, 2.8747, -36.1176)
+material_override = SubResource("S4")
+mesh = SubResource("S22")
+
+[node name="Arbol17C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.1775, 6.9494, -36.1176)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol18T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 46.0111, 2.5934, -33.2627)
+material_override = SubResource("S4")
+mesh = SubResource("S23")
+
+[node name="Arbol18C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 46.0111, 6.3869, -33.2627)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol19T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44.9913, 2.6607, -25.827)
+material_override = SubResource("S4")
+mesh = SubResource("S24")
+
+[node name="Arbol19C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44.9913, 6.5215, -25.827)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol20T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.7177, 2.3885, -24.417)
+material_override = SubResource("S4")
+mesh = SubResource("S25")
+
+[node name="Arbol20C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -34.7177, 5.9769, -24.417)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol21T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.5814, 2.5629, -24.8981)
+material_override = SubResource("S4")
+mesh = SubResource("S26")
+
+[node name="Arbol21C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20.5814, 6.3257, -24.8981)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol22T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.0487, 3.0228, -28.2289)
+material_override = SubResource("S4")
+mesh = SubResource("S27")
+
+[node name="Arbol22C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.0487, 7.2457, -28.2289)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol23T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9629, 2.3696, -27.7214)
+material_override = SubResource("S4")
+mesh = SubResource("S28")
+
+[node name="Arbol23C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9629, 5.9392, -27.7214)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol24T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.6994, 2.5371, -24.5059)
+material_override = SubResource("S4")
+mesh = SubResource("S29")
+
+[node name="Arbol24C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.6994, 6.2741, -24.5059)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol25T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.3485, 2.3161, -27.6904)
+material_override = SubResource("S4")
+mesh = SubResource("S30")
+
+[node name="Arbol25C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.3485, 5.8322, -27.6904)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol26T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31.0717, 3.2341, -28.2667)
+material_override = SubResource("S4")
+mesh = SubResource("S31")
+
+[node name="Arbol26C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31.0717, 7.6682, -28.2667)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol27T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.5805, 2.1349, -26.1535)
+material_override = SubResource("S4")
+mesh = SubResource("S32")
+
+[node name="Arbol27C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.5805, 5.4698, -26.1535)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol28T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43.4991, 2.3123, -18.5452)
+material_override = SubResource("S4")
+mesh = SubResource("S33")
+
+[node name="Arbol28C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43.4991, 5.8247, -18.5452)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol29T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.3886, 2.7063, -16.3563)
+material_override = SubResource("S4")
+mesh = SubResource("S34")
+
+[node name="Arbol29C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.3886, 6.6127, -16.3563)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol30T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.0501, 2.4531, -17.5597)
+material_override = SubResource("S4")
+mesh = SubResource("S35")
+
+[node name="Arbol30C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.0501, 6.1061, -17.5597)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol31T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.9573, 2.0802, -19.0062)
+material_override = SubResource("S4")
+mesh = SubResource("S36")
+
+[node name="Arbol31C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.9573, 5.3604, -19.0062)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol32T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5727, 2.9613, -16.4071)
+material_override = SubResource("S4")
+mesh = SubResource("S37")
+
+[node name="Arbol32C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5727, 7.1225, -16.4071)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol33T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5041, 2.2206, -18.3433)
+material_override = SubResource("S4")
+mesh = SubResource("S38")
+
+[node name="Arbol33C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5041, 5.6411, -18.3433)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol34T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.7831, 2.6247, -18.0128)
+material_override = SubResource("S4")
+mesh = SubResource("S39")
+
+[node name="Arbol34C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20.7831, 6.4493, -18.0128)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol35T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.9939, 2.1516, -17.5337)
+material_override = SubResource("S4")
+mesh = SubResource("S40")
+
+[node name="Arbol35C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.9939, 5.5033, -17.5337)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Arbol36T" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43.312, 2.3319, -18.2616)
+material_override = SubResource("S4")
+mesh = SubResource("S41")
+
+[node name="Arbol36C" type="MeshInstance3D" parent="Monte"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43.312, 5.8639, -18.2616)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Tocones" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Tocon0" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.491, 0.25, 4.9394)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte0" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.491, 0.51, 4.9394)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon1" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.8029, 0.25, 12.111)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte1" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.8029, 0.51, 12.111)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon2" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42.2932, 0.25, 4.225)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte2" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -42.2932, 0.51, 4.225)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon3" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.4292, 0.25, -4.3901)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte3" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -29.4292, 0.51, -4.3901)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon4" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33.2905, 0.25, -4.7644)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte4" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -33.2905, 0.51, -4.7644)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon5" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33.1723, 0.25, -0.4731)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte5" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33.1723, 0.51, -0.4731)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon6" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.6157, 0.25, 10.5479)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte6" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.6157, 0.51, 10.5479)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon7" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.7941, 0.25, -4.499)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte7" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32.7941, 0.51, -4.499)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon8" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.4005, 0.25, 8.442)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte8" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.4005, 0.51, 8.442)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon9" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44.1369, 0.25, 16.6356)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte9" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 44.1369, 0.51, 16.6356)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon10" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.3468, 0.25, -7.4257)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte10" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.3468, 0.51, -7.4257)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon11" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38.7252, 0.25, 21.6544)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte11" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38.7252, 0.51, 21.6544)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon12" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.0271, 0.25, -6.1256)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte12" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.0271, 0.51, -6.1256)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon13" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -41.4886, 0.25, -0.6864)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte13" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -41.4886, 0.51, -0.6864)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon14" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.074, 0.25, 7.9061)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte14" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.074, 0.51, 7.9061)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon15" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.8984, 0.25, 4.9647)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte15" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.8984, 0.51, 4.9647)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon16" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.9415, 0.25, 14.1388)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte16" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 41.9415, 0.51, 14.1388)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon17" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.6153, 0.25, -5.1142)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte17" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.6153, 0.51, -5.1142)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon18" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.6026, 0.25, -1.0085)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte18" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.6026, 0.51, -1.0085)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon19" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.4142, 0.25, 13.3798)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte19" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.4142, 0.51, 13.3798)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon20" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.7733, 0.25, 7.3446)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte20" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25.7733, 0.51, 7.3446)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon21" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43.8092, 0.25, -0.9373)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte21" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -43.8092, 0.51, -0.9373)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon22" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.283, 0.25, 13.9735)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte22" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25.283, 0.51, 13.9735)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Tocon23" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2506, 0.25, 16.2912)
+material_override = SubResource("S4")
+mesh = SubResource("S42")
+
+[node name="Corte23" type="MeshInstance3D" parent="Tocones"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.2506, 0.51, 16.2912)
+material_override = SubResource("S44")
+mesh = SubResource("S43")
+
+[node name="Pila1" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 36)
+
+[node name="Leno0_0" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, -1.04)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno0_1" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, -0.52)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno0_2" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno0_3" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, 0.52)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno0_4" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, 1.04)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno1_0" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.7, -0.78)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno1_1" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.7, -0.26)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno1_2" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.7, 0.26)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno1_3" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.7, 0.78)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno2_0" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.15, -0.52)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno2_1" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.15, 0)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno2_2" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.15, 0.52)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno3_0" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.6, -0.26)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno3_1" type="MeshInstance3D" parent="Pila1"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.6, 0.26)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Pila2" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0, 38)
+
+[node name="Leno0_0" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, -1.04)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno0_1" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, -0.52)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno0_2" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno0_3" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, 0.52)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno0_4" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, 1.04)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno1_0" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.7, -0.78)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno1_1" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.7, -0.26)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno1_2" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.7, 0.26)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno1_3" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.7, 0.78)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno2_0" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.15, -0.52)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno2_1" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.15, 0)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno2_2" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.15, 0.52)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno3_0" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.6, -0.26)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno3_1" type="MeshInstance3D" parent="Pila2"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.6, 0.26)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Pila3" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 34)
+
+[node name="Leno0_0" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, -1.04)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno0_1" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, -0.52)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno0_2" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, 0)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno0_3" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, 0.52)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno0_4" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.25, 1.04)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno1_0" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.7, -0.78)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno1_1" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.7, -0.26)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno1_2" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.7, 0.26)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno1_3" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0.7, 0.78)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno2_0" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.15, -0.52)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno2_1" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.15, 0)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno2_2" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.15, 0.52)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno3_0" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.6, -0.26)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Leno3_1" type="MeshInstance3D" parent="Pila3"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 1.6, 0.26)
+material_override = SubResource("S4")
+mesh = SubResource("S45")
+
+[node name="Rancho" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 0, 38)
+
+[node name="Paredes" type="MeshInstance3D" parent="Rancho"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
+material_override = SubResource("S47")
+mesh = SubResource("S46")
+
+[node name="Techo" type="MeshInstance3D" parent="Rancho"]
+transform = Transform3D(1, 0, 0, 0, 0.9928, -0.1197, 0, 0.1197, 0.9928, 0, 2.7, 0)
+material_override = SubResource("S49")
+mesh = SubResource("S48")
+
+[node name="Puerta" type="MeshInstance3D" parent="Rancho"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 2.01)
+material_override = SubResource("S51")
+mesh = SubResource("S50")
+
+[node name="Carro" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 40)
+
+[node name="Caja" type="MeshInstance3D" parent="Carro"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+material_override = SubResource("S47")
+mesh = SubResource("S52")
+
+[node name="Rueda0" type="MeshInstance3D" parent="Carro"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -1.1, 0.6, -1.2)
+material_override = SubResource("S54")
+mesh = SubResource("S53")
+
+[node name="Rueda1" type="MeshInstance3D" parent="Carro"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 1.1, 0.6, -1.2)
+material_override = SubResource("S54")
+mesh = SubResource("S53")
+
+[node name="Rueda2" type="MeshInstance3D" parent="Carro"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, -1.1, 0.6, 1.2)
+material_override = SubResource("S54")
+mesh = SubResource("S53")
+
+[node name="Rueda3" type="MeshInstance3D" parent="Carro"]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 1.1, 0.6, 1.2)
+material_override = SubResource("S54")
+mesh = SubResource("S53")

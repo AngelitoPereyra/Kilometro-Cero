@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
 [ext_resource type="Resource" path="res://data/items/hides.tres" id="i_hides"]
 [ext_resource type="Resource" path="res://data/items/leather.tres" id="i_leather"]
+[ext_resource type="PackedScene" path="res://scenes/parcels/piletones.tscn" id="p_parcela"]
 
 [sub_resource type="Resource" id="Pide_hides"]
 script = ExtResource("2_amt")
@@ -22,4 +23,5 @@ display_name = "curtidores"
 kind = 2
 needs = Array[ExtResource("2_amt")]([SubResource("Pide_hides")])
 produces = Array[ExtResource("2_amt")]([SubResource("Da_leather")])
+landscape_scene = ExtResource("p_parcela")
 description = "Curten los cueros en los piletones: con 2 cueros dan 1 cuero curtido por familia y por día."

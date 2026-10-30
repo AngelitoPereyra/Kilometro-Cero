@@ -1,0 +1,191 @@
+[gd_scene format=3]
+
+[sub_resource type="BoxMesh" id="S1"]
+size = Vector3(49, 0.06, 49)
+
+[sub_resource type="StandardMaterial3D" id="S2"]
+albedo_color = Color(0.5, 0.48, 0.44, 1)
+
+[sub_resource type="BoxMesh" id="S3"]
+size = Vector3(40, 8, 20)
+
+[sub_resource type="StandardMaterial3D" id="S4"]
+albedo_color = Color(0.6, 0.62, 0.64, 1)
+
+[sub_resource type="BoxMesh" id="S5"]
+size = Vector3(40.8, 0.2, 11.0712)
+
+[sub_resource type="StandardMaterial3D" id="S6"]
+albedo_color = Color(0.5, 0.52, 0.55, 1)
+
+[sub_resource type="BoxMesh" id="S7"]
+size = Vector3(0.3, 3.7963, 19.6)
+
+[sub_resource type="BoxMesh" id="S8"]
+size = Vector3(4.5, 5, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="S9"]
+albedo_color = Color(0.15, 0.15, 0.15, 1)
+
+[sub_resource type="BoxMesh" id="S10"]
+size = Vector3(0.1, 0.15, 14)
+
+[sub_resource type="BoxMesh" id="S11"]
+size = Vector3(0.3, 8, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="S12"]
+albedo_color = Color(0.5, 0.36, 0.22, 1)
+
+[sub_resource type="CylinderMesh" id="S13"]
+top_radius = 2.6
+bottom_radius = 2.6
+height = 3
+
+[sub_resource type="StandardMaterial3D" id="S14"]
+albedo_color = Color(0.35, 0.36, 0.38, 1)
+
+[sub_resource type="BoxMesh" id="S15"]
+size = Vector3(2.6, 0.25, 6)
+
+[node name="GalponFerroviario" type="Node3D"]
+editor_description = "Galpón ferroviario de chapa (tarea 62b.5, zona industrial de la ciudad, 50 x 50 m): fijo desde el principio (TrackLot.fixed_scene). Frente hacia +Z (la vía)."
+
+[node name="Suelo" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Malla" type="MeshInstance3D" parent="Suelo"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+material_override = SubResource("S2")
+mesh = SubResource("S1")
+
+[node name="Galpon" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -6)
+
+[node name="Paredes" type="MeshInstance3D" parent="Galpon"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, 0)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Techo0" type="MeshInstance3D" parent="Galpon"]
+transform = Transform3D(1, 0, 0, 0, 0.9394, 0.3429, 0, -0.3429, 0.9394, 0, 9.8981, -5.2)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Techo1" type="MeshInstance3D" parent="Galpon"]
+transform = Transform3D(1, 0, 0, 0, 0.9394, -0.3429, 0, 0.3429, 0.9394, 0, 9.8981, 5.2)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="Frontis" type="MeshInstance3D" parent="Galpon"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.85, 9.7981, 0)
+material_override = SubResource("S4")
+mesh = SubResource("S7")
+
+[node name="FrontisB" type="MeshInstance3D" parent="Galpon"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.85, 9.7981, 0)
+material_override = SubResource("S4")
+mesh = SubResource("S7")
+
+[node name="Porton0" type="MeshInstance3D" parent="Galpon"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.3333, 2.5, 10.02)
+material_override = SubResource("S9")
+mesh = SubResource("S8")
+
+[node name="Porton1" type="MeshInstance3D" parent="Galpon"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 10.02)
+material_override = SubResource("S9")
+mesh = SubResource("S8")
+
+[node name="Porton2" type="MeshInstance3D" parent="Galpon"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.3333, 2.5, 10.02)
+material_override = SubResource("S9")
+mesh = SubResource("S8")
+
+[node name="Vias" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+
+[node name="Riel00" type="MeshInstance3D" parent="Vias"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.02, 0.12, -3)
+material_override = SubResource("S6")
+mesh = SubResource("S10")
+
+[node name="Riel01" type="MeshInstance3D" parent="Vias"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.58, 0.12, -3)
+material_override = SubResource("S6")
+mesh = SubResource("S10")
+
+[node name="Riel10" type="MeshInstance3D" parent="Vias"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.72, 0.12, -3)
+material_override = SubResource("S6")
+mesh = SubResource("S10")
+
+[node name="Riel11" type="MeshInstance3D" parent="Vias"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.72, 0.12, -3)
+material_override = SubResource("S6")
+mesh = SubResource("S10")
+
+[node name="Riel20" type="MeshInstance3D" parent="Vias"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.58, 0.12, -3)
+material_override = SubResource("S6")
+mesh = SubResource("S10")
+
+[node name="Riel21" type="MeshInstance3D" parent="Vias"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.02, 0.12, -3)
+material_override = SubResource("S6")
+mesh = SubResource("S10")
+
+[node name="TanqueDeAgua" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, 16)
+
+[node name="Pata0" type="MeshInstance3D" parent="TanqueDeAgua"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 4, -1.5)
+material_override = SubResource("S12")
+mesh = SubResource("S11")
+
+[node name="Pata1" type="MeshInstance3D" parent="TanqueDeAgua"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 4, -1.5)
+material_override = SubResource("S12")
+mesh = SubResource("S11")
+
+[node name="Pata2" type="MeshInstance3D" parent="TanqueDeAgua"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 4, 1.5)
+material_override = SubResource("S12")
+mesh = SubResource("S11")
+
+[node name="Pata3" type="MeshInstance3D" parent="TanqueDeAgua"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 4, 1.5)
+material_override = SubResource("S12")
+mesh = SubResource("S11")
+
+[node name="Tanque" type="MeshInstance3D" parent="TanqueDeAgua"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.5, 0)
+material_override = SubResource("S14")
+mesh = SubResource("S13")
+
+[node name="Durmientes" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, 17)
+
+[node name="Pila0" type="MeshInstance3D" parent="Durmientes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.13, 0)
+material_override = SubResource("S12")
+mesh = SubResource("S15")
+
+[node name="Pila1" type="MeshInstance3D" parent="Durmientes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.39, 0)
+material_override = SubResource("S12")
+mesh = SubResource("S15")
+
+[node name="Pila2" type="MeshInstance3D" parent="Durmientes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+material_override = SubResource("S12")
+mesh = SubResource("S15")
+
+[node name="Pila3" type="MeshInstance3D" parent="Durmientes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.91, 0)
+material_override = SubResource("S12")
+mesh = SubResource("S15")
+
+[node name="Pila4" type="MeshInstance3D" parent="Durmientes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.17, 0)
+material_override = SubResource("S12")
+mesh = SubResource("S15")

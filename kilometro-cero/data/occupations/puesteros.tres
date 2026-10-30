@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/stations/occupation_data.gd" id="1_ofi"]
 [ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
 [ext_resource type="Resource" path="res://data/items/hides.tres" id="i_hides"]
+[ext_resource type="PackedScene" path="res://scenes/parcels/corral.tscn" id="p_parcela"]
 
 [sub_resource type="Resource" id="Da_hides"]
 script = ExtResource("2_amt")
@@ -16,4 +17,5 @@ display_name = "puesteros"
 kind = 1
 produces = Array[ExtResource("2_amt")]([SubResource("Da_hides")])
 requires_trait = &"campo"
+landscape_scene = ExtResource("p_parcela")
 description = "Crían vacunos en el campo: 2 cueros por familia y por día."

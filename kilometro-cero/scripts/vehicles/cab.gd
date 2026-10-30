@@ -31,10 +31,19 @@ enum View { CAB, EXTERIOR }
 const GROUP: StringName = &"cabs"
 ## Hasta dónde llega la mira para apretar un botón.
 const AIM_DISTANCE: float = 1.6
+## Tren sin nadie en la cabina que queda a más de esto del jugador (m): se pone en punto muerto y
+## frena solo, para que no se escape (ajuste de la tarea 62b.5).
+const RUNAWAY_DISTANCE: float = 100.0
+## Cada cuánto se mira la distancia al jugador (s).
+const RUNAWAY_CHECK_TIME: float = 0.5
 
 ## Muescas de la palanca hacia adelante y hacia atrás; la última de cada lado es a fondo.
 @export_range(1, 10) var forward_notches: int = 4
 @export_range(1, 10) var reverse_notches: int = 2
+## Velocidad de cada muesca adelante y atrás (km/h; ajuste de la tarea 62b.5: 20, 43, 60 y 90). Vacío:
+## cada muesca es una fracción pareja del límite, como antes. Las que falten usan la última.
+@export var forward_speeds_kmh: PackedFloat32Array = PackedFloat32Array([20.0, 43.0, 60.0, 90.0])
+@export var reverse_speeds_kmh: PackedFloat32Array = PackedFloat32Array([10.0, 20.0])
 ## Distancia horizontal máxima desde el puesto para entrar con F.
 @export_range(0.5, 5.0, 0.1, "suffix:m") var enter_radius: float = 1.5
 ## Cuánto se inclina la palanca visible por muesca.
@@ -67,6 +76,10 @@ var _horn: AudioStreamPlayer3D
 var _exterior: TrainCamera
 var _hud: CabHud
 var _aimed: CabButton
+# Frenó solo porque el jugador quedó lejos (se suelta al volver a entrar).
+var _auto_stopped: bool = false
+var _runaway_wait: float = 0.0
+var _player: Player
 
 @onready var _camera: Camera3D = get_node_or_null(^"Camera3D") as Camera3D
 @onready var _lever: Node3D = get_node_or_null(^"Palanca") as Node3D
@@ -112,6 +125,8 @@ func _ready() -> void:
 	_exterior.name = "CamaraExterior"
 	add_child(_exterior)
 	_exterior.set_vehicle(_vehicle)
+	if _vehicle != null and not forward_speeds_kmh.is_empty():
+		_vehicle.absolute_throttle = true
 	_apply_lights()
 	_apply_lever()
 
@@ -145,8 +160,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			_exterior.orbit(-motion.relative.x * mouse_sensitivity, -motion.relative.y * mouse_sensitivity)
 
 
-func _physics_process(_delta: float) -> void:
-	var want_brake: bool = is_occupied() and (brake_latched or (_can_drive() and Input.is_action_pressed(&"jump")))
+func _physics_process(delta: float) -> void:
+	_runaway_wait -= delta
+	if _runaway_wait <= 0.0:
+		_runaway_wait = RUNAWAY_CHECK_TIME
+		check_runaway()
+	var want_brake: bool = _auto_stopped or (is_occupied() and (brake_latched or (_can_drive() and Input.is_action_pressed(&"jump"))))
 	if want_brake != braking:
 		set_braking(want_brake)
 
@@ -195,6 +214,7 @@ func horizontal_distance_to(point: Vector3) -> float:
 ## exterior detrás del tren) y muestra el CabHud. La llama Player.
 func occupy(player: Player) -> void:
 	_occupant = player
+	_auto_stopped = false
 	look_yaw = 0.0
 	look_pitch = 0.0
 	_apply_look()
@@ -322,7 +342,57 @@ func set_notch(value: int) -> void:
 
 
 func get_throttle() -> float:
-	return throttle_for_notch(notch, forward_notches, reverse_notches)
+	var speeds: PackedFloat32Array = forward_speeds_kmh if notch > 0 else reverse_speeds_kmh
+	if notch == 0 or speeds.is_empty() or _vehicle == null or _vehicle.data == null:
+		return throttle_for_notch(notch, forward_notches, reverse_notches)
+	return signf(notch) * speed_fraction(speeds, absi(notch), _vehicle.data.max_speed)
+
+
+## Lógica pura: qué fracción de `max_speed` (m/s) pide la muesca `index` (desde 1) con esas
+## velocidades en km/h. Las muescas que no tienen velocidad usan la última.
+static func speed_fraction(speeds_kmh: PackedFloat32Array, index: int, max_speed: float) -> float:
+	if speeds_kmh.is_empty() or index <= 0 or max_speed <= 0.0:
+		return 0.0
+	var kmh: float = speeds_kmh[mini(index, speeds_kmh.size()) - 1]
+	return clampf(kmh / 3.6 / max_speed, 0.0, 1.0)
+
+
+## El tren quedó solo y lejos del jugador: punto muerto y freno (lo llama _physics_process cada
+## RUNAWAY_CHECK_TIME; es público para las pruebas). Devuelve true si lo frenó ahora.
+func check_runaway(player: Player = null) -> bool:
+	if is_occupied() or _auto_stopped or _vehicle == null or _vehicle.automatic:
+		return false
+	if absf(_vehicle.get_head().speed) < 0.1 and notch == 0:
+		return false
+	if player == null:
+		player = _find_player()
+	if player == null:
+		return false
+	var offset: Vector3 = player.global_position - _vehicle.global_position
+	if Vector2(offset.x, offset.z).length() <= RUNAWAY_DISTANCE:
+		return false
+	set_notch(0)
+	_auto_stopped = true
+	set_braking(true)
+	return true
+
+
+## Si frenó solo porque el jugador quedó lejos.
+func is_auto_stopped() -> bool:
+	return _auto_stopped
+
+
+func _find_player() -> Player:
+	if is_instance_valid(_player) and _player.is_inside_tree():
+		return _player
+	_player = null
+	var tree: SceneTree = get_tree()
+	if tree == null or tree.current_scene == null:
+		return null
+	for node: Node in tree.current_scene.find_children("*", "Player", true, false):
+		_player = node as Player
+		break
+	return _player
 
 
 func set_braking(value: bool) -> void:

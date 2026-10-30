@@ -47,12 +47,16 @@ func get_aim_text() -> String:
 	return _aim.text if _aim.visible else ""
 
 
-## "Adelante 2/4 · 18 km/h · Freno · Luces · Puertas abiertas"
+## "Adelante 2/4 · 18 km/h · Precaución: máx. 15 km/h · Freno · Luces · Puertas abiertas"
 static func status_text(cab: Cab) -> String:
 	var parts: PackedStringArray = [Cab.notch_text(cab.notch, cab.forward_notches, cab.reverse_notches)]
 	var vehicle: Vehicle = cab.get_vehicle()
 	if vehicle != null:
 		parts.append("%d km/h" % roundi(absf(vehicle.speed) * 3.6))
+		# Zona de precaución (tarea 62b.5): el tope que pisa el tren.
+		var zone: SpeedZone = SpeedZone.find_for(vehicle.get_train()) if not vehicle.automatic else null
+		if zone != null:
+			parts.append("Precaución: máx. %d km/h" % zone.get_kmh())
 	if cab.braking:
 		parts.append("Freno puesto" if cab.brake_latched else "Frenando")
 	if cab.lights_on:

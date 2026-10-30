@@ -1,0 +1,993 @@
+[gd_scene format=3]
+
+[sub_resource type="BoxMesh" id="S1"]
+size = Vector3(99, 0.06, 99)
+
+[sub_resource type="StandardMaterial3D" id="S2"]
+albedo_color = Color(0.42, 0.55, 0.28, 1)
+
+[sub_resource type="CylinderMesh" id="S3"]
+top_radius = 0.1
+bottom_radius = 0.1
+height = 1.3
+
+[sub_resource type="StandardMaterial3D" id="S4"]
+albedo_color = Color(0.5, 0.36, 0.22, 1)
+
+[sub_resource type="BoxMesh" id="S5"]
+size = Vector3(96, 0.04, 0.04)
+
+[sub_resource type="StandardMaterial3D" id="S6"]
+albedo_color = Color(0.7, 0.55, 0.35, 1)
+
+[sub_resource type="BoxMesh" id="S7"]
+size = Vector3(43, 0.04, 0.04)
+
+[sub_resource type="BoxMesh" id="S8"]
+size = Vector3(0.04, 0.04, 96)
+
+[sub_resource type="BoxMesh" id="S9"]
+size = Vector3(9, 1.1, 0.12)
+
+[sub_resource type="BoxMesh" id="S10"]
+size = Vector3(16, 3.5, 9)
+
+[sub_resource type="StandardMaterial3D" id="S11"]
+albedo_color = Color(0.92, 0.9, 0.84, 1)
+
+[sub_resource type="BoxMesh" id="S12"]
+size = Vector3(16.8, 0.2, 5.2162)
+
+[sub_resource type="StandardMaterial3D" id="S13"]
+albedo_color = Color(0.68, 0.26, 0.2, 1)
+
+[sub_resource type="BoxMesh" id="S14"]
+size = Vector3(0.3, 1.7886, 8.82)
+
+[sub_resource type="BoxMesh" id="S15"]
+size = Vector3(4.5, 2.8, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="S16"]
+albedo_color = Color(0.15, 0.15, 0.15, 1)
+
+[sub_resource type="BoxMesh" id="S17"]
+size = Vector3(0.7, 0.7, 1.6)
+
+[sub_resource type="StandardMaterial3D" id="S18"]
+albedo_color = Color(0.95, 0.95, 0.92, 1)
+
+[sub_resource type="BoxMesh" id="S19"]
+size = Vector3(0.72, 0.4, 0.5)
+
+[sub_resource type="BoxMesh" id="S20"]
+size = Vector3(0.45, 0.45, 0.55)
+
+[sub_resource type="BoxMesh" id="S21"]
+size = Vector3(0.15, 0.5, 0.15)
+
+[sub_resource type="BoxMesh" id="S22"]
+size = Vector3(0.12, 9, 0.12)
+
+[sub_resource type="StandardMaterial3D" id="S23"]
+albedo_color = Color(0.5, 0.52, 0.55, 1)
+
+[sub_resource type="CylinderMesh" id="S24"]
+top_radius = 1.6
+bottom_radius = 1.6
+height = 0.15
+
+[sub_resource type="StandardMaterial3D" id="S25"]
+albedo_color = Color(0.6, 0.62, 0.64, 1)
+
+[sub_resource type="BoxMesh" id="S26"]
+size = Vector3(0.05, 0.8, 1.8)
+
+[sub_resource type="CylinderMesh" id="S27"]
+top_radius = 2.2
+bottom_radius = 2.2
+height = 1.5
+
+[sub_resource type="BoxMesh" id="S28"]
+size = Vector3(4, 0.6, 1.6)
+
+[sub_resource type="CylinderMesh" id="S29"]
+top_radius = 0.25
+bottom_radius = 0.25
+height = 0.8
+
+[sub_resource type="CylinderMesh" id="S30"]
+top_radius = 0.3
+bottom_radius = 0.3
+height = 6
+
+[sub_resource type="StandardMaterial3D" id="S31"]
+albedo_color = Color(0.45, 0.32, 0.2, 1)
+
+[sub_resource type="SphereMesh" id="S32"]
+radius = 2.2
+height = 4.4
+
+[sub_resource type="StandardMaterial3D" id="S33"]
+albedo_color = Color(0.22, 0.42, 0.2, 1)
+
+[node name="Tambo" type="Node3D"]
+editor_description = "Parcela de los tamberos (tarea 62b.5): una hectárea alambrada con holandas, el galpón del tambo, molino y la tarima de tarros junto a la vía. Frente hacia +Z (la vía)."
+
+[node name="Suelo" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Malla" type="MeshInstance3D" parent="Suelo"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+material_override = SubResource("S2")
+mesh = SubResource("S1")
+
+[node name="Alambrado" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Poste1" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0.65, -48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste2" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0.65, 48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste3" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38.4, 0.65, -48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste4" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -38.4, 0.65, 48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste5" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.8, 0.65, -48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste6" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.8, 0.65, 48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste7" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.2, 0.65, -48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste8" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -19.2, 0.65, 48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste9" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.6, 0.65, -48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste10" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.6, 0.65, 48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste11" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, -48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste12" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.6, 0.65, -48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste13" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.6, 0.65, 48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste14" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.2, 0.65, -48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste15" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.2, 0.65, 48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste16" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.8, 0.65, -48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste17" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.8, 0.65, 48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste18" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38.4, 0.65, -48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste19" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38.4, 0.65, 48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste20" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0.65, -48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste21" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0.65, 48)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste22" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0.65, -38.4)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste23" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0.65, -38.4)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste24" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0.65, -28.8)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste25" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0.65, -28.8)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste26" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0.65, -19.2)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste27" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0.65, -19.2)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste28" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0.65, -9.6)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste29" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0.65, -9.6)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste30" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0.65, 0)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste31" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0.65, 0)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste32" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0.65, 9.6)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste33" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0.65, 9.6)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste34" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0.65, 19.2)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste35" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0.65, 19.2)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste36" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0.65, 28.8)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste37" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0.65, 28.8)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste38" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0.65, 38.4)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="Poste39" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0.65, 38.4)
+material_override = SubResource("S4")
+mesh = SubResource("S3")
+
+[node name="HiloFondo0" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, -48)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="HiloFrente00" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.5, 0.6, 48)
+material_override = SubResource("S6")
+mesh = SubResource("S7")
+
+[node name="HiloFrente01" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.5, 0.6, 48)
+material_override = SubResource("S6")
+mesh = SubResource("S7")
+
+[node name="HiloCostado00" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 0.6, 0)
+material_override = SubResource("S6")
+mesh = SubResource("S8")
+
+[node name="HiloCostado01" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 0.6, 0)
+material_override = SubResource("S6")
+mesh = SubResource("S8")
+
+[node name="HiloFondo1" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -48)
+material_override = SubResource("S6")
+mesh = SubResource("S5")
+
+[node name="HiloFrente10" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.5, 1.1, 48)
+material_override = SubResource("S6")
+mesh = SubResource("S7")
+
+[node name="HiloFrente11" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.5, 1.1, 48)
+material_override = SubResource("S6")
+mesh = SubResource("S7")
+
+[node name="HiloCostado10" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -48, 1.1, 0)
+material_override = SubResource("S6")
+mesh = SubResource("S8")
+
+[node name="HiloCostado11" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 48, 1.1, 0)
+material_override = SubResource("S6")
+mesh = SubResource("S8")
+
+[node name="Tranquera" type="MeshInstance3D" parent="Alambrado"]
+transform = Transform3D(0.8776, 0, 0.4794, 0, 1, 0, -0.4794, 0, 0.8776, 0, 0.7, 48)
+material_override = SubResource("S6")
+mesh = SubResource("S9")
+
+[node name="Tambo" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, 22)
+
+[node name="Paredes" type="MeshInstance3D" parent="Tambo"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 0)
+material_override = SubResource("S11")
+mesh = SubResource("S10")
+
+[node name="Techo0" type="MeshInstance3D" parent="Tambo"]
+transform = Transform3D(1, 0, 0, 0, 0.9394, 0.3429, 0, -0.3429, 0.9394, 0, 4.3943, -2.45)
+material_override = SubResource("S13")
+mesh = SubResource("S12")
+
+[node name="Techo1" type="MeshInstance3D" parent="Tambo"]
+transform = Transform3D(1, 0, 0, 0, 0.9394, -0.3429, 0, 0.3429, 0.9394, 0, 4.3943, 2.45)
+material_override = SubResource("S13")
+mesh = SubResource("S12")
+
+[node name="Frontis" type="MeshInstance3D" parent="Tambo"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.85, 4.2943, 0)
+material_override = SubResource("S11")
+mesh = SubResource("S14")
+
+[node name="FrontisB" type="MeshInstance3D" parent="Tambo"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.85, 4.2943, 0)
+material_override = SubResource("S11")
+mesh = SubResource("S14")
+
+[node name="Porton0" type="MeshInstance3D" parent="Tambo"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 4.52)
+material_override = SubResource("S16")
+mesh = SubResource("S15")
+
+[node name="Holando1" type="Node3D" parent="."]
+transform = Transform3D(-0.9993, 0, -0.0361, 0, 1, 0, 0.0361, 0, -0.9993, 35.1915, 0, -36.6861)
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Holando1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("S18")
+mesh = SubResource("S17")
+
+[node name="Mancha" type="MeshInstance3D" parent="Holando1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.2)
+material_override = SubResource("S16")
+mesh = SubResource("S19")
+
+[node name="Cabeza" type="MeshInstance3D" parent="Holando1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1)
+material_override = SubResource("S18")
+mesh = SubResource("S20")
+
+[node name="Pata0" type="MeshInstance3D" parent="Holando1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata1" type="MeshInstance3D" parent="Holando1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata2" type="MeshInstance3D" parent="Holando1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata3" type="MeshInstance3D" parent="Holando1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Holando2" type="Node3D" parent="."]
+transform = Transform3D(0.279, 0, -0.9603, 0, 1, 0, 0.9603, 0, 0.279, -0.4644, 0, -22.9413)
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Holando2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("S18")
+mesh = SubResource("S17")
+
+[node name="Mancha" type="MeshInstance3D" parent="Holando2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.2)
+material_override = SubResource("S16")
+mesh = SubResource("S19")
+
+[node name="Cabeza" type="MeshInstance3D" parent="Holando2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1)
+material_override = SubResource("S18")
+mesh = SubResource("S20")
+
+[node name="Pata0" type="MeshInstance3D" parent="Holando2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata1" type="MeshInstance3D" parent="Holando2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata2" type="MeshInstance3D" parent="Holando2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata3" type="MeshInstance3D" parent="Holando2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Holando3" type="Node3D" parent="."]
+transform = Transform3D(-0.7793, 0, -0.6266, 0, 1, 0, 0.6266, 0, -0.7793, -6.56, 0, -3.6127)
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Holando3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("S18")
+mesh = SubResource("S17")
+
+[node name="Mancha" type="MeshInstance3D" parent="Holando3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.2)
+material_override = SubResource("S16")
+mesh = SubResource("S19")
+
+[node name="Cabeza" type="MeshInstance3D" parent="Holando3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1)
+material_override = SubResource("S18")
+mesh = SubResource("S20")
+
+[node name="Pata0" type="MeshInstance3D" parent="Holando3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata1" type="MeshInstance3D" parent="Holando3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata2" type="MeshInstance3D" parent="Holando3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata3" type="MeshInstance3D" parent="Holando3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Holando4" type="Node3D" parent="."]
+transform = Transform3D(0.5662, 0, -0.8243, 0, 1, 0, 0.8243, 0, 0.5662, -16.1922, 0, -14.0659)
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Holando4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("S18")
+mesh = SubResource("S17")
+
+[node name="Mancha" type="MeshInstance3D" parent="Holando4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.2)
+material_override = SubResource("S16")
+mesh = SubResource("S19")
+
+[node name="Cabeza" type="MeshInstance3D" parent="Holando4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1)
+material_override = SubResource("S18")
+mesh = SubResource("S20")
+
+[node name="Pata0" type="MeshInstance3D" parent="Holando4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata1" type="MeshInstance3D" parent="Holando4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata2" type="MeshInstance3D" parent="Holando4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata3" type="MeshInstance3D" parent="Holando4"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Holando5" type="Node3D" parent="."]
+transform = Transform3D(-0.9663, 0, 0.2574, 0, 1, 0, -0.2574, 0, -0.9663, -3.1797, 0, 2.2268)
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Holando5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("S18")
+mesh = SubResource("S17")
+
+[node name="Mancha" type="MeshInstance3D" parent="Holando5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.2)
+material_override = SubResource("S16")
+mesh = SubResource("S19")
+
+[node name="Cabeza" type="MeshInstance3D" parent="Holando5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1)
+material_override = SubResource("S18")
+mesh = SubResource("S20")
+
+[node name="Pata0" type="MeshInstance3D" parent="Holando5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata1" type="MeshInstance3D" parent="Holando5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata2" type="MeshInstance3D" parent="Holando5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata3" type="MeshInstance3D" parent="Holando5"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Holando6" type="Node3D" parent="."]
+transform = Transform3D(0.8912, 0, 0.4537, 0, 1, 0, -0.4537, 0, 0.8912, 2.4084, 0, -35.6228)
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Holando6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("S18")
+mesh = SubResource("S17")
+
+[node name="Mancha" type="MeshInstance3D" parent="Holando6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.2)
+material_override = SubResource("S16")
+mesh = SubResource("S19")
+
+[node name="Cabeza" type="MeshInstance3D" parent="Holando6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1)
+material_override = SubResource("S18")
+mesh = SubResource("S20")
+
+[node name="Pata0" type="MeshInstance3D" parent="Holando6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata1" type="MeshInstance3D" parent="Holando6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata2" type="MeshInstance3D" parent="Holando6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata3" type="MeshInstance3D" parent="Holando6"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Holando7" type="Node3D" parent="."]
+transform = Transform3D(0.0994, 0, -0.995, 0, 1, 0, 0.995, 0, 0.0994, 10.1751, 0, -29.4176)
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Holando7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("S18")
+mesh = SubResource("S17")
+
+[node name="Mancha" type="MeshInstance3D" parent="Holando7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.2)
+material_override = SubResource("S16")
+mesh = SubResource("S19")
+
+[node name="Cabeza" type="MeshInstance3D" parent="Holando7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1)
+material_override = SubResource("S18")
+mesh = SubResource("S20")
+
+[node name="Pata0" type="MeshInstance3D" parent="Holando7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata1" type="MeshInstance3D" parent="Holando7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata2" type="MeshInstance3D" parent="Holando7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata3" type="MeshInstance3D" parent="Holando7"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Holando8" type="Node3D" parent="."]
+transform = Transform3D(0.9927, 0, -0.1206, 0, 1, 0, 0.1206, 0, 0.9927, 20.7698, 0, 6.9925)
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Holando8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("S18")
+mesh = SubResource("S17")
+
+[node name="Mancha" type="MeshInstance3D" parent="Holando8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.2)
+material_override = SubResource("S16")
+mesh = SubResource("S19")
+
+[node name="Cabeza" type="MeshInstance3D" parent="Holando8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1)
+material_override = SubResource("S18")
+mesh = SubResource("S20")
+
+[node name="Pata0" type="MeshInstance3D" parent="Holando8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata1" type="MeshInstance3D" parent="Holando8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata2" type="MeshInstance3D" parent="Holando8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata3" type="MeshInstance3D" parent="Holando8"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Holando9" type="Node3D" parent="."]
+transform = Transform3D(-0.3224, 0, 0.9466, 0, 1, 0, -0.9466, 0, -0.3224, -17.529, 0, -39.8426)
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Holando9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("S18")
+mesh = SubResource("S17")
+
+[node name="Mancha" type="MeshInstance3D" parent="Holando9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.2)
+material_override = SubResource("S16")
+mesh = SubResource("S19")
+
+[node name="Cabeza" type="MeshInstance3D" parent="Holando9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1)
+material_override = SubResource("S18")
+mesh = SubResource("S20")
+
+[node name="Pata0" type="MeshInstance3D" parent="Holando9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata1" type="MeshInstance3D" parent="Holando9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata2" type="MeshInstance3D" parent="Holando9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata3" type="MeshInstance3D" parent="Holando9"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Holando10" type="Node3D" parent="."]
+transform = Transform3D(0.4252, 0, -0.9051, 0, 1, 0, 0.9051, 0, 0.4252, -5.6779, 0, -36.4955)
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Holando10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("S18")
+mesh = SubResource("S17")
+
+[node name="Mancha" type="MeshInstance3D" parent="Holando10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.2)
+material_override = SubResource("S16")
+mesh = SubResource("S19")
+
+[node name="Cabeza" type="MeshInstance3D" parent="Holando10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1)
+material_override = SubResource("S18")
+mesh = SubResource("S20")
+
+[node name="Pata0" type="MeshInstance3D" parent="Holando10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata1" type="MeshInstance3D" parent="Holando10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata2" type="MeshInstance3D" parent="Holando10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata3" type="MeshInstance3D" parent="Holando10"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Holando11" type="Node3D" parent="."]
+transform = Transform3D(0.8336, 0, 0.5524, 0, 1, 0, -0.5524, 0, 0.8336, 26.6266, 0, 2.6902)
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Holando11"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("S18")
+mesh = SubResource("S17")
+
+[node name="Mancha" type="MeshInstance3D" parent="Holando11"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.2)
+material_override = SubResource("S16")
+mesh = SubResource("S19")
+
+[node name="Cabeza" type="MeshInstance3D" parent="Holando11"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1)
+material_override = SubResource("S18")
+mesh = SubResource("S20")
+
+[node name="Pata0" type="MeshInstance3D" parent="Holando11"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata1" type="MeshInstance3D" parent="Holando11"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata2" type="MeshInstance3D" parent="Holando11"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata3" type="MeshInstance3D" parent="Holando11"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Holando12" type="Node3D" parent="."]
+transform = Transform3D(-0.9396, 0, 0.3421, 0, 1, 0, -0.3421, 0, -0.9396, -0.1674, 0, -4.1425)
+
+[node name="Cuerpo" type="MeshInstance3D" parent="Holando12"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+material_override = SubResource("S18")
+mesh = SubResource("S17")
+
+[node name="Mancha" type="MeshInstance3D" parent="Holando12"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0.2)
+material_override = SubResource("S16")
+mesh = SubResource("S19")
+
+[node name="Cabeza" type="MeshInstance3D" parent="Holando12"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1, -1)
+material_override = SubResource("S18")
+mesh = SubResource("S20")
+
+[node name="Pata0" type="MeshInstance3D" parent="Holando12"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata1" type="MeshInstance3D" parent="Holando12"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, -0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata2" type="MeshInstance3D" parent="Holando12"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Pata3" type="MeshInstance3D" parent="Holando12"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.25, 0.6)
+material_override = SubResource("S18")
+mesh = SubResource("S21")
+
+[node name="Molino" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 22)
+
+[node name="Pata0" type="MeshInstance3D" parent="Molino"]
+transform = Transform3D(0.996, -0.0895, -0.0081, 0.0899, 0.9919, 0.0895, 0, -0.0899, 0.996, -0.675, 4.5, -0.675)
+material_override = SubResource("S23")
+mesh = SubResource("S22")
+
+[node name="Pata1" type="MeshInstance3D" parent="Molino"]
+transform = Transform3D(0.996, 0.0895, 0.0081, -0.0899, 0.9919, 0.0895, 0, -0.0899, 0.996, 0.675, 4.5, -0.675)
+material_override = SubResource("S23")
+mesh = SubResource("S22")
+
+[node name="Pata2" type="MeshInstance3D" parent="Molino"]
+transform = Transform3D(0.996, -0.0895, 0.0081, 0.0899, 0.9919, -0.0895, 0, 0.0899, 0.996, -0.675, 4.5, 0.675)
+material_override = SubResource("S23")
+mesh = SubResource("S22")
+
+[node name="Pata3" type="MeshInstance3D" parent="Molino"]
+transform = Transform3D(0.996, 0.0895, -0.0081, -0.0899, 0.9919, -0.0895, 0, 0.0899, 0.996, 0.675, 4.5, 0.675)
+material_override = SubResource("S23")
+mesh = SubResource("S22")
+
+[node name="Rueda" type="MeshInstance3D" parent="Molino"]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 9.2, 0.4)
+material_override = SubResource("S25")
+mesh = SubResource("S24")
+
+[node name="Cola" type="MeshInstance3D" parent="Molino"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.2, -1.2)
+material_override = SubResource("S25")
+mesh = SubResource("S26")
+
+[node name="Tanque" type="MeshInstance3D" parent="Molino"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 0.75, 0)
+material_override = SubResource("S23")
+mesh = SubResource("S27")
+
+[node name="Tarros" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, 42)
+
+[node name="Tarima" type="MeshInstance3D" parent="Tarros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+material_override = SubResource("S4")
+mesh = SubResource("S28")
+
+[node name="Tarro0" type="MeshInstance3D" parent="Tarros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.6, 1, 0)
+material_override = SubResource("S25")
+mesh = SubResource("S29")
+
+[node name="Tarro1" type="MeshInstance3D" parent="Tarros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.95, 1, 0.2)
+material_override = SubResource("S25")
+mesh = SubResource("S29")
+
+[node name="Tarro2" type="MeshInstance3D" parent="Tarros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 1, 0)
+material_override = SubResource("S25")
+mesh = SubResource("S29")
+
+[node name="Tarro3" type="MeshInstance3D" parent="Tarros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 1, 0.2)
+material_override = SubResource("S25")
+mesh = SubResource("S29")
+
+[node name="Tarro4" type="MeshInstance3D" parent="Tarros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0)
+material_override = SubResource("S25")
+mesh = SubResource("S29")
+
+[node name="Tarro5" type="MeshInstance3D" parent="Tarros"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.65, 1, 0.2)
+material_override = SubResource("S25")
+mesh = SubResource("S29")
+
+[node name="Arboleda" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Arbol0T" type="MeshInstance3D" parent="Arboleda"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44, 3, -42.0582)
+material_override = SubResource("S31")
+mesh = SubResource("S30")
+
+[node name="Arbol0C" type="MeshInstance3D" parent="Arboleda"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -44, 7.2, -42.0582)
+material_override = SubResource("S33")
+mesh = SubResource("S32")
+
+[node name="Arbol1T" type="MeshInstance3D" parent="Arboleda"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 3, -42.1524)
+material_override = SubResource("S31")
+mesh = SubResource("S30")
+
+[node name="Arbol1C" type="MeshInstance3D" parent="Arboleda"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 7.2, -42.1524)
+material_override = SubResource("S33")
+mesh = SubResource("S32")
+
+[node name="Arbol2T" type="MeshInstance3D" parent="Arboleda"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -36, 3, -42.3718)
+material_override = SubResource("S31")
+mesh = SubResource("S30")
+
+[node name="Arbol2C" type="MeshInstance3D" parent="Arboleda"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -36, 7.2, -42.3718)
+material_override = SubResource("S33")
+mesh = SubResource("S32")
+
+[node name="Arbol3T" type="MeshInstance3D" parent="Arboleda"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32, 3, -44.9932)
+material_override = SubResource("S31")
+mesh = SubResource("S30")
+
+[node name="Arbol3C" type="MeshInstance3D" parent="Arboleda"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32, 7.2, -44.9932)
+material_override = SubResource("S33")
+mesh = SubResource("S32")
+
+[node name="Arbol4T" type="MeshInstance3D" parent="Arboleda"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, 3, -44.2809)
+material_override = SubResource("S31")
+mesh = SubResource("S30")
+
+[node name="Arbol4C" type="MeshInstance3D" parent="Arboleda"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28, 7.2, -44.2809)
+material_override = SubResource("S33")
+mesh = SubResource("S32")

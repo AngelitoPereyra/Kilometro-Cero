@@ -6,7 +6,7 @@
 script = ExtResource("1_vdata")
 id = &"locomotive"
 display_name = "locomotora"
-max_speed = 12.0
+max_speed = 25.0
 acceleration = 1.5
 braking = 3.0
 coast_deceleration = 0.3

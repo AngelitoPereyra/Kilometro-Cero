@@ -234,7 +234,8 @@ func _probar_cabina() -> void:
 
 	await _enviar_accion(&"move_forward")
 	await _enviar_accion(&"move_forward")
-	_comprobar(_cab.notch == 2 and is_equal_approx(_loco.throttle, 0.5), "W dos veces: adelante 2, medio acelerador")
+	# Desde la 62b.5 cada muesca pide una velocidad (adelante 2: 43 km/h de los 90 de la locomotora).
+	_comprobar(_cab.notch == 2 and is_equal_approx(_loco.throttle, Cab.speed_fraction(_cab.forward_speeds_kmh, 2, _loco.data.max_speed)), "W dos veces: adelante 2, 43 km/h")
 	await _esperar(120)
 	_comprobar(_loco.speed > 1.0, "El tren arranca (%.1f m/s)" % _loco.speed)
 	_comprobar(_posicion_local().distance_to(puesto) < 0.05, "Con el tren andando sigue en el puesto (%.3f m)" % _posicion_local().distance_to(puesto))
@@ -308,7 +309,8 @@ func _poner_tren(avance: float, velocidad: float) -> void:
 # Velocidad constante: el acelerador pide justo esa velocidad, así no acelera ni frena.
 func _poner_velocidad(velocidad: float) -> void:
 	_loco.speed = velocidad
-	_loco.throttle = velocidad / _loco.get_max_speed()
+	# Con la Cab el acelerador es fracción de la máxima de la locomotora (62b.5), no del límite de la vía.
+	_loco.throttle = velocidad / (_loco.data.max_speed if _loco.absolute_throttle else _loco.get_max_speed())
 
 
 # Gira la cámara para que "adelante" (W) apunte hacia la cola de la locomotora (+Z local).

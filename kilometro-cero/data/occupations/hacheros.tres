@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://scripts/stations/occupation_data.gd" id="1_ofi"]
 [ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
 [ext_resource type="Resource" path="res://data/items/log.tres" id="i_log"]
+[ext_resource type="PackedScene" path="res://scenes/parcels/monte_talado.tscn" id="p_parcela"]
 
 [sub_resource type="Resource" id="Da_log"]
 script = ExtResource("2_amt")
@@ -16,4 +17,5 @@ display_name = "hacheros"
 kind = 1
 produces = Array[ExtResource("2_amt")]([SubResource("Da_log")])
 requires_trait = &"monte"
+landscape_scene = ExtResource("p_parcela")
 description = "Hachan el monte: 10 troncos por familia y por día. Los habilita el rasgo monte en cualquier bioma."

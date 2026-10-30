@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/storage/item_amount.gd" id="2_amt"]
 [ext_resource type="Resource" path="res://data/items/limestone.tres" id="i_limestone"]
 [ext_resource type="Resource" path="res://data/items/cement.tres" id="i_cement"]
+[ext_resource type="PackedScene" path="res://scenes/parcels/horno_cal.tscn" id="p_parcela"]
 
 [sub_resource type="Resource" id="Pide_limestone"]
 script = ExtResource("2_amt")
@@ -23,4 +24,5 @@ kind = 2
 needs = Array[ExtResource("2_amt")]([SubResource("Pide_limestone")])
 produces = Array[ExtResource("2_amt")]([SubResource("Da_cement")])
 requires_trait = &"horno"
+landscape_scene = ExtResource("p_parcela")
 description = "Queman la piedra en los hornos: con 10 piedras dan 5 bolsas de cemento por familia y por día."

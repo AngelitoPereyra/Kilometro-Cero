@@ -43,6 +43,10 @@
 [ext_resource type="Script" path="res://scripts/vehicles/borrowed_trains.gd" id="41_pres"]
 [ext_resource type="PackedScene" path="res://scenes/stations/construction_site.tscn" id="42_obra"]
 [ext_resource type="Resource" path="res://data/missions/primeras_casas.tres" id="43_casas"]
+[ext_resource type="Script" path="res://scripts/world/track_lots.gd" id="44_lotes"]
+[ext_resource type="Script" path="res://scripts/world/track_lot.gd" id="45_lote"]
+[ext_resource type="Script" path="res://scripts/world/speed_zone.gd" id="46_prec"]
+[ext_resource type="PackedScene" path="res://scenes/parcels/galpon_ferroviario.tscn" id="47_galf"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Cielo_mat"]
 sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
@@ -59,31 +63,31 @@ sky = SubResource("Cielo")
 albedo_color = Color(0.45, 0.58, 0.3, 1)
 
 [sub_resource type="BoxMesh" id="Malla_campo"]
-size = Vector3(320, 1, 1400)
+size = Vector3(340, 1, 2600)
 
 [sub_resource type="BoxShape3D" id="Forma_campo"]
-size = Vector3(320, 1, 1400)
+size = Vector3(340, 1, 2600)
 
 [sub_resource type="BoxMesh" id="Modulo_via"]
 size = Vector3(1.6, 0.2, 4.8)
 
 [sub_resource type="Curve3D" id="Curva_o_a"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 60, 0, 0, 100, 0, 0, -70, 0, 0, 70, 30, 0, 300, 0, 0, -60, 0, 0, 0, 0, 0, 480),
+"points": PackedVector3Array(0, 0, 0, 0, 0, 150, 0, 0, 100, 0, 0, -150, 0, 0, 150, 35, 0, 540, 0, 0, -150, 0, 0, 0, 0, 0, 980),
 "tilts": PackedFloat32Array(0, 0, 0)
 }
 point_count = 3
 
 [sub_resource type="Curve3D" id="Curva_o_s"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, -50, 0, 0, -100, 0, 0, 50, 0, 0, -50, -25, 0, -250, 0, 0, 50, 0, 0, 0, 0, 0, -400),
+"points": PackedVector3Array(0, 0, 0, 0, 0, -120, 0, 0, -100, 0, 0, 120, 0, 0, -120, -25, 0, -450, 0, 0, 120, 0, 0, 0, 0, 0, -800),
 "tilts": PackedFloat32Array(0, 0, 0)
 }
 point_count = 3
 
 [sub_resource type="Curve3D" id="Curva_s_c"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, -540, 0, 0, 0, 0, 0, 0, 0, 0, -640),
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, -940, 0, 0, 0, 0, 0, 0, 0, 0, -1040),
 "tilts": PackedFloat32Array(0, 0)
 }
 point_count = 2
@@ -164,7 +168,7 @@ transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545
 shadow_enabled = true
 
 [node name="Campo" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, -50)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 200)
 
 [node name="Malla" type="MeshInstance3D" parent="Campo"]
 material_override = SubResource("Mat_campo")
@@ -185,11 +189,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 data = ExtResource("15_ola")
 
 [node name="Azul" parent="." instance=ExtResource("13_pue")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 540)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1040)
 data = ExtResource("16_azu")
 
 [node name="SierrasBayas" parent="." instance=ExtResource("14_car")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -470)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -870)
 data = ExtResource("17_sie")
 
 [node name="Taller" parent="Olavarria"]
@@ -398,11 +402,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -115)
 segment_id = &"o_s"
 
 [node name="PiedrasDesvio1" parent="." instance=ExtResource("19_pie")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -580)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -980)
 segment_id = &"s_c"
 
 [node name="PiedrasDesvio2" parent="." instance=ExtResource("19_pie")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, -600)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, -1000)
 segment_id = &"s_c"
 
 [node name="Clearable" parent="PiedrasDesvio1"]
@@ -414,69 +418,69 @@ required_tool = ExtResource("38_picd")
 [node name="Bosquecito" type="Node3D" parent="."]
 
 [node name="Arbol1" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0, 520)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0, 1020)
 
 [node name="Arbol2" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, 0, 528)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, 0, 1028)
 
 [node name="Arbol3" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 0, 534)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 0, 1034)
 
 [node name="Arbol4" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 0, 540)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 0, 1040)
 
 [node name="Arbol5" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 0, 546)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 0, 1046)
 
 [node name="Arbol6" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0, 552)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0, 1052)
 
 [node name="Arbol7" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 36, 0, 558)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 36, 0, 1058)
 
 [node name="Arbol8" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 0, 565)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 0, 1065)
 
 [node name="Arbol9" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 0, 530)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 0, 1030)
 
 [node name="Arbol10" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 552)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 1052)
 
 [node name="Cantera" type="Node3D" parent="."]
 
 [node name="Afloramiento1" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -455)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -855)
 
 [node name="Afloramiento2" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 0, -470)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 0, -870)
 
 [node name="Afloramiento3" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -485)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -885)
 
 [node name="Afloramiento4" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53, 0, -450)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53, 0, -850)
 
 [node name="Afloramiento5" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, -465)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, -865)
 
 [node name="Afloramiento6" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, -480)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, -880)
 
 [node name="Afloramiento7" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 0, -495)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 0, -895)
 
 [node name="FrenteViejo1" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -635)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -1035)
 
 [node name="FrenteViejo2" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -628)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -1028)
 
 [node name="FrenteViejo3" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -632)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -1032)
 
 [node name="CartelCanteraVieja" type="Label3D" parent="Cantera"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3, -645)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3, -1045)
 billboard = 1
 font_size = 64
 outline_size = 10
@@ -505,11 +509,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.4, 0)
 shape = SubResource("Forma_mesa")
 
 [node name="Pico" parent="." instance=ExtResource("37_pic")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1, 548)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1, 1048)
 start_item = ExtResource("38_picd")
 
 [node name="MarcaPico" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3.2, 548)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3.2, 1048)
 billboard = 1
 no_depth_test = true
 modulate = Color(1, 0.85, 0.2, 1)
@@ -526,17 +530,17 @@ missions = Array[ExtResource("27_md")]([ExtResource("36_via")])
 main_station = &"olavarria"
 
 [node name="Vecina" parent="." instance=ExtResource("26_pob")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.6, 532)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.6, 1032)
 speaker = "Doña Rosa, vecina de Azul"
 missions = Array[ExtResource("27_md")]([ExtResource("28_mae")])
 
 [node name="Cantero" parent="." instance=ExtResource("26_pob")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 1, -478)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 1, -878)
 speaker = "Don Aurelio, el cantero"
 missions = Array[ExtResource("27_md")]([ExtResource("29_can")])
 
 [node name="DonaClara" parent="." instance=ExtResource("26_pob")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.6, 550)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.6, 1050)
 speaker = "Doña Clara, de la comisión de fomento de Azul"
 missions = Array[ExtResource("27_md")]([ExtResource("43_casas")])
 main_station = &"azul"
@@ -546,12 +550,12 @@ transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -16, 0, 20)
 mission = ExtResource("43_casas")
 
 [node name="Ramirez" parent="." instance=ExtResource("26_pob")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.6, -460)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.6, -860)
 speaker = "Ramírez, el capataz de Sierras Bayas"
 main_station = &"sierras_bayas"
 
 [node name="RegaloAzul" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 545)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 1045)
 script = ExtResource("33_reg")
 wagon_scene = ExtResource("9_plat")
 wagon_name = "una plataforma vacía"
@@ -568,6 +572,217 @@ text = "Regalo"
 [node name="TrenesPrestados" type="Node" parent="." node_paths=PackedStringArray("player_train")]
 script = ExtResource("41_pres")
 player_train = NodePath("../OlavarriaSierrasBayas/Locomotive")
+
+[node name="Lotes" type="Node3D" parent="."]
+script = ExtResource("44_lotes")
+
+[node name="LoteOlavarriaNorte1" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.0199, 0, 0.9998, 0, 1, 0, -0.9998, 0, -0.0199, -13.7948, 0, 120.2772)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+ring = 2
+
+[node name="LoteOlavarriaNorte2" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.0199, 0, -0.9998, 0, 1, 0, 0.9998, 0, 0.0199, 14.1996, 0, 119.7201)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+ring = 2
+
+[node name="LoteOlavarriaNorte3" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.0589, 0, 0.9983, 0, 1, 0, -0.9983, 0, -0.0589, -30.9319, 0, 166.9044)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+ring = 1
+fixed_scene = ExtResource("47_galf")
+
+[node name="LoteOlavarriaNorte4" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.0589, 0, -0.9983, 0, 1, 0, 0.9983, 0, 0.0589, 34.9533, 0, 163.0145)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+ring = 1
+
+[node name="LoteOlavarriaNorte5" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.0942, 0, 0.9956, 0, 1, 0, -0.9956, 0, -0.0942, -26.5687, 0, 222.8983)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+ring = 1
+
+[node name="LoteOlavarriaNorte6" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.0942, 0, -0.9956, 0, 1, 0, 0.9956, 0, 0.0942, 39.1379, 0, 216.6822)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+ring = 1
+
+[node name="LoteOlavarriaNorte7" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.1197, 0, 0.9928, 0, 1, 0, -0.9928, 0, -0.1197, -40.7821, 0, 321.1483)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+
+[node name="LoteOlavarriaNorte8" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.1197, 0, -0.9928, 0, 1, 0, 0.9928, 0, 0.1197, 74.3833, 0, 307.259)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+
+[node name="LoteOlavarriaNorte9" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.095, 0, 0.9955, 0, 1, 0, -0.9955, 0, -0.095, -29.1807, 0, 424.0511)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+
+[node name="LoteOlavarriaNorte10" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.095, 0, -0.9955, 0, 1, 0, 0.9955, 0, 0.095, 86.2945, 0, 413.0297)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+
+[node name="LoteOlavarriaSur1" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.0221, 0, -0.9998, 0, 1, 0, 0.9998, 0, 0.0221, 13.7717, 0, -120.3074)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+ring = 2
+
+[node name="LoteOlavarriaSur2" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.0221, 0, 0.9998, 0, 1, 0, -0.9998, 0, -0.0221, -14.2215, 0, -119.6893)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+ring = 2
+
+[node name="LoteOlavarriaSur3" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.0638, 0, -0.998, 0, 1, 0, 0.998, 0, 0.0638, 30.7305, 0, -167.0568)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+ring = 1
+
+[node name="LoteOlavarriaSur4" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.0638, 0, 0.998, 0, 1, 0, -0.998, 0, -0.0638, -35.1351, 0, -162.8464)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+ring = 1
+fixed_scene = ExtResource("47_galf")
+
+[node name="LoteOlavarriaSur5" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.0968, 0, -0.9953, 0, 1, 0, 0.9953, 0, 0.0968, 26.1359, 0, -222.9574)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+ring = 1
+
+[node name="LoteOlavarriaSur6" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.0968, 0, 0.9953, 0, 1, 0, -0.9953, 0, -0.0968, -39.5544, 0, -216.5708)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+ring = 1
+
+[node name="LoteOlavarriaSur7" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.1024, 0, -0.9947, 0, 1, 0, 0.9947, 0, 0.1024, 41.0069, 0, -320.1751)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+
+[node name="LoteOlavarriaSur8" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.1024, 0, 0.9947, 0, 1, 0, -0.9947, 0, -0.1024, -74.3838, 0, -308.3011)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+
+[node name="LoteOlavarriaSur9" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.0335, 0, -0.9994, 0, 1, 0, 0.9994, 0, 0.0335, 33.5011, 0, -420.8698)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+
+[node name="LoteOlavarriaSur10" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.0335, 0, 0.9994, 0, 1, 0, -0.9994, 0, -0.0335, -82.4339, 0, -416.9865)
+script = ExtResource("45_lote")
+station_id = &"olavarria"
+
+[node name="LoteAzul1" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.0551, 0, 0.9985, 0, 1, 0, -0.9985, 0, 0.0551, -56.1863, 0, 916.8393)
+script = ExtResource("45_lote")
+station_id = &"azul"
+
+[node name="LoteAzul2" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.0551, 0, -0.9985, 0, 1, 0, 0.9985, 0, -0.0551, 59.6377, 0, 923.2255)
+script = ExtResource("45_lote")
+station_id = &"azul"
+
+[node name="LoteAzul3" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.112, 0, 0.9937, 0, 1, 0, -0.9937, 0, 0.112, -46.6783, 0, 808.9599)
+script = ExtResource("45_lote")
+station_id = &"azul"
+
+[node name="LoteAzul4" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.112, 0, -0.9937, 0, 1, 0, 0.9937, 0, -0.112, 68.5924, 0, 821.9473)
+script = ExtResource("45_lote")
+station_id = &"azul"
+
+[node name="LoteAzul5" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.1137, 0, 0.9935, 0, 1, 0, -0.9935, 0, 0.1137, -34.334, 0, 704.5856)
+script = ExtResource("45_lote")
+station_id = &"azul"
+
+[node name="LoteAzul6" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.1137, 0, -0.9935, 0, 1, 0, 0.9935, 0, -0.1137, 80.9136, 0, 717.7756)
+script = ExtResource("45_lote")
+station_id = &"azul"
+
+[node name="LoteAzul7" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -58, 0, 1188)
+script = ExtResource("45_lote")
+station_id = &"azul"
+
+[node name="LoteAzul8" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 58, 0, 1188)
+script = ExtResource("45_lote")
+station_id = &"azul"
+
+[node name="LoteAzul9" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -58, 0, 1293)
+script = ExtResource("45_lote")
+station_id = &"azul"
+
+[node name="LoteAzul10" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 58, 0, 1293)
+script = ExtResource("45_lote")
+station_id = &"azul"
+
+[node name="LoteAzul11" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -58, 0, 1398)
+script = ExtResource("45_lote")
+station_id = &"azul"
+
+[node name="LoteAzul12" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 58, 0, 1398)
+script = ExtResource("45_lote")
+station_id = &"azul"
+
+[node name="LoteSierrasBayas1" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.0596, 0, -0.9982, 0, 1, 0, 0.9982, 0, -0.0596, 56.0034, 0, -736.5844)
+script = ExtResource("45_lote")
+station_id = &"sierras_bayas"
+
+[node name="LoteSierrasBayas2" type="Marker3D" parent="Lotes"]
+transform = Transform3D(-0.1076, 0, -0.9942, 0, 1, 0, 0.9942, 0, -0.1076, 46.3004, 0, -629.2342)
+script = ExtResource("45_lote")
+station_id = &"sierras_bayas"
+
+[node name="LoteSierrasBayas3" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.1076, 0, 0.9942, 0, 1, 0, -0.9942, 0, 0.1076, -69.0256, 0, -641.7206)
+script = ExtResource("45_lote")
+station_id = &"sierras_bayas"
+
+[node name="LoteSierrasBayas4" type="Marker3D" parent="Lotes"]
+transform = Transform3D(0.0754, 0, 0.9972, 0, 1, 0, -0.9972, 0, 0.0754, -79.5112, 0, -535.3618)
+script = ExtResource("45_lote")
+station_id = &"sierras_bayas"
+
+[node name="PrecaucionNorte" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 135)
+script = ExtResource("46_prec")
+length = 135.0
+width = 90.0
+sign_offset = Vector3(-4, 0, 0)
+
+[node name="PrecaucionSur" type="Node3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 0, 0, -135)
+script = ExtResource("46_prec")
+length = 135.0
+width = 90.0
+sign_offset = Vector3(-4, 0, 0)
 
 [node name="Player" parent="." instance=ExtResource("11_jug")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.7, -12)
