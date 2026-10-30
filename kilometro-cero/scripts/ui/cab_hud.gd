@@ -47,12 +47,16 @@ func get_aim_text() -> String:
 	return _aim.text if _aim.visible else ""
 
 
-## "Adelante 2/4 · 18 km/h · Precaución: máx. 15 km/h · Freno · Luces · Puertas abiertas"
+## "Adelante 2/4 · 18 km/h · Sube 4 % · Precaución: máx. 15 km/h · Freno · Luces · Puertas abiertas"
 static func status_text(cab: Cab) -> String:
 	var parts: PackedStringArray = [Cab.notch_text(cab.notch, cab.forward_notches, cab.reverse_notches)]
 	var vehicle: Vehicle = cab.get_vehicle()
 	if vehicle != null:
 		parts.append("%d km/h" % roundi(absf(vehicle.speed) * 3.6))
+		# Pendiente (tarea 62c.1): hacia donde va el tren; parado, hacia donde mira.
+		var slope: String = grade_text(vehicle.get_grade(), vehicle.speed) if not vehicle.automatic else ""
+		if not slope.is_empty():
+			parts.append(slope)
 		# Zona de precaución (tarea 62b.5): el tope que pisa el tren.
 		var zone: SpeedZone = SpeedZone.find_for(vehicle.get_train()) if not vehicle.automatic else null
 		if zone != null:
@@ -68,6 +72,16 @@ static func status_text(cab: Cab) -> String:
 			open = open or coach.doors_open
 		parts.append("Puertas abiertas" if open else "Puertas cerradas")
 	return " · ".join(parts)
+
+
+## "Sube 4 %" o "Baja 3 %" según `grade` (hacia donde mira el tren) y el sentido de `direction`
+## (la velocidad; 0 cuenta como adelante). Vacío si no llega al 1 %.
+static func grade_text(grade: float, direction: float) -> String:
+	var along: float = -grade if direction < 0.0 else grade
+	var percent: int = roundi(absf(along) * 100.0)
+	if percent == 0:
+		return ""
+	return ("Sube %d %%" if along > 0.0 else "Baja %d %%") % percent
 
 
 static func keys_text(view: Cab.View) -> String:

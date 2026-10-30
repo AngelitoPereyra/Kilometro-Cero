@@ -16,5 +16,13 @@ const CARGO_TYPE_NAMES: Array[String] = ["plataforma", "tolva", "cerrado", "tanq
 @export var accepted_tags: Array[StringName] = []
 
 
+# Los vagones pesan menos que una locomotora, suman peso con la carga y no tiran (tarea 62c.1). Se
+# ponen acá y no en cada .tres: un valor que el .tres no guarda queda con el de _init.
+func _init() -> void:
+	weight = 0.4
+	load_weight = 0.6
+	climb_power = 0.0
+
+
 static func cargo_type_name(type: CargoType) -> String:
 	return CARGO_TYPE_NAMES[type]

@@ -51,6 +51,7 @@
 [ext_resource type="Resource" path="res://data/missions/miel_don_ernesto.tres" id="49_miel"]
 [ext_resource type="Resource" path="res://data/missions/cueros_dona_rosa.tres" id="50_cueros"]
 [ext_resource type="Resource" path="res://data/missions/los_etchegaray.tres" id="51_etche"]
+[ext_resource type="Script" path="res://scripts/world/terrain.gd" id="52_terreno"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Cielo_mat"]
 sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
@@ -63,14 +64,9 @@ sky_material = SubResource("Cielo_mat")
 background_mode = 2
 sky = SubResource("Cielo")
 
-[sub_resource type="StandardMaterial3D" id="Mat_campo"]
-albedo_color = Color(0.45, 0.58, 0.3, 1)
-
-[sub_resource type="BoxMesh" id="Malla_campo"]
-size = Vector3(340, 1, 2600)
-
-[sub_resource type="BoxShape3D" id="Forma_campo"]
-size = Vector3(340, 1, 2600)
+[sub_resource type="FastNoiseLite" id="Ruido_lomas"]
+seed = 62
+frequency = 0.006
 
 [sub_resource type="BoxMesh" id="Modulo_via"]
 size = Vector3(1.6, 0.2, 4.8)
@@ -171,15 +167,14 @@ environment = SubResource("Ambiente")
 transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
 shadow_enabled = true
 
-[node name="Campo" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 200)
-
-[node name="Malla" type="MeshInstance3D" parent="Campo"]
-material_override = SubResource("Mat_campo")
-mesh = SubResource("Malla_campo")
-
-[node name="Forma" type="CollisionShape3D" parent="Campo"]
-shape = SubResource("Forma_campo")
+[node name="Terreno" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 200)
+script = ExtResource("52_terreno")
+size = Vector2(340, 2600)
+noise = SubResource("Ruido_lomas")
+noise_height = 6.0
+min_blend = 40.0
+max_blend = 40.0
 
 [node name="RailNetwork" type="Node" parent="."]
 script = ExtResource("5_red")
@@ -395,7 +390,7 @@ reversed = true
 [node name="LineaDelSud" type="Node" parent="." node_paths=PackedStringArray("stations")]
 script = ExtResource("7_linea")
 line_name = "Línea del Sud"
-stations = [NodePath("../Azul"), NodePath("../Olavarria"), NodePath("../SierrasBayas")]
+stations = [NodePath("../Azul"), NodePath("../Olavarria")]
 
 [node name="ArbolCaido" parent="." groups=["troncos_olavarria"] instance=ExtResource("18_arb")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 115)

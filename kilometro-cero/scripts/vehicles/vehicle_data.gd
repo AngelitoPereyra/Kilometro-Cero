@@ -29,6 +29,16 @@ const CONDITION_EPSILON: float = 0.0001
 @export_range(0.01, 20.0, 0.01, "suffix:m/s²") var coast_deceleration: float = 2.5
 ## Cuántos vagones puede arrastrar como locomotora de un tren automático (tarea 61, D110).
 @export_range(0, 20) var max_wagons: int = 4
+## Peso vacío, en la escala de `climb_power` (tarea 62c.1, D134; provisorio: 1 la locomotora,
+## 0,4 un vagón, que lo pone WagonData).
+@export_range(0.0, 10.0, 0.05) var weight: float = 1.0
+## Cuánto más pesa lleno: un vagón pesa `weight + load_weight × lo lleno que está`.
+@export_range(0.0, 10.0, 0.05) var load_weight: float = 0.0
+## Fuerza para subir: en marcha, un tren de peso P en una pendiente de g % pierde g × P / climb_power
+## de la velocidad de su marcha (tope en Vehicle.MIN_CLIMB_FRACTION). Lo da el que más tiene del
+## tren; 0 no tira (los vagones). Con 30, la locomotora con dos vagones llenos (peso 3) en el 4 %
+## anda al 60 % de su marcha.
+@export_range(0.0, 200.0, 0.5) var climb_power: float = 30.0
 
 
 func can_enter(track_condition: float) -> bool:

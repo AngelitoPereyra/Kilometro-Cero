@@ -21,6 +21,9 @@ extends PathFollow3D
 ## de la salida en rojo de una vía de estación (RailNetwork.get_exit_stop), para adelante y para
 ## atrás, como frena en un tope. Los carteles de bloque en rojo de la vía doble (tarea 61e.3,
 ## RailNetwork.get_block_stops) frenan a cualquier tren, también a los automáticos.
+## Pendiente (tarea 62c.1, D134): un tren que no es automático la siente. En marcha y subiendo, pide
+## menos velocidad según su peso y su fuerza (climb_fraction); rodando en punto muerto, la gravedad
+## lo frena en subida y lo empuja en bajada (hasta el límite de la vía). Parado no rueda solo.
 
 signal coupled(rear_vehicle: Vehicle)
 signal uncoupled(rear_vehicle: Vehicle)
@@ -40,6 +43,13 @@ const LOOKAHEAD: float = 30.0
 const SIGNAL_STOP_MARGIN: float = 1.0
 ## Las partes del modelo que gira model_yaw: lo que se ve, lo que choca y el faro.
 const MODEL_PARTS: Array[NodePath] = [^"Visual", ^"CuerpoFisico", ^"Faro", ^"FaroLampara"]
+## Cuánto acelera la gravedad rodando en punto muerto, en m/s² por unidad de pendiente (tarea 62c.1):
+## g entera. En el 4 % son 0,39 m/s², algo más que el rozamiento de la locomotora (0,3).
+const GRADE_GRAVITY: float = 9.8
+## Debajo de esta velocidad el tren está parado y la pendiente no lo mueve (como con el freno de mano).
+const ROLL_MIN_SPEED: float = 0.05
+## En subida nunca pide menos que esta fracción de su marcha.
+const MIN_CLIMB_FRACTION: float = 0.2
 
 @export var data: VehicleData
 ## Tramo que recorre. Si queda vacío, se usa el TrackSegment que cuelga del mismo Path3D:
@@ -140,6 +150,10 @@ func simulate(delta: float) -> void:
 	var input: float = throttle
 	if absolute_throttle and not automatic and limit > 0.0 and limit < INF:
 		input = clampf(throttle * data.max_speed / limit, -1.0, 1.0)
+	# Los automáticos no sienten la pendiente, así no se corren sus horarios.
+	var grade: float = 0.0 if automatic else get_grade()
+	if not is_zero_approx(input) and not is_zero_approx(grade):
+		input *= climb_fraction(grade * signf(input), get_train_weight(), get_train_climb_power())
 	if brake > 0.0:
 		speed = move_toward(speed, 0.0, data.braking * clampf(brake, 0.0, 1.0) * delta)
 	elif absf(speed) > limit:
@@ -148,7 +162,66 @@ func simulate(delta: float) -> void:
 	else:
 		# Sin freno, bajar el acelerador solo deja rodar: lo frena el rozamiento.
 		speed = step_speed(speed, input, limit, data.acceleration, data.coast_deceleration, delta)
+		if is_zero_approx(input):
+			speed = roll(speed, grade, delta)
 	_advance(speed * delta)
+
+
+## Pendiente del tren hacia donde mira la cabeza (tarea 62c.1): metros que sube por metro andado
+## hacia adelante; positiva si la cabeza está más alta que la cola. Con un solo vehículo, la de su
+## curva donde está.
+func get_grade() -> float:
+	var head: Vehicle = get_head()
+	var tail: Vehicle = head.get_tail()
+	if tail == head:
+		return grade_of(-head.global_basis.z)
+	return grade_of(head.global_position - tail.global_position)
+
+
+## Peso de este vehículo (Wagon le suma su carga).
+func get_weight() -> float:
+	return data.weight if data != null else 0.0
+
+
+func get_train_weight() -> float:
+	var total: float = 0.0
+	for vehicle: Vehicle in get_train():
+		total += vehicle.get_weight()
+	return total
+
+
+## La fuerza para subir del tren: la del que más tiene (la locomotora, adelante o atrás).
+func get_train_climb_power() -> float:
+	var power: float = 0.0
+	for vehicle: Vehicle in get_train():
+		if vehicle.data != null:
+			power = maxf(power, vehicle.data.climb_power)
+	return power
+
+
+## Lógica pura: pendiente de una dirección (lo que sube por metro horizontal).
+static func grade_of(direction: Vector3) -> float:
+	var run: float = Vector2(direction.x, direction.z).length()
+	return direction.y / run if run > 0.001 else 0.0
+
+
+## Lógica pura: qué fracción de su marcha pide un tren que sube `climb` (0,04 es el 4 %) con ese
+## peso y esa fuerza. En plano o en bajada, toda.
+static func climb_fraction(climb: float, weight: float, power: float) -> float:
+	if climb <= 0.0:
+		return 1.0
+	if power <= 0.0:
+		return MIN_CLIMB_FRACTION
+	return clampf(1.0 - climb * 100.0 * weight / power, MIN_CLIMB_FRACTION, 1.0)
+
+
+## Lógica pura: la velocidad después de rodar `delta` segundos en punto muerto con esa pendiente
+## (hacia donde mira el tren). Parado no se mueve, y la gravedad no lo da vuelta: lo deja parado.
+static func roll(current_speed: float, grade: float, delta: float) -> float:
+	if absf(current_speed) < ROLL_MIN_SPEED:
+		return current_speed
+	var rolled: float = current_speed - GRADE_GRAVITY * grade * delta
+	return rolled if signf(rolled) == signf(current_speed) else 0.0
 
 
 func get_track_condition() -> float:

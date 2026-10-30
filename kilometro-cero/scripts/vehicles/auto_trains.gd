@@ -212,6 +212,8 @@ var _trunk_targets: Dictionary = {}
 # enseguida, aparecen con humo.
 var _shown_at: Dictionary = {}
 var _signature: String = ""
+# Anexos (tarea 62c.2, D139): anexo -> cabecera, de la última vez que se miraron los flujos.
+var _hubs: Dictionary[StringName, StringName] = {}
 var _next_id: int = 1
 var _refresh_left: float = 0.0
 var _loco_data: VehicleData
@@ -251,6 +253,16 @@ func next_departure(after: float) -> float:
 ## Hora absoluta del juego (horas desde el principio de la partida).
 static func now_hours() -> float:
 	return float(GameState.clock.current_day - 1) * GameClock.HOURS_PER_DAY + GameState.clock.time_of_day
+
+
+## La cabecera de un anexo (tarea 62c.2), o &"" si la estación no es anexo.
+func get_hub(station_id: StringName) -> StringName:
+	return _hubs.get(station_id, &"")
+
+
+## Los anexos de una cabecera (tarea 62c.2).
+func get_annexes(hub: StringName) -> Array[StringName]:
+	return AnnexRoutes.annexes_of(hub, _hubs)
 
 
 ## La clave de una conexión: las dos estaciones en orden alfabético.
@@ -356,6 +368,9 @@ func sync_flows() -> void:
 		var ids: Array[StringName] = line.get_station_ids()
 		if ids.size() >= 2:
 			lines.append(ids)
+	# Lo que toca un anexo va en dos trenes: el de ramal hasta su cabecera y el resto desde ahí.
+	_hubs = _find_hubs(lines)
+	flows = AnnexRoutes.split(flows, _hubs)
 	var parts: PackedStringArray = []
 	for ids: Array in lines:
 		parts.append("L:" + "-".join(PackedStringArray(ids)))
@@ -768,6 +783,24 @@ func _find_item(item_id: StringName) -> ItemData:
 
 func _is_passenger(item_id: StringName) -> bool:
 	return ItemData.is_passenger(_find_item(item_id))
+
+
+# Anexos y cabeceras con las estaciones del modelo y el largo de los caminos por vía (también por
+# tramos cortados: un anexo es anexo aunque su ramal esté tapado).
+func _find_hubs(lines: Array[Array]) -> Dictionary[StringName, StringName]:
+	var types: Dictionary = {}
+	if GameState.production != null:
+		for station_id: StringName in GameState.production.get_station_ids():
+			var data: StationData = GameState.production.get_data(station_id)
+			if data != null:
+				types[station_id] = data.type
+	var network: RailNetwork = RailNetwork.find_in(get_tree()) if is_inside_tree() else null
+	var distance := func(from: StringName, to: StringName) -> float:
+		if network == null:
+			return INF
+		var route: Array[StringName] = network.find_route(from, to, true)
+		return network.get_route_length(route) if not route.is_empty() else INF
+	return AnnexRoutes.find_hubs(types, lines, distance)
 
 
 func _station_name(station_id: StringName) -> String:

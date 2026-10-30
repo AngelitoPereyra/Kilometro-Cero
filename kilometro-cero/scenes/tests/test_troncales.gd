@@ -409,15 +409,21 @@ func _probar_escena() -> void:
 	_trains.load_dict(guardado)
 	_check(carga.home == &"ciudad" and carga.away == &"maderera" and carga.state == AutoTrainRun.State.AT_AWAY, "Al cargar, la troncal retoma sus puntas")
 
-	# Si la maderera no está en la línea, sus flujos vuelven a los trenes de conexión.
+	# Si la maderera no está en la línea, es anexo del pueblo (D139, tarea 62c.2): lo suyo va en un
+	# tren de ramal hasta el pueblo y lo que viene de la ciudad sigue por la troncal hasta ahí.
 	var sin_maderera: Array[Station] = [$Ciudad as Station, $Pueblo as Station]
 	_linea.stations = sin_maderera
 	_trains.sync_flows()
-	var troncales: int = 0
+	var ramales: Array[AutoTrainRun] = []
+	var directo: bool = false
 	for run: AutoTrainRun in _trains.get_runs():
 		if run.is_trunk():
-			troncales += 1
-	_check(troncales == 0 and _trains.get_runs().size() == 2, "Lo que no va por una línea sigue con el tren de su conexión")
+			continue
+		if AutoTrains.connection_key(run.home, run.away) == AutoTrains.connection_key(&"pueblo", &"maderera"):
+			ramales.append(run)
+		else:
+			directo = true
+	_check(_trains.get_hub(&"maderera") == &"pueblo" and ramales.size() == 1 and not directo, "Fuera de la línea, la maderera es anexo del pueblo y la atiende un tren de ramal")
 	_linea.stations = _estaciones()
 
 

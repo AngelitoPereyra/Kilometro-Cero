@@ -66,6 +66,12 @@ func get_shown_units() -> int:
 	return _cargo.get_total() if _cargo != null else 0
 
 
+## Peso con la carga de verdad (tarea 62c.1): la de adorno de los automáticos no pesa.
+func get_weight() -> float:
+	var fill: float = fill_ratio(_cargo.get_total(), _cargo.capacity) if _cargo != null else 0.0
+	return data.weight + data.load_weight * fill
+
+
 ## Lógica pura: fracción llena, sin pasar de 1 ni dividir por 0.
 static func fill_ratio(total: int, capacity: int) -> float:
 	return clampf(float(total) / float(capacity), 0.0, 1.0) if capacity > 0 else 0.0

@@ -177,6 +177,12 @@ func build_text() -> String:
 	# Tarea 61: los trenes automáticos que salen o llegan acá, con su horario.
 	var trains: AutoTrains = AutoTrains.find_in(get_tree()) if is_inside_tree() else null
 	if trains != null:
+		# Anexos (tarea 62c.2, D139): la cabecera muestra lo que piden y dan; el anexo, de quién es.
+		var hub: StringName = trains.get_hub(station_id)
+		if hub != &"":
+			lines.append("Anexo de %s: sus trenes de ramal van y vienen de ahí" % board.station_name(hub))
+		for annex: StringName in trains.get_annexes(station_id):
+			lines.append(annex_line(board.station_name(annex), GameState.production.get_consumption(annex), GameState.production.get_production(annex), _amounts_text))
 		var train_lines: PackedStringArray = trains.describe_at(station_id)
 		if not train_lines.is_empty():
 			lines.append("— Trenes —")
@@ -187,6 +193,16 @@ func build_text() -> String:
 	if not _message.is_empty():
 		lines.append(_message)
 	return "\n".join(lines)
+
+
+## "Anexo Sierras Bayas: pide 10 troncos · da 20 piedras" (tarea 62c.2). `amounts_text`: func(Dictionary) -> String.
+static func annex_line(annex_name: String, needs: Dictionary[StringName, int], gives: Dictionary[StringName, int], amounts_text: Callable) -> String:
+	var parts: PackedStringArray = []
+	if not needs.is_empty():
+		parts.append("pide " + String(amounts_text.call(needs)))
+	if not gives.is_empty():
+		parts.append("da " + String(amounts_text.call(gives)))
+	return "Anexo %s: %s" % [annex_name, " · ".join(parts) if not parts.is_empty() else "sin movimiento"]
 
 
 func _mission_line(board: MissionBoard, mission: Mission) -> String:

@@ -38,6 +38,11 @@ func _ready() -> void:
 	_mapa = (load(HITO_A) as PackedScene).instantiate() as Node3D
 	add_child(_mapa)
 	await _cuadros(12)
+	# Desde la 62c.1 el terreno tarda en armarse y el primer cuadro es largo: los regalos de vagón
+	# tienen que ver o_a cortado antes de que se despeje, así que se revisan acá una vez a mano.
+	await get_tree().create_timer(0.6).timeout
+	for nodo: Node in get_tree().get_nodes_in_group(WagonGift.GROUP):
+		(nodo as WagonGift).refresh()
 	_jugador = _mapa.get_node_or_null(^"Player") as Player
 	_red = RailNetwork.find_in(get_tree())
 	_prestados = BorrowedTrains.find_in(get_tree())
