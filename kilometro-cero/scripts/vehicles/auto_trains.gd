@@ -1345,6 +1345,9 @@ func _ensure_signals(network: RailNetwork, segment_id: StringName) -> void:
 		if path == null or path.curve == null or not path.is_inside_tree() or path.curve.get_baked_length() < SIGNAL_OFFSET * 2.0:
 			continue
 		for station_id: StringName in [track.from_station, track.to_station]:
+			# En un empalme no van carteles de línea: quedarían todos juntos sobre la aguja (62c.3d).
+			if network.is_junction(station_id):
+				continue
 			var leaving: bool = station_id == track.from_station
 			var key: String = _line_key(segment_id, station_id, double and not leaving)
 			if _signals.has(key) and is_instance_valid(_signals[key]):

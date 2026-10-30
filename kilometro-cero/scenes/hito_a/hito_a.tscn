@@ -53,6 +53,16 @@
 [ext_resource type="Resource" path="res://data/missions/los_etchegaray.tres" id="51_etche"]
 [ext_resource type="Script" path="res://scripts/world/terrain.gd" id="52_terreno"]
 [ext_resource type="Texture2D" path="res://scenes/hito_a/alturas_hito_a.png" id="53_alturas"]
+[ext_resource type="Script" path="res://scripts/world/biome_scatter.gd" id="54_veg"]
+[ext_resource type="Script" path="res://scripts/world/scatter_layer.gd" id="55_capa"]
+[ext_resource type="Script" path="res://scripts/world/track_decor.gd" id="56_deco"]
+[ext_resource type="Script" path="res://scripts/world/terrain_carve.gd" id="57_arroyo"]
+[ext_resource type="Script" path="res://scripts/world/dirt_road.gd" id="58_camino"]
+[ext_resource type="Script" path="res://scripts/world/horizon_ring.gd" id="59_horiz"]
+[ext_resource type="Script" path="res://scripts/world/ambient_zone.gd" id="60_sonido"]
+[ext_resource type="PackedScene" path="res://scenes/items/log.tscn" id="61_tronco"]
+[ext_resource type="PackedScene" path="res://scenes/items/hides.tscn" id="62_cuero"]
+[ext_resource type="Resource" path="res://data/items/hides.tres" id="63_cuerod"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Cielo_mat"]
 sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
@@ -64,6 +74,10 @@ sky_material = SubResource("Cielo_mat")
 [sub_resource type="Environment" id="Ambiente"]
 background_mode = 2
 sky = SubResource("Cielo")
+fog_enabled = true
+fog_light_color = Color(0.72, 0.74, 0.76, 1)
+fog_density = 0.0012
+fog_sky_affect = 0.4
 
 [sub_resource type="FastNoiseLite" id="Ruido_lomas"]
 seed = 62
@@ -81,14 +95,70 @@ point_count = 7
 
 [sub_resource type="Curve3D" id="Curva_o_s"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, -120, 0, 0, -100, 0, 0, 120, 0, 0, -130, -25, 0, -450, 0, 0, 130, 0, 0, -130, -100, 3, -850, 0, 0, 130, 0, 0, -130, -55, 8, -1250, 0, 0, 130, 0, 0, -120, -25, 0, -1650, 0, 0, 120, 0, 0, 0, 0, 0, -2000),
-"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0)
+"points": PackedVector3Array(0, 0, 0, 0, 0, -120, 0, 0, -100, 0, 0, 120, 0, 0, -130, -25, 0, -450, 0, 0, 130, 0, 0, -130, -100, 3, -850, 0, 0, 130, 0, 0, -130, -55, 8, -1250, 0, 0, 130, 0, 0, 0, 0, 0, -1600),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0)
 }
-point_count = 6
+point_count = 5
+
+[sub_resource type="Curve3D" id="Curva_empalme_n"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, -1600, 0, 0, 0, 0, 0, 0, 0, 0, -1620),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[sub_resource type="Curve3D" id="Curva_e_ns"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, -1620, 0, 0, 0, 0, 0, 0, 0, 0, -1760),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[sub_resource type="Curve3D" id="Curva_empalme_s"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, -1760, 0, 0, 0, 0, 0, 0, 0, 0, -1780),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[sub_resource type="Curve3D" id="Curva_e_sur"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, -1780, 0, 0, 0, 0, 0, 0, 0, 0, -2300),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[sub_resource type="Curve3D" id="Curva_e_nr"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, -38.7, 0, 0, -1620, 38.7, 0, 0, 0, 0, 0, -70, 0, -1690),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[sub_resource type="Curve3D" id="Curva_e_sr"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 38.7, 0, 0, -1760, 38.7, 0, 0, 0, 0, 0, -70, 0, -1690),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[sub_resource type="Curve3D" id="Curva_empalme_r"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -70, 0, -1690, 0, 0, 0, 0, 0, 0, -90, 0, -1690),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
+
+[sub_resource type="Curve3D" id="Curva_e_s"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, -38.7, 0, 0, -90, 0, -1690, 0, 0, 38.7, 0, 0, 0, -160, 0, -1760),
+"tilts": PackedFloat32Array(0, 0)
+}
+point_count = 2
 
 [sub_resource type="Curve3D" id="Curva_s_c"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, -2140, 0, 0, 0, 0, 0, 0, 0, 0, -2240),
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -160, 0, -1900, 0, 0, 0, 0, 0, 0, -160, 0, -2240),
 "tilts": PackedFloat32Array(0, 0)
 }
 point_count = 2
@@ -122,27 +192,6 @@ size = Vector3(10, 3.5, 6)
 [sub_resource type="StandardMaterial3D" id="Mat_piedra"]
 albedo_color = Color(0.82, 0.8, 0.72, 1)
 
-[sub_resource type="Curve3D" id="Curva_ramal_sb"]
-_data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 22, 7, 0, 70, 22, 0, 0, 0, 0, 0, -33, 0, 110, 0, 0, 0, 0, 0, 0, -93, 0, 110),
-"tilts": PackedFloat32Array(0, 0, 0)
-}
-point_count = 3
-
-[sub_resource type="Curve3D" id="Curva_bahia1_sb"]
-_data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 0, -93, 0, 110, 0, 0, 0, 0, 0, 0, -143, 0, 110),
-"tilts": PackedFloat32Array(0, 0)
-}
-point_count = 2
-
-[sub_resource type="Curve3D" id="Curva_bahia2_sb"]
-_data = {
-"points": PackedVector3Array(0, 0, 0, -12, 0, 0, -93, 0, 110, 12, 0, 0, 0, 0, 0, -117, 0, 117, 0, 0, 0, 0, 0, 0, -143, 0, 117),
-"tilts": PackedFloat32Array(0, 0, 0)
-}
-point_count = 3
-
 [sub_resource type="StandardMaterial3D" id="Mat_local"]
 albedo_color = Color(0.78, 0.62, 0.45, 1)
 
@@ -157,6 +206,186 @@ size = Vector3(3, 0.9, 30)
 
 [sub_resource type="BoxMesh" id="Malla_pila"]
 size = Vector3(4, 1.4, 3)
+
+[sub_resource type="Resource" id="Capa_pasto_largo"]
+script = ExtResource("55_capa")
+id = &"pasto_largo"
+kind = 0
+density = 2.5
+min_scale = 0.8
+max_scale = 1.4
+noise_threshold = -0.3
+noise_frequency = 0.02
+keep_away = 3
+view_distance = 140
+
+[sub_resource type="Resource" id="Capa_matas"]
+script = ExtResource("55_capa")
+id = &"matas"
+kind = 1
+density = 0.25
+min_scale = 0.6
+max_scale = 1.3
+keep_away = 4
+max_slope = 1
+view_distance = 300
+
+[sub_resource type="Resource" id="Capa_cardos"]
+script = ExtResource("55_capa")
+id = &"cardos"
+kind = 2
+density = 0.8
+min_scale = 0.8
+max_scale = 1.3
+area = Rect2(-250, -2380, 500, 2080)
+noise_threshold = -0.1
+noise_frequency = 0.01
+keep_away = 3
+view_distance = 160
+
+[sub_resource type="Resource" id="Capa_piedras"]
+script = ExtResource("55_capa")
+id = &"piedras"
+kind = 3
+density = 0.12
+min_scale = 0.6
+max_scale = 1.8
+area = Rect2(-250, -2380, 500, 1480)
+keep_away = 5
+view_distance = 400
+
+[sub_resource type="Resource" id="Capa_eucaliptos"]
+script = ExtResource("55_capa")
+id = &"eucaliptos"
+kind = 5
+density = 1.2
+min_scale = 0.8
+max_scale = 1.2
+noise_threshold = 0.5
+noise_frequency = 0.004
+keep_away = 10
+max_slope = 0.4
+view_distance = 1200
+
+[sub_resource type="Resource" id="Capa_monte_o_a"]
+script = ExtResource("55_capa")
+id = &"monte_o_a"
+kind = 5
+density = 4
+min_scale = 0.85
+max_scale = 1.25
+area = Rect2(135, 1120, 100, 220)
+keep_away = 10
+view_distance = 1200
+
+[sub_resource type="Resource" id="Capa_arboles"]
+script = ExtResource("55_capa")
+id = &"arboles"
+kind = 4
+density = 0.03
+min_scale = 0.8
+max_scale = 1.3
+keep_away = 8
+max_slope = 0.5
+view_distance = 900
+
+[sub_resource type="Resource" id="Capa_sauces"]
+script = ExtResource("55_capa")
+id = &"sauces"
+kind = 6
+density = 1.5
+min_scale = 0.8
+max_scale = 1.2
+keep_away = 3
+near_water = 12
+view_distance = 900
+
+[sub_resource type="Curve3D" id="Curva_tapalque"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 60, 0, 30, -250, 0, 1380, -60, 0, 0, 60, 0, 0, -90, 0, 1470, -60, 0, 0, 60, 0, 0, 70, 0, 1450, -50, 0, 5, 40, 0, 0, 190, 0, 1405, -30, 0, -15, 0, 0, 0, 250, 0, 1440),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0)
+}
+point_count = 5
+
+[sub_resource type="Curve3D" id="Curva_camino_paso"]
+_data = {
+"points": PackedVector3Array(0, 0, 0, 97, 0, -25, -245, 0, 880, -97, 0, 25, 97, 0, -25, 82.7, 0, 800, -50, 0, 13, 0, 0, 0, 245, 0, 759),
+"tilts": PackedFloat32Array(0, 0, 0)
+}
+point_count = 3
+
+[sub_resource type="StandardMaterial3D" id="Mat_madera_vieja"]
+albedo_color = Color(0.45, 0.38, 0.3, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_ladrillo"]
+albedo_color = Color(0.66, 0.4, 0.3, 1)
+roughness = 1.0
+
+[sub_resource type="StandardMaterial3D" id="Mat_hierro"]
+albedo_color = Color(0.25, 0.25, 0.27, 1)
+roughness = 0.7
+
+[sub_resource type="StandardMaterial3D" id="Mat_blanco_rojo"]
+albedo_color = Color(0.85, 0.2, 0.18, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_cemento_viejo"]
+albedo_color = Color(0.62, 0.6, 0.56, 1)
+roughness = 1.0
+
+[sub_resource type="BoxMesh" id="Malla_tablero_puente"]
+size = Vector3(4.4, 0.5, 34)
+
+[sub_resource type="BoxShape3D" id="Forma_tablero_puente"]
+size = Vector3(4.4, 0.5, 34)
+
+[sub_resource type="BoxMesh" id="Malla_baranda"]
+size = Vector3(0.12, 0.12, 34)
+
+[sub_resource type="BoxMesh" id="Malla_pilar"]
+size = Vector3(3.2, 4.2, 1.4)
+
+[sub_resource type="BoxMesh" id="Malla_estribo"]
+size = Vector3(5, 3, 3)
+
+[sub_resource type="BoxMesh" id="Malla_casilla"]
+size = Vector3(3, 2.6, 3)
+
+[sub_resource type="BoxShape3D" id="Forma_casilla"]
+size = Vector3(3, 2.6, 3)
+
+[sub_resource type="BoxMesh" id="Malla_techo_casilla"]
+size = Vector3(3.6, 0.15, 3.6)
+
+[sub_resource type="BoxMesh" id="Malla_poste_barrera"]
+size = Vector3(0.25, 1.1, 0.25)
+
+[sub_resource type="BoxMesh" id="Malla_brazo_barrera"]
+size = Vector3(0.12, 5, 0.12)
+
+[sub_resource type="BoxMesh" id="Malla_poste_cruz"]
+size = Vector3(0.12, 2.6, 0.12)
+
+[sub_resource type="BoxMesh" id="Malla_aspa"]
+size = Vector3(1.4, 0.18, 0.04)
+
+[sub_resource type="BoxMesh" id="Malla_anden_viejo"]
+size = Vector3(3, 0.9, 40)
+
+[sub_resource type="BoxShape3D" id="Forma_anden_viejo"]
+size = Vector3(3, 0.9, 40)
+
+[sub_resource type="BoxMesh" id="Malla_pared_refugio"]
+size = Vector3(0.2, 2.4, 4)
+
+[sub_resource type="BoxMesh" id="Malla_lado_refugio"]
+size = Vector3(1.8, 2.4, 0.2)
+
+[sub_resource type="BoxShape3D" id="Forma_pared_refugio"]
+size = Vector3(0.2, 2.4, 4)
+
+[sub_resource type="BoxMesh" id="Malla_techo_caido"]
+size = Vector3(2.4, 0.1, 3)
 
 [node name="HitoA" type="Node3D"]
 script = ExtResource("1_hito")
@@ -195,7 +424,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2540)
 data = ExtResource("16_azu")
 
 [node name="SierrasBayas" parent="." instance=ExtResource("14_car")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -2070)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -167, 0, -1830)
 data = ExtResource("17_sie")
 
 [node name="Taller" parent="Olavarria"]
@@ -206,6 +435,9 @@ turntable = true
 
 [node name="Vias" parent="Olavarria"]
 bay_offsets = PackedFloat32Array(42)
+
+[node name="Vias" parent="SierrasBayas"]
+bay_offsets = PackedFloat32Array(40)
 
 [node name="PuntoDeCarga" type="Node3D" parent="Olavarria"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.5, 0, 0)
@@ -223,53 +455,8 @@ font_size = 40
 outline_size = 10
 text = "Punto de carga"
 
-[node name="Ramal" type="Path3D" parent="SierrasBayas"]
-curve = SubResource("Curva_ramal_sb")
-
-[node name="Via" type="Node" parent="SierrasBayas/Ramal"]
-script = ExtResource("40_est")
-role = 4
-display_name = "ramal de carga"
-spring_exit = true
-condition = 1.0
-
-[node name="TrackBuilder" type="Node3D" parent="SierrasBayas/Ramal" node_paths=PackedStringArray("segment")]
-script = ExtResource("3_cons")
-module_mesh = SubResource("Modulo_via")
-segment = NodePath("../Via")
-
-[node name="Bahia1" type="Path3D" parent="SierrasBayas"]
-curve = SubResource("Curva_bahia1_sb")
-
-[node name="Via" type="Node" parent="SierrasBayas/Bahia1"]
-script = ExtResource("40_est")
-role = 4
-display_name = "bahía de carga 1"
-spring_exit = true
-condition = 1.0
-
-[node name="TrackBuilder" type="Node3D" parent="SierrasBayas/Bahia1" node_paths=PackedStringArray("segment")]
-script = ExtResource("3_cons")
-module_mesh = SubResource("Modulo_via")
-segment = NodePath("../Via")
-
-[node name="Bahia2" type="Path3D" parent="SierrasBayas"]
-curve = SubResource("Curva_bahia2_sb")
-
-[node name="Via" type="Node" parent="SierrasBayas/Bahia2"]
-script = ExtResource("40_est")
-role = 4
-display_name = "bahía de carga 2"
-spring_exit = true
-condition = 1.0
-
-[node name="TrackBuilder" type="Node3D" parent="SierrasBayas/Bahia2" node_paths=PackedStringArray("segment")]
-script = ExtResource("3_cons")
-module_mesh = SubResource("Modulo_via")
-segment = NodePath("../Via")
-
 [node name="PuntoDeCarga" type="Node3D" parent="SierrasBayas"]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -120, 0, 106.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43.5, 0, 0)
 script = ExtResource("39_bah")
 
 [node name="Plataforma" type="MeshInstance3D" parent="SierrasBayas/PuntoDeCarga"]
@@ -366,7 +553,7 @@ segment = NodePath("../TrackSegment")
 script = ExtResource("4_tramo")
 segment_id = &"o_s"
 from_station = &"olavarria"
-to_station = &"sierras_bayas"
+to_station = &"empalme_norte"
 condition = 1.0
 
 [node name="DesvioCanteraVieja" type="Path3D" parent="."]
@@ -384,6 +571,129 @@ segment_id = &"s_c"
 from_station = &"sierras_bayas"
 to_station = &"cantera_vieja"
 condition = 0.3
+
+[node name="EmpalmeNorte" type="Path3D" parent="."]
+curve = SubResource("Curva_empalme_n")
+
+[node name="Via" type="Node" parent="EmpalmeNorte"]
+script = ExtResource("40_est")
+display_name = "Empalme norte"
+station_id = &"empalme_norte"
+condition = 1.0
+
+[node name="TrackBuilder" type="Node3D" parent="EmpalmeNorte" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_cons")
+module_mesh = SubResource("Modulo_via")
+segment = NodePath("../Via")
+
+[node name="LineaDelSudEmpalmes" type="Path3D" parent="."]
+curve = SubResource("Curva_e_ns")
+script = ExtResource("2_via")
+
+[node name="TrackBuilder" type="Node3D" parent="LineaDelSudEmpalmes" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_cons")
+module_mesh = SubResource("Modulo_via")
+segment = NodePath("../TrackSegment")
+
+[node name="TrackSegment" type="Node" parent="LineaDelSudEmpalmes"]
+script = ExtResource("4_tramo")
+segment_id = &"e_ns"
+from_station = &"empalme_norte"
+to_station = &"empalme_sur"
+condition = 1.0
+
+[node name="EmpalmeSur" type="Path3D" parent="."]
+curve = SubResource("Curva_empalme_s")
+
+[node name="Via" type="Node" parent="EmpalmeSur"]
+script = ExtResource("40_est")
+display_name = "Empalme sur"
+station_id = &"empalme_sur"
+condition = 1.0
+
+[node name="TrackBuilder" type="Node3D" parent="EmpalmeSur" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_cons")
+module_mesh = SubResource("Modulo_via")
+segment = NodePath("../Via")
+
+[node name="LineaDelSudSur" type="Path3D" parent="."]
+curve = SubResource("Curva_e_sur")
+script = ExtResource("2_via")
+
+[node name="TrackBuilder" type="Node3D" parent="LineaDelSudSur" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_cons")
+module_mesh = SubResource("Modulo_via")
+segment = NodePath("../TrackSegment")
+
+[node name="TrackSegment" type="Node" parent="LineaDelSudSur"]
+script = ExtResource("4_tramo")
+segment_id = &"e_sur"
+from_station = &"empalme_sur"
+to_station = &"Bahía Blanca"
+state = 0
+condition = 0.2
+
+[node name="RamalNorte" type="Path3D" parent="."]
+curve = SubResource("Curva_e_nr")
+script = ExtResource("2_via")
+
+[node name="TrackBuilder" type="Node3D" parent="RamalNorte" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_cons")
+module_mesh = SubResource("Modulo_via")
+segment = NodePath("../TrackSegment")
+
+[node name="TrackSegment" type="Node" parent="RamalNorte"]
+script = ExtResource("4_tramo")
+segment_id = &"e_nr"
+from_station = &"empalme_norte"
+to_station = &"empalme_ramal"
+condition = 1.0
+
+[node name="RamalSur" type="Path3D" parent="."]
+curve = SubResource("Curva_e_sr")
+script = ExtResource("2_via")
+
+[node name="TrackBuilder" type="Node3D" parent="RamalSur" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_cons")
+module_mesh = SubResource("Modulo_via")
+segment = NodePath("../TrackSegment")
+
+[node name="TrackSegment" type="Node" parent="RamalSur"]
+script = ExtResource("4_tramo")
+segment_id = &"e_sr"
+from_station = &"empalme_sur"
+to_station = &"empalme_ramal"
+condition = 1.0
+
+[node name="EmpalmeRamal" type="Path3D" parent="."]
+curve = SubResource("Curva_empalme_r")
+
+[node name="Via" type="Node" parent="EmpalmeRamal"]
+script = ExtResource("40_est")
+display_name = "Empalme del ramal"
+station_id = &"empalme_ramal"
+condition = 1.0
+
+[node name="TrackBuilder" type="Node3D" parent="EmpalmeRamal" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_cons")
+module_mesh = SubResource("Modulo_via")
+segment = NodePath("../Via")
+
+[node name="RamalSierrasBayas" type="Path3D" parent="."]
+curve = SubResource("Curva_e_s")
+script = ExtResource("2_via")
+
+[node name="TrackBuilder" type="Node3D" parent="RamalSierrasBayas" node_paths=PackedStringArray("segment")]
+script = ExtResource("3_cons")
+module_mesh = SubResource("Modulo_via")
+segment = NodePath("../TrackSegment")
+
+[node name="TrackSegment" type="Node" parent="RamalSierrasBayas"]
+script = ExtResource("4_tramo")
+segment_id = &"e_s"
+from_station = &"empalme_ramal"
+to_station = &"sierras_bayas"
+condition = 1.0
 
 [node name="Locomotive" parent="OlavarriaSierrasBayas" instance=ExtResource("8_loco")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -130)
@@ -404,11 +714,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -115)
 segment_id = &"o_s"
 
 [node name="PiedrasDesvio1" parent="." instance=ExtResource("19_pie")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2180)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -160, 0, -2180)
 segment_id = &"s_c"
 
 [node name="PiedrasDesvio2" parent="." instance=ExtResource("19_pie")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, -2200)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -159.5, 0, -2200)
 segment_id = &"s_c"
 
 [node name="Clearable" parent="PiedrasDesvio1"]
@@ -461,37 +771,37 @@ transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 26, 0, 2560)
 [node name="Cantera" type="Node3D" parent="."]
 
 [node name="Afloramiento1" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -2055)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -205, 0, -1815)
 
 [node name="Afloramiento2" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 0, -2070)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -209, 0, -1830)
 
 [node name="Afloramiento3" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -2085)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -205, 0, -1845)
 
 [node name="Afloramiento4" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53, 0, -2050)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -213, 0, -1810)
 
 [node name="Afloramiento5" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, -2065)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -215, 0, -1825)
 
 [node name="Afloramiento6" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, -2080)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -215, 0, -1840)
 
 [node name="Afloramiento7" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 0, -2095)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -212, 0, -1855)
 
 [node name="FrenteViejo1" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -2235)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -170, 0, -2235)
 
 [node name="FrenteViejo2" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -2228)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -174, 0, -2228)
 
 [node name="FrenteViejo3" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -2232)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -150, 0, -2232)
 
 [node name="CartelCanteraVieja" type="Label3D" parent="Cantera"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3, -2245)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -166, 3, -2245)
 billboard = 1
 font_size = 64
 outline_size = 10
@@ -546,7 +856,7 @@ speaker = "Doña Elvira, vecina de Azul"
 missions = Array[ExtResource("27_md")]([ExtResource("28_mae")])
 
 [node name="Cantero" parent="." instance=ExtResource("26_pob")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 1, -2078)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -176, 1, -1838)
 speaker = "Don Aurelio, el cantero"
 missions = Array[ExtResource("27_md")]([ExtResource("29_can")])
 
@@ -576,7 +886,7 @@ transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -16, 0, 20)
 mission = ExtResource("43_casas")
 
 [node name="Ramirez" parent="." instance=ExtResource("26_pob")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.6, -2060)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -174, 0.6, -1820)
 speaker = "Ramírez, el capataz de Sierras Bayas"
 main_station = &"sierras_bayas"
 
@@ -777,22 +1087,22 @@ script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteSierrasBayas1" type="Marker3D" parent="Lotes"]
-transform = Transform3D(-0.0596, 0, -0.9982, 0, 1, 0, 0.9982, 0, -0.0596, 56.0034, 0, -1936.58)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 70, 0, -1670)
 script = ExtResource("45_lote")
 station_id = &"sierras_bayas"
 
 [node name="LoteSierrasBayas2" type="Marker3D" parent="Lotes"]
-transform = Transform3D(-0.1076, 0, -0.9942, 0, 1, 0, 0.9942, 0, -0.1076, 46.3004, 0, -1829.23)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 70, 0, -1780)
 script = ExtResource("45_lote")
 station_id = &"sierras_bayas"
 
 [node name="LoteSierrasBayas3" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0.1076, 0, 0.9942, 0, 1, 0, -0.9942, 0, 0.1076, -69.0256, 0, -1841.72)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 70, 0, -1890)
 script = ExtResource("45_lote")
 station_id = &"sierras_bayas"
 
 [node name="LoteSierrasBayas4" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0.0754, 0, 0.9972, 0, 1, 0, -0.9972, 0, 0.0754, -79.5112, 0, -1735.36)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 70, 0, -2000)
 script = ExtResource("45_lote")
 station_id = &"sierras_bayas"
 
@@ -820,6 +1130,286 @@ offset_left = 16.0
 offset_top = 16.0
 offset_right = 900.0
 offset_bottom = 600.0
+
+[node name="Decoracion" type="Node3D" parent="OlavarriaAzul"]
+script = ExtResource("56_deco")
+pole_side = -1
+
+[node name="Decoracion" type="Node3D" parent="OlavarriaSierrasBayas"]
+script = ExtResource("56_deco")
+pole_side = 1
+
+[node name="Decoracion" type="Node3D" parent="LineaDelSudEmpalmes"]
+script = ExtResource("56_deco")
+pole_side = -1
+
+[node name="Decoracion" type="Node3D" parent="LineaDelSudSur"]
+script = ExtResource("56_deco")
+pole_side = -1
+
+[node name="ArroyoTapalque" type="Path3D" parent="."]
+curve = SubResource("Curva_tapalque")
+script = ExtResource("57_arroyo")
+
+[node name="PuenteTapalque" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70, 0, 1450)
+
+[node name="Tablero" type="MeshInstance3D" parent="PuenteTapalque"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, 0)
+material_override = SubResource("Mat_hierro")
+mesh = SubResource("Malla_tablero_puente")
+
+[node name="FormaTablero" type="CollisionShape3D" parent="PuenteTapalque"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.3, 0)
+shape = SubResource("Forma_tablero_puente")
+
+[node name="BarandaIzquierda" type="MeshInstance3D" parent="PuenteTapalque"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.1, 0.9, 0)
+material_override = SubResource("Mat_hierro")
+mesh = SubResource("Malla_baranda")
+
+[node name="BarandaDerecha" type="MeshInstance3D" parent="PuenteTapalque"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.1, 0.9, 0)
+material_override = SubResource("Mat_hierro")
+mesh = SubResource("Malla_baranda")
+
+[node name="PilarNorte" type="MeshInstance3D" parent="PuenteTapalque"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.65, 6)
+material_override = SubResource("Mat_ladrillo")
+mesh = SubResource("Malla_pilar")
+
+[node name="PilarSur" type="MeshInstance3D" parent="PuenteTapalque"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2.65, -6)
+material_override = SubResource("Mat_ladrillo")
+mesh = SubResource("Malla_pilar")
+
+[node name="EstriboNorte" type="MeshInstance3D" parent="PuenteTapalque"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, 16)
+material_override = SubResource("Mat_ladrillo")
+mesh = SubResource("Malla_estribo")
+
+[node name="EstriboSur" type="MeshInstance3D" parent="PuenteTapalque"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -2, -16)
+material_override = SubResource("Mat_ladrillo")
+mesh = SubResource("Malla_estribo")
+
+[node name="Cartel" type="Label3D" parent="PuenteTapalque"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 2.2, -18)
+billboard = 1
+font_size = 40
+outline_size = 8
+text = "Arroyo Tapalqué"
+
+[node name="CaminoDelPaso" type="Path3D" parent="."]
+curve = SubResource("Curva_camino_paso")
+script = ExtResource("58_camino")
+
+[node name="PasoANivel" type="Node3D" parent="."]
+transform = Transform3D(0.969, 0, 0.246, 0, 1, 0, -0.246, 0, 0.969, 82.7, 0, 800)
+
+[node name="Casilla" type="StaticBody3D" parent="PasoANivel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 9)
+
+[node name="Paredes" type="MeshInstance3D" parent="PasoANivel/Casilla"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
+material_override = SubResource("Mat_ladrillo")
+mesh = SubResource("Malla_casilla")
+
+[node name="Techo" type="MeshInstance3D" parent="PasoANivel/Casilla"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, 0)
+material_override = SubResource("Mat_madera_vieja")
+mesh = SubResource("Malla_techo_casilla")
+
+[node name="Forma" type="CollisionShape3D" parent="PasoANivel/Casilla"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
+shape = SubResource("Forma_casilla")
+
+[node name="Cartel" type="Label3D" parent="PasoANivel/Casilla"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.4, 0)
+billboard = 1
+font_size = 36
+outline_size = 8
+text = "Paso a nivel · guardabarrera"
+
+[node name="BarreraEste" type="Node3D" parent="PasoANivel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 2.6)
+
+[node name="Poste" type="MeshInstance3D" parent="PasoANivel/BarreraEste"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+material_override = SubResource("Mat_hierro")
+mesh = SubResource("Malla_poste_barrera")
+
+[node name="Brazo" type="MeshInstance3D" parent="PasoANivel/BarreraEste"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, 0)
+material_override = SubResource("Mat_blanco_rojo")
+mesh = SubResource("Malla_brazo_barrera")
+
+[node name="BarreraOeste" type="Node3D" parent="PasoANivel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0, -2.6)
+
+[node name="Poste" type="MeshInstance3D" parent="PasoANivel/BarreraOeste"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+material_override = SubResource("Mat_hierro")
+mesh = SubResource("Malla_poste_barrera")
+
+[node name="Brazo" type="MeshInstance3D" parent="PasoANivel/BarreraOeste"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, 0)
+material_override = SubResource("Mat_blanco_rojo")
+mesh = SubResource("Malla_brazo_barrera")
+
+[node name="CruzEste" type="Node3D" parent="PasoANivel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 0, -2.8)
+
+[node name="Poste" type="MeshInstance3D" parent="PasoANivel/CruzEste"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
+material_override = SubResource("Mat_hierro")
+mesh = SubResource("Malla_poste_cruz")
+
+[node name="Aspa1" type="MeshInstance3D" parent="PasoANivel/CruzEste"]
+transform = Transform3D(0.7071, -0.7071, 0, 0.7071, 0.7071, 0, 0, 0, 1, 0, 2.3, 0.08)
+material_override = SubResource("Mat_cemento_viejo")
+mesh = SubResource("Malla_aspa")
+
+[node name="Aspa2" type="MeshInstance3D" parent="PasoANivel/CruzEste"]
+transform = Transform3D(0.7071, 0.7071, 0, -0.7071, 0.7071, 0, 0, 0, 1, 0, 2.3, 0.08)
+material_override = SubResource("Mat_cemento_viejo")
+mesh = SubResource("Malla_aspa")
+
+[node name="CruzOeste" type="Node3D" parent="PasoANivel"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 0, 2.8)
+
+[node name="Poste" type="MeshInstance3D" parent="PasoANivel/CruzOeste"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, 0)
+material_override = SubResource("Mat_hierro")
+mesh = SubResource("Malla_poste_cruz")
+
+[node name="Aspa1" type="MeshInstance3D" parent="PasoANivel/CruzOeste"]
+transform = Transform3D(0.7071, -0.7071, 0, 0.7071, 0.7071, 0, 0, 0, 1, 0, 2.3, 0.08)
+material_override = SubResource("Mat_cemento_viejo")
+mesh = SubResource("Malla_aspa")
+
+[node name="Aspa2" type="MeshInstance3D" parent="PasoANivel/CruzOeste"]
+transform = Transform3D(0.7071, 0.7071, 0, -0.7071, 0.7071, 0, 0, 0, 1, 0, 2.3, 0.08)
+material_override = SubResource("Mat_cemento_viejo")
+mesh = SubResource("Malla_aspa")
+
+[node name="ApeaderoAbandonado" type="Node3D" parent="."]
+transform = Transform3D(-0.986, 0, 0.164, 0, 1, 0, -0.164, 0, -0.986, -77.5, 5.5, -1050)
+
+[node name="Anden" type="StaticBody3D" parent="ApeaderoAbandonado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.6, 0, 0)
+
+[node name="Malla" type="MeshInstance3D" parent="ApeaderoAbandonado/Anden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+material_override = SubResource("Mat_cemento_viejo")
+mesh = SubResource("Malla_anden_viejo")
+
+[node name="Forma" type="CollisionShape3D" parent="ApeaderoAbandonado/Anden"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+shape = SubResource("Forma_anden_viejo")
+
+[node name="Refugio" type="StaticBody3D" parent="ApeaderoAbandonado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.2, 0.9, -6)
+
+[node name="Fondo" type="MeshInstance3D" parent="ApeaderoAbandonado/Refugio"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 1.2, 0)
+material_override = SubResource("Mat_madera_vieja")
+mesh = SubResource("Malla_pared_refugio")
+
+[node name="FormaFondo" type="CollisionShape3D" parent="ApeaderoAbandonado/Refugio"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.7, 1.2, 0)
+shape = SubResource("Forma_pared_refugio")
+
+[node name="LadoNorte" type="MeshInstance3D" parent="ApeaderoAbandonado/Refugio"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 1.2, 1.9)
+material_override = SubResource("Mat_madera_vieja")
+mesh = SubResource("Malla_lado_refugio")
+
+[node name="LadoSur" type="MeshInstance3D" parent="ApeaderoAbandonado/Refugio"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.2, 1.2, -1.9)
+material_override = SubResource("Mat_madera_vieja")
+mesh = SubResource("Malla_lado_refugio")
+
+[node name="TechoCaido" type="MeshInstance3D" parent="ApeaderoAbandonado/Refugio"]
+transform = Transform3D(0.94, -0.342, 0, 0.342, 0.94, 0, 0, 0, 1, 0.1, 2.2, 0.3)
+material_override = SubResource("Mat_madera_vieja")
+mesh = SubResource("Malla_techo_caido")
+
+[node name="Cartel" type="Label3D" parent="ApeaderoAbandonado"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.6, 3.2, 4)
+billboard = 1
+font_size = 40
+outline_size = 8
+modulate = Color(0.85, 0.82, 0.75, 1)
+text = "Apeadero km 19 (abandonado)"
+
+[node name="DurmienteViejo1" parent="ApeaderoAbandonado" instance=ExtResource("61_tronco")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4, 1.15, 4)
+start_item = ExtResource("34_tro")
+
+[node name="DurmienteViejo2" parent="ApeaderoAbandonado" instance=ExtResource("61_tronco")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.4, 1.15, 6)
+start_item = ExtResource("34_tro")
+
+[node name="DurmienteViejo3" parent="ApeaderoAbandonado" instance=ExtResource("61_tronco")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.8, 1.15, 8)
+start_item = ExtResource("34_tro")
+
+[node name="CuerosOlvidados" parent="ApeaderoAbandonado" instance=ExtResource("62_cuero")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.4, 1.0, -6)
+start_item = ExtResource("63_cuerod")
+start_amount = 2
+
+[node name="Horizonte" type="MeshInstance3D" parent="."]
+script = ExtResource("59_horiz")
+
+[node name="Vegetacion" type="Node3D" parent="."]
+script = ExtResource("54_veg")
+layers = Array[ExtResource("55_capa")]([SubResource("Capa_pasto_largo"), SubResource("Capa_matas"), SubResource("Capa_cardos"), SubResource("Capa_piedras"), SubResource("Capa_eucaliptos"), SubResource("Capa_monte_o_a"), SubResource("Capa_arboles"), SubResource("Capa_sauces")])
+
+[node name="Sonidos" type="Node3D" parent="."]
+
+[node name="Viento" type="Node3D" parent="Sonidos"]
+script = ExtResource("60_sonido")
+radius = 100000.0
+volume_db = -20.0
+
+[node name="PajarosMonte" type="Node3D" parent="Sonidos"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 180, 0, 1230)
+script = ExtResource("60_sonido")
+kind = 1
+radius = 80.0
+fade = 60.0
+volume_db = -16.0
+
+[node name="PajarosBosquecito" type="Node3D" parent="Sonidos"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 0, 2540)
+script = ExtResource("60_sonido")
+kind = 1
+radius = 40.0
+volume_db = -16.0
+
+[node name="AguaTapalque" type="Node3D" parent="Sonidos"]
+script = ExtResource("60_sonido")
+kind = 2
+radius = 15.0
+fade = 45.0
+volume_db = -12.0
+along = NodePath("../../ArroyoTapalque")
+
+[node name="CartelEmpalme" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 3, -1690)
+billboard = 1
+font_size = 36
+outline_size = 10
+text = "Empalme Sierras Bayas"
+
+[node name="CartelClausurada" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 2.6, -2285)
+billboard = 1
+font_size = 36
+outline_size = 10
+text = "Línea del Sud: clausurada"
 
 [editable path="Olavarria"]
 

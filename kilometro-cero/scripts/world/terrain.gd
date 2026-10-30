@@ -11,6 +11,8 @@ extends StaticBody3D
 ## Busca vías, estaciones y lotes debajo de su padre (la escena donde está). En el editor se arma
 ## al abrir la escena y con el botón "Rehacer terreno" (después de mover una vía); en el juego, al
 ## empezar. El origen del nodo es el centro del terreno y su y es la altura 0 del mapa; no se gira.
+## Tarea 62c.3c: los arroyos (TerrainCarve) se cavan después de aplanar, también debajo de las
+## vías (las cruzan con un puente); `is_carved` dice si un punto cae en uno.
 
 const GROUP: StringName = &"terrain"
 const MESH_NODE_NAME: String = "Malla"
@@ -60,6 +62,8 @@ var _origin: Vector2 = Vector2.ZERO
 var _flat_distance: PackedFloat32Array = PackedFloat32Array()
 var _flat_target: PackedFloat32Array = PackedFloat32Array()
 var _image: Image
+# Los arroyos que cava (los busca al rehacerse).
+var _carves: Array[TerrainCarve] = []
 
 
 func _ready() -> void:
@@ -81,6 +85,7 @@ func rebuild() -> void:
 	_flat_target = PackedFloat32Array()
 	_flat_target.resize(_columns * _rows)
 	var root: Node = get_parent() if get_parent() != null else self
+	_carves.clear()
 	_stamp_features(root)
 	_heights = PackedFloat32Array()
 	_heights.resize(_columns * _rows)
@@ -96,10 +101,24 @@ func rebuild() -> void:
 			var target: float = _flat_target[index]
 			var weight: float = blend_weight(maxf(distance, 0.0), base - target, min_blend, max_blend, slope_ratio)
 			_heights[index] = lerpf(target, base, weight)
+	for carve: TerrainCarve in _carves:
+		_apply_carve(carve)
 	_flat_distance = PackedFloat32Array()
 	_flat_target = PackedFloat32Array()
 	_image = null
 	_build_mesh_and_shape()
+
+
+## Si el punto (global) cae en un arroyo o en sus barrancas.
+func is_carved(global_point: Vector3) -> bool:
+	for carve: TerrainCarve in _carves:
+		if not is_instance_valid(carve) or carve.curve == null:
+			continue
+		var local: Vector3 = carve.to_local(global_point)
+		var closest: Vector3 = carve.curve.get_closest_point(local)
+		if Vector2(local.x - closest.x, local.z - closest.z).length() < carve.get_reach():
+			return true
+	return false
 
 
 func get_columns() -> int:
@@ -204,7 +223,9 @@ func _stamp_features(node: Node) -> void:
 	for child: Node in node.get_children():
 		if child == self:
 			continue
-		if child is Path3D and _has_track_builder(child):
+		if child is TerrainCarve:
+			_carves.append(child as TerrainCarve)
+		elif child is Path3D and _has_track_builder(child):
 			_stamp_track(child as Path3D)
 		elif child is Station:
 			_stamp_rect(_relative_transform(child as Station), station_flat_size * 0.5)
@@ -231,6 +252,40 @@ func _stamp_track(path: Path3D) -> void:
 	var to_terrain: Transform3D = _relative_transform(path)
 	for k: int in ceili(length / step) + 1:
 		_stamp_point(to_terrain * curve.sample_baked(minf(k * step, length)))
+
+
+# Baja el terreno a lo largo del arroyo: cada vértice toma el punto de la curva más cercano.
+func _apply_carve(carve: TerrainCarve) -> void:
+	var curve: Curve3D = carve.curve
+	if curve == null or curve.point_count < 2:
+		return
+	var reach: float = carve.get_reach()
+	var nearest := PackedFloat32Array()
+	nearest.resize(_columns * _rows)
+	nearest.fill(INF)
+	var level := PackedFloat32Array()
+	level.resize(_columns * _rows)
+	var touched := PackedInt32Array()
+	var to_terrain: Transform3D = _relative_transform(carve)
+	var length: float = curve.get_baked_length()
+	var step: float = cell_size * 0.5
+	for k: int in ceili(length / step) + 1:
+		var local: Vector3 = to_terrain * curve.sample_baked(minf(k * step, length))
+		var first: Vector2i = _cell_of(Vector2(local.x, local.z) - Vector2(reach, reach))
+		var last: Vector2i = _cell_of(Vector2(local.x, local.z) + Vector2(reach, reach)) + Vector2i.ONE
+		for j: int in range(maxi(first.y, 0), mini(last.y, _rows - 1) + 1):
+			for i: int in range(maxi(first.x, 0), mini(last.x, _columns - 1) + 1):
+				var index: int = j * _columns + i
+				var distance: float = vertex_position(i, j).distance_to(Vector2(local.x, local.z))
+				if distance < nearest[index]:
+					if nearest[index] == INF:
+						touched.append(index)
+					nearest[index] = distance
+					level[index] = local.y
+	for index: int in touched:
+		var bed: float = level[index] - carve.depth
+		var weight: float = TerrainCarve.carve_weight(nearest[index], carve.half_width, carve.bank_width)
+		_heights[index] = minf(_heights[index], lerpf(bed, maxf(_heights[index], level[index]), weight))
 
 
 func _stamp_point(local: Vector3) -> void:

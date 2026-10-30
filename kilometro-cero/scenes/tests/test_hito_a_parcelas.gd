@@ -111,6 +111,11 @@ func _probar_tren_que_se_escapa() -> void:
 	await get_tree().physics_frame
 	_comprobar(not cab.is_auto_stopped() and not cab.braking, "Al entrar a la cabina el freno se suelta")
 	cab.release()
+	# Para mirar al terminar: de vuelta en el andén de Olavarría, quieto (antes quedaba a 150 m).
+	var olavarria := Station.find(get_tree(), &"olavarria")
+	if olavarria != null:
+		jugador.global_position = olavarria.global_position + Vector3(-6.0, 1.0, -12.0)
+		jugador.velocity = Vector3.ZERO
 
 
 func _ocupados(station_id: StringName) -> Array[TrackLot]:

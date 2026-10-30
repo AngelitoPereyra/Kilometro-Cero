@@ -877,11 +877,15 @@ func _make_switch(toe: Dictionary) -> void:
 	track_switch.point = toe.point
 	track_switch.direction = Vector3(toe.out.x, 0.0, toe.out.z).normalized()
 	track_switch.options = _links[key]
+	var all_lines: bool = true
 	for index: int in track_switch.option_count():
 		var station_track := track_switch.get_option_track(index) as StationTrack
 		if station_track != null:
 			track_switch.station_id = station_track.get_station_id()
+			all_lines = false
 			break
+	if all_lines:
+		track_switch.main_option = _straight_option(track_switch)
 	if toe.track is StationTrack:
 		track_switch.station_id = (toe.track as StationTrack).get_station_id()
 	var state: int = -1
@@ -897,6 +901,39 @@ func _make_switch(toe: Dictionary) -> void:
 	track_switch.state_changed.connect(_on_switch_state_changed.bind(track_switch, key))
 	_switches.append(track_switch)
 	_switch_at[key] = track_switch
+
+
+# En un empalme (todas las salidas son líneas, tarea 62c.3d): la salida que sigue más derecho desde
+# la aguja; si empatan, la primera.
+static func _straight_option(track_switch: TrackSwitch) -> int:
+	var best: int = 0
+	var best_dot: float = -INF
+	for index: int in track_switch.option_count():
+		var path: Path3D = track_switch.get_option_path(index)
+		var length: float = path.curve.get_baked_length()
+		var from_end: bool = track_switch.options[index][1]
+		var probe: Vector3 = path.global_transform * path.curve.sample_baked(maxf(0.0, length - 15.0) if from_end else minf(15.0, length))
+		var flat: Vector3 = probe - track_switch.point
+		flat.y = 0.0
+		var dot: float = flat.normalized().dot(track_switch.direction) if flat.length() > 0.01 else 1.0
+		if dot > best_dot + 0.001:
+			best = index
+			best_dot = dot
+	return best
+
+
+## Si `station` es un empalme (tarea 62c.3d): tiene vías de estación pero ninguna Station.
+func is_junction(station: StringName) -> bool:
+	var tracks: Array[StationTrack] = get_station_tracks(station)
+	if tracks.is_empty():
+		return false
+	for station_track: StationTrack in tracks:
+		var node: Node = station_track.get_parent()
+		while node != null:
+			if node is Station:
+				return false
+			node = node.get_parent()
+	return true
 
 
 # Una palanca madre junto a la aguja de cada cambio. En la vía doble los dos cambios de una punta
@@ -975,9 +1012,11 @@ func _trail(path: Path3D, at_end: bool, toe: Array, vehicle: Vehicle) -> bool:
 			if index == track_switch.state:
 				return true
 			var station_track := track_of(path) as StationTrack
-			# La principal sale sola si ninguna otra vía pidió el paso (D117: la principal manda).
-			var free: bool = station_track != null and (station_track.trails_freely() \
-					or (station_track.is_main() and not track_switch.is_locked()))
+			# La principal sale sola si ninguna otra vía pidió el paso (D117: la principal manda). Los
+			# cambios de un empalme son de resorte (62c.3d): se talonan solos si nadie pidió el paso.
+			var free: bool = (station_track != null and (station_track.trails_freely() \
+					or (station_track.is_main() and not track_switch.is_locked()))) \
+					or (track_switch.is_junction() and not track_switch.is_locked())
 			if vehicle != null and not vehicle.get_head().automatic and not free:
 				return false
 			_choosing = true

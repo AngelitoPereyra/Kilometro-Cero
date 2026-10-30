@@ -31,6 +31,9 @@ var toe_at_end: bool
 var options: Array = []
 var state: int = 0
 var station_id: StringName
+## En un empalme (tarea 62c.3d: todas las salidas son líneas), la salida que sigue derecho: la
+## principal del cambio. -1 si el cambio es de estación.
+var main_option: int = -1
 ## La vía que pidió el paso (y su punta: true el final de su curva); null si no está trabado.
 var locked_path: Path3D
 var locked_at_end: bool = false
@@ -107,7 +110,14 @@ func is_fouled() -> bool:
 func is_main_option(index: int) -> bool:
 	var track: TrackSegment = get_option_track(index)
 	var station_track := track as StationTrack
-	return station_track == null or station_track.is_main()
+	if station_track != null:
+		return station_track.is_main()
+	return main_option < 0 or index == main_option
+
+
+## Si es el cambio de un empalme (sus salidas son todas líneas, tarea 62c.3d).
+func is_junction() -> bool:
+	return main_option >= 0
 
 
 func _station_name(station: StringName) -> String:
@@ -115,6 +125,12 @@ func _station_name(station: StringName) -> String:
 		var node: Station = Station.find(toe_path.get_tree(), station)
 		if node != null:
 			return node.get_display_name()
+		# Un empalme no tiene Station: el nombre de su vía.
+		var network: RailNetwork = RailNetwork.find_in(toe_path.get_tree())
+		if network != null:
+			for station_track: StationTrack in network.get_station_tracks(station):
+				if station_track.display_name != "":
+					return station_track.display_name
 	return String(station)
 
 
