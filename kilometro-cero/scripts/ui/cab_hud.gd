@@ -4,6 +4,7 @@ extends CanvasLayer
 ## tarea 67): arriba la marcha, la velocidad, el freno, las luces y las puertas; abajo las
 ## teclas; en la vista de la cabina, una mira en el centro y el nombre del botón apuntado.
 ## La crea y la borra la Cab al ocuparse y al quedar libre. Arma sus nodos por código.
+## Tarea 62c.3e: el estado y las teclas van en carteles ferroviarios (RailTheme).
 
 var _status: Label
 var _keys: Label
@@ -14,8 +15,10 @@ var _aim: Label
 func _init() -> void:
 	layer = 5
 	_status = _make_label(Control.PRESET_CENTER_TOP, HORIZONTAL_ALIGNMENT_CENTER, 22)
+	RailTheme.style_label(_status)
 	_status.offset_top = 12.0
 	_keys = _make_label(Control.PRESET_CENTER_BOTTOM, HORIZONTAL_ALIGNMENT_CENTER, 16)
+	RailTheme.style_label(_keys)
 	_keys.offset_top = -40.0
 	_keys.offset_bottom = -12.0
 	_cross = _make_label(Control.PRESET_CENTER, HORIZONTAL_ALIGNMENT_CENTER, 24)

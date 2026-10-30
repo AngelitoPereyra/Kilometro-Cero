@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/stations/night_light.gd" id="1_luz"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_poste"]
-albedo_color = Color(0.2, 0.2, 0.22, 1)
+albedo_color = Color(0.122, 0.290, 0.216, 1)
 
 [sub_resource type="CylinderMesh" id="Mesh_poste"]
 top_radius = 0.06

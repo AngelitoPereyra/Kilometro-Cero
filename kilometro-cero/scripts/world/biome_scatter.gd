@@ -13,23 +13,9 @@ const BLOCK_CELL: float = 4.0
 const CELL_HALF_DIAGONAL: float = BLOCK_CELL * 0.7072
 ## Hasta dónde se mira la distancia a vías, caminos y arroyos.
 const BLOCK_REACH: float = 40.0
-const WIND_SHADER: String = """
-shader_type spatial;
-render_mode cull_disabled;
-uniform float strength = 0.18;
-varying vec3 tint;
-void vertex() {
-	tint = COLOR.rgb;
-	vec3 world = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
-	float sway = sin(TIME * 1.7 + world.x * 0.15 + world.z * 0.11) + 0.5 * sin(TIME * 3.1 + world.z * 0.3);
-	VERTEX.x += sway * strength * UV.y;
-	VERTEX.z += sway * strength * 0.5 * UV.y;
-}
-void fragment() {
-	ALBEDO = tint;
-	ROUGHNESS = 1.0;
-}
-"""
+## Viento (tarea 62c.3e): metros que se mueve la punta del pasto y la copa de los árboles.
+const GRASS_WIND: float = 0.22
+const TREE_WIND: float = 0.35
 
 @export var layers: Array[ScatterLayer] = []
 @export var scatter_seed: int = 62
@@ -101,31 +87,28 @@ static func spacing_for(density: float) -> float:
 	return 10.0 / sqrt(maxf(density, 0.0001))
 
 
-## Las piezas de cada forma: [{mesh, material}], con la base en y 0.
+## Las piezas de cada forma: [{mesh, material}], con la base en y 0. Pintan con la paleta (Palette,
+## tarea 62c.3e); el pasto, los cardos y las copas se mueven con el viento.
 static func make_parts(kind: ScatterLayer.Kind) -> Array[Dictionary]:
 	match kind:
 		ScatterLayer.Kind.GRASS:
-			var wind := ShaderMaterial.new()
-			var shader := Shader.new()
-			shader.code = WIND_SHADER
-			wind.shader = shader
-			return [{"mesh": _grass_mesh(), "material": wind}]
+			return [{"mesh": _grass_mesh(), "material": Palette.wind_material(&"pasto_oscuro", GRASS_WIND, 0.95, &"trigo", 0.95, true)}]
 		ScatterLayer.Kind.BUSH:
-			return [_part(_sphere(0.7, 0.9), Vector3(0.0, 0.35, 0.0), Color(0.25, 0.4, 0.2))]
+			return [_part(_sphere(0.7, 0.9), Vector3(0.0, 0.35, 0.0), Palette.wind_material(&"mata", 0.06, 0.8))]
 		ScatterLayer.Kind.THISTLE:
-			return [_part(_cylinder(0.03, 0.03, 0.9), Vector3(0.0, 0.45, 0.0), Color(0.45, 0.52, 0.4)),
-				_part(_sphere(0.13, 0.2), Vector3(0.0, 0.95, 0.0), Color(0.55, 0.3, 0.6))]
+			return [_part(_cylinder(0.03, 0.03, 0.9), Vector3(0.0, 0.45, 0.0), Palette.wind_material(&"mata", 0.12, 1.0)),
+				_part(_sphere(0.13, 0.2), Vector3(0.0, 0.95, 0.0), Palette.wind_material(&"cardo", 0.12, 1.0))]
 		ScatterLayer.Kind.ROCK:
-			return [_part(_sphere(1.0, 1.1), Vector3(0.0, 0.15, 0.0), Color(0.6, 0.58, 0.54))]
+			return [_part(_sphere(1.0, 1.1), Vector3(0.0, 0.15, 0.0), Palette.material(&"piedra"))]
 		ScatterLayer.Kind.TREE:
-			return [_part(_cylinder(0.22, 0.3, 3.0), Vector3(0.0, 1.5, 0.0), Color(0.42, 0.28, 0.15)),
-				_part(_sphere(2.2, 3.4), Vector3(0.0, 4.2, 0.0), Color(0.24, 0.45, 0.2))]
+			return [_part(_cylinder(0.22, 0.3, 3.0), Vector3(0.0, 1.5, 0.0), Palette.material(&"durmiente")),
+				_part(_sphere(2.2, 3.4), Vector3(0.0, 4.2, 0.0), Palette.wind_material(&"monte", TREE_WIND * 0.6, 6.0))]
 		ScatterLayer.Kind.EUCALYPTUS:
-			return [_part(_cylinder(0.16, 0.26, 9.0), Vector3(0.0, 4.5, 0.0), Color(0.78, 0.76, 0.7)),
-				_part(_sphere(2.0, 6.0), Vector3(0.0, 10.0, 0.0), Color(0.36, 0.46, 0.38))]
+			return [_part(_cylinder(0.16, 0.26, 9.0), Vector3(0.0, 4.5, 0.0), Palette.material(&"gris_claro")),
+				_part(_sphere(2.0, 6.0), Vector3(0.0, 10.0, 0.0), Palette.wind_material(&"eucalipto", TREE_WIND, 13.0))]
 		ScatterLayer.Kind.WILLOW:
-			return [_part(_cylinder(0.25, 0.35, 3.0), Vector3(0.0, 1.5, 0.0), Color(0.4, 0.33, 0.24)),
-				_part(_sphere(3.0, 4.0), Vector3(0.0, 3.6, 0.0), Color(0.45, 0.58, 0.3))]
+			return [_part(_cylinder(0.25, 0.35, 3.0), Vector3(0.0, 1.5, 0.0), Palette.material(&"madera")),
+				_part(_sphere(3.0, 4.0), Vector3(0.0, 3.6, 0.0), Palette.wind_material(&"sauce", TREE_WIND * 0.8, 5.6))]
 	return []
 
 
@@ -295,13 +278,10 @@ func _terrain_bounds() -> Rect2:
 	return Rect2(center - half, _terrain.size)
 
 
-static func _part(mesh: Mesh, offset: Vector3, color: Color) -> Dictionary:
+static func _part(mesh: Mesh, offset: Vector3, material: Material) -> Dictionary:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	surface.append_from(mesh, 0, Transform3D(Basis.IDENTITY, offset))
-	var material := StandardMaterial3D.new()
-	material.albedo_color = color
-	material.roughness = 1.0
 	return {"mesh": surface.commit(), "material": material}
 
 
@@ -324,12 +304,10 @@ static func _cylinder(top: float, bottom: float, height: float) -> CylinderMesh:
 	return mesh
 
 
-# Tres planos cruzados que se afinan arriba; UV.y es la altura (el viento mueve la punta).
+# Tres planos cruzados que se afinan arriba; el color va de la base a la punta según la altura.
 static func _grass_mesh() -> ArrayMesh:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var base := Color(0.32, 0.45, 0.2)
-	var tip := Color(0.7, 0.72, 0.38)
 	for blade: int in 3:
 		var angle: float = blade * PI / 3.0
 		var side := Vector3(cos(angle), 0.0, sin(angle)) * 0.45
@@ -337,7 +315,6 @@ static func _grass_mesh() -> ArrayMesh:
 		var corners: Array[Vector3] = [-side, side, top_side + Vector3.UP * 0.95, -top_side + Vector3.UP * 0.95]
 		var heights: Array[float] = [0.0, 0.0, 1.0, 1.0]
 		for corner: int in [0, 1, 2, 0, 2, 3]:
-			surface.set_color(base.lerp(tip, heights[corner]))
 			surface.set_uv(Vector2(0.0, heights[corner]))
 			surface.set_normal(Vector3.UP)
 			surface.add_vertex(corners[corner])

@@ -63,10 +63,13 @@
 [ext_resource type="PackedScene" path="res://scenes/items/log.tscn" id="61_tronco"]
 [ext_resource type="PackedScene" path="res://scenes/items/hides.tscn" id="62_cuero"]
 [ext_resource type="Resource" path="res://data/items/hides.tres" id="63_cuerod"]
+[ext_resource type="Shader" path="res://assets/shaders/cielo.gdshader" id="64_cielo"]
+[ext_resource type="Script" path="res://scripts/look/look_director.gd" id="65_estetica"]
+[ext_resource type="Resource" path="res://data/look/dia_pampa.tres" id="66_dia"]
+[ext_resource type="Script" path="res://scripts/look/vitality_field.gd" id="67_vida"]
 
-[sub_resource type="ProceduralSkyMaterial" id="Cielo_mat"]
-sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
-ground_horizon_color = Color(0.66, 0.67, 0.69, 1)
+[sub_resource type="ShaderMaterial" id="Cielo_mat"]
+shader = ExtResource("64_cielo")
 
 [sub_resource type="Sky" id="Cielo"]
 sky_material = SubResource("Cielo_mat")
@@ -74,10 +77,26 @@ sky_material = SubResource("Cielo_mat")
 [sub_resource type="Environment" id="Ambiente"]
 background_mode = 2
 sky = SubResource("Cielo")
+ambient_light_source = 2
+ambient_light_color = Color(0.561, 0.659, 0.816, 1)
+ambient_light_energy = 0.6
+reflected_light_source = 1
+tonemap_mode = 4
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 1.2
+ssao_power = 1.5
+glow_enabled = true
+glow_intensity = 0.4
+glow_bloom = 0.02
+glow_hdr_threshold = 1.0
 fog_enabled = true
-fog_light_color = Color(0.72, 0.74, 0.76, 1)
+fog_light_color = Color(0.81, 0.89, 0.92, 1)
 fog_density = 0.0012
+fog_aerial_perspective = 0.5
 fog_sky_affect = 0.4
+adjustment_enabled = true
+adjustment_saturation = 1.12
 
 [sub_resource type="FastNoiseLite" id="Ruido_lomas"]
 seed = 62
@@ -169,7 +188,7 @@ item = ExtResource("31_cem")
 amount = 5
 
 [sub_resource type="StandardMaterial3D" id="Mat_galpon"]
-albedo_color = Color(0.55, 0.42, 0.3, 1)
+albedo_color = Color(0.541, 0.416, 0.290, 1)
 
 [sub_resource type="BoxMesh" id="Malla_galpon_techo"]
 size = Vector3(6, 0.2, 5)
@@ -184,22 +203,22 @@ size = Vector3(1.6, 0.8, 0.8)
 size = Vector3(1.6, 0.8, 0.8)
 
 [sub_resource type="StandardMaterial3D" id="Mat_escuela"]
-albedo_color = Color(0.92, 0.9, 0.85, 1)
+albedo_color = Color(0.969, 0.961, 0.937, 1)
 
 [sub_resource type="BoxMesh" id="Malla_escuela"]
 size = Vector3(10, 3.5, 6)
 
 [sub_resource type="StandardMaterial3D" id="Mat_piedra"]
-albedo_color = Color(0.82, 0.8, 0.72, 1)
+albedo_color = Color(0.945, 0.925, 0.878, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_local"]
-albedo_color = Color(0.78, 0.62, 0.45, 1)
+albedo_color = Color(0.690, 0.553, 0.384, 1)
 
 [sub_resource type="BoxMesh" id="Malla_local"]
 size = Vector3(5, 3.2, 3.5)
 
 [sub_resource type="StandardMaterial3D" id="Mat_bahia"]
-albedo_color = Color(0.55, 0.47, 0.36, 1)
+albedo_color = Color(0.541, 0.416, 0.290, 1)
 
 [sub_resource type="BoxMesh" id="Malla_bahia"]
 size = Vector3(3, 0.9, 30)
@@ -315,22 +334,22 @@ _data = {
 point_count = 3
 
 [sub_resource type="StandardMaterial3D" id="Mat_madera_vieja"]
-albedo_color = Color(0.45, 0.38, 0.3, 1)
+albedo_color = Color(0.420, 0.310, 0.227, 1)
 roughness = 1.0
 
 [sub_resource type="StandardMaterial3D" id="Mat_ladrillo"]
-albedo_color = Color(0.66, 0.4, 0.3, 1)
+albedo_color = Color(0.714, 0.353, 0.235, 1)
 roughness = 1.0
 
 [sub_resource type="StandardMaterial3D" id="Mat_hierro"]
-albedo_color = Color(0.25, 0.25, 0.27, 1)
+albedo_color = Color(0.227, 0.247, 0.278, 1)
 roughness = 0.7
 
 [sub_resource type="StandardMaterial3D" id="Mat_blanco_rojo"]
-albedo_color = Color(0.85, 0.2, 0.18, 1)
+albedo_color = Color(0.784, 0.259, 0.227, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_cemento_viejo"]
-albedo_color = Color(0.62, 0.6, 0.56, 1)
+albedo_color = Color(0.725, 0.706, 0.659, 1)
 roughness = 1.0
 
 [sub_resource type="BoxMesh" id="Malla_tablero_puente"]
@@ -395,7 +414,21 @@ environment = SubResource("Ambiente")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+light_angular_distance = 0.6
 shadow_enabled = true
+shadow_opacity = 0.9
+shadow_blur = 1.5
+directional_shadow_max_distance = 180.0
+
+[node name="Estetica" type="Node" parent="." node_paths=PackedStringArray("world_environment", "sun", "horizon")]
+script = ExtResource("65_estetica")
+look = ExtResource("66_dia")
+world_environment = NodePath("../WorldEnvironment")
+sun = NodePath("../DirectionalLight3D")
+horizon = NodePath("../Horizonte")
+
+[node name="Vitalidad" type="Node" parent="."]
+script = ExtResource("67_vida")
 
 [node name="Terreno" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 320)

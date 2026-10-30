@@ -21,13 +21,6 @@ enum Tab { BACKPACK, AGENDA, TRAIN, NEIGHBORS }
 
 const TAB_NAMES: Array[String] = ["Mochila", "Agenda", "Tren", "Vecinos"]
 const TEXT_SIZE: Vector2 = Vector2(760.0, 460.0)
-## Colores de la ventana (tarea 62.8, pedido de Batmi): fondo crema clarito, tinta oscura, ranuras
-## de un crema más tostado con borde marrón para que se vean.
-const CREAM: Color = Color(0.96, 0.93, 0.84)
-const CREAM_DARK: Color = Color(0.86, 0.8, 0.66)
-const CREAM_HOVER: Color = Color(0.91, 0.86, 0.74)
-const INK: Color = Color(0.17, 0.13, 0.09)
-const BORDER: Color = Color(0.48, 0.36, 0.22)
 
 ## Si queda vacío, usa el padre.
 @export var player: Player
@@ -309,35 +302,10 @@ func _build() -> void:
 	outer.add_child(keys)
 
 
-## El tema de la ventana: crema clarito con tinta oscura, pestañas y ranuras que se distinguen.
-## También lo usa la ventana del mercado (MarketUI, tarea 62.9b).
+## El tema de la ventana: el de cartel ferroviario (RailTheme, tarea 62c.3e), crema clarito con
+## tinta oscura y marco bordó, pestañas verdes. También lo usa la ventana del mercado (MarketUI).
 static func make_theme() -> Theme:
-	var theme := Theme.new()
-	theme.set_stylebox(&"panel", &"PanelContainer", _box(CREAM, CREAM, 8, 0))
-	theme.set_stylebox(&"panel", &"TabContainer", _box(CREAM, BORDER, 4, 1))
-	theme.set_stylebox(&"tab_selected", &"TabContainer", _box(CREAM, BORDER, 4, 1))
-	theme.set_stylebox(&"tab_unselected", &"TabContainer", _box(CREAM_DARK, BORDER, 4, 1))
-	theme.set_stylebox(&"tab_hovered", &"TabContainer", _box(CREAM_HOVER, BORDER, 4, 1))
-	for color_name: StringName in [&"font_selected_color", &"font_unselected_color", &"font_hovered_color"]:
-		theme.set_color(color_name, &"TabContainer", INK)
-	theme.set_color(&"font_color", &"Label", INK)
-	theme.set_color(&"default_color", &"RichTextLabel", INK)
-	theme.set_stylebox(&"normal", &"Button", _box(CREAM_DARK, BORDER, 4, 2))
-	theme.set_stylebox(&"hover", &"Button", _box(CREAM_HOVER, BORDER, 4, 2))
-	theme.set_stylebox(&"pressed", &"Button", _box(CREAM, BORDER, 4, 2))
-	for color_name: StringName in [&"font_color", &"font_hover_color", &"font_pressed_color", &"font_focus_color"]:
-		theme.set_color(color_name, &"Button", INK)
-	return theme
-
-
-static func _box(fill: Color, border: Color, radius: int, border_width: int) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = fill
-	box.border_color = border
-	box.set_border_width_all(border_width)
-	box.set_corner_radius_all(radius)
-	box.set_content_margin_all(6.0)
-	return box
+	return RailTheme.get_theme()
 
 
 # Una pestaña de texto con barra para bajar (agenda y tren).

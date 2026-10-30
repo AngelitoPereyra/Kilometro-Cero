@@ -185,7 +185,7 @@ func _mostrar(cartel: Label, texto: String, lugar: Control.LayoutPreset) -> void
 		cartel.set_anchors_and_offsets_preset(lugar, Control.PRESET_MODE_MINSIZE, HUD_MARGIN)
 
 
-# Fondo oscuro y letra más grande para los carteles de pantalla.
+# Carteles de pantalla: esmaltados verde y crema, con letra más grande.
 func _armar_hud() -> void:
 	_estilo_de_cartel(_hud)
 	_hud_teclas = _nuevo_cartel("Teclas")
@@ -211,14 +211,8 @@ static func _envolver(texto: String, ancho: int) -> String:
 
 
 func _estilo_de_cartel(cartel: Label) -> void:
-	var fondo := StyleBoxFlat.new()
-	fondo.bg_color = Color(0.0, 0.0, 0.0, 0.5)
-	fondo.set_corner_radius_all(6)
-	fondo.set_content_margin_all(8.0)
-	cartel.add_theme_stylebox_override(&"normal", fondo)
-	cartel.add_theme_font_size_override(&"font_size", HUD_FONT_SIZE)
-	cartel.add_theme_constant_override(&"outline_size", 4)
-	cartel.add_theme_color_override(&"font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+	# Cartel ferroviario esmaltado (tarea 62c.3e, D141).
+	RailTheme.style_label(cartel, HUD_FONT_SIZE)
 	cartel.size = Vector2.ZERO
 
 

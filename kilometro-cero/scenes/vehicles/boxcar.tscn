@@ -6,13 +6,13 @@
 [ext_resource type="Script" path="res://scripts/storage/storage_area.gd" id="4_area"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_piso"]
-albedo_color = Color(0.5, 0.35, 0.2, 1)
+albedo_color = Color(0.541, 0.416, 0.290, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_chasis"]
-albedo_color = Color(0.08, 0.08, 0.08, 1)
+albedo_color = Color(0.149, 0.161, 0.180, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_rampa"]
-albedo_color = Color(0.45, 0.3, 0.15, 1)
+albedo_color = Color(0.541, 0.416, 0.290, 1)
 
 [sub_resource type="BoxMesh" id="Mesh_Chasis"]
 size = Vector3(2, 0.5, 9.4)
@@ -39,7 +39,7 @@ size = Vector3(1.6, 0.1, 1)
 size = Vector3(1.6, 0.1, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_pasarela"]
-albedo_color = Color(0.3, 0.3, 0.32, 1)
+albedo_color = Color(0.357, 0.376, 0.408, 1)
 
 [sub_resource type="BoxMesh" id="Mesh_Pasarela"]
 size = Vector3(1, 0.03, 1)
@@ -48,7 +48,7 @@ size = Vector3(1, 0.03, 1)
 size = Vector3(1, 0.03, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_troncos"]
-albedo_color = Color(0.72, 0.66, 0.52, 1)
+albedo_color = Color(0.690, 0.553, 0.384, 1)
 
 [sub_resource type="BoxMesh" id="Mesh_Troncos"]
 size = Vector3(2.4, 1.6, 9)
@@ -57,7 +57,7 @@ size = Vector3(2.4, 1.6, 9)
 size = Vector3(3, 1.6, 10)
 
 [sub_resource type="StandardMaterial3D" id="Mat_paredes"]
-albedo_color = Color(0.45, 0.2, 0.15, 1)
+albedo_color = Color(0.541, 0.290, 0.165, 1)
 
 [sub_resource type="BoxMesh" id="Mesh_ParedIzquierdaFrente"]
 size = Vector3(0.1, 2.4, 4)

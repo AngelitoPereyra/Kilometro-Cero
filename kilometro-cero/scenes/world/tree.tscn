@@ -5,7 +5,7 @@
 [ext_resource type="Resource" path="res://data/items/log.tres" id="3_log"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_tronco"]
-albedo_color = Color(0.42, 0.28, 0.15, 1)
+albedo_color = Color(0.420, 0.310, 0.227, 1)
 
 [sub_resource type="CylinderMesh" id="Mesh_tronco"]
 top_radius = 0.22
@@ -13,7 +13,7 @@ bottom_radius = 0.3
 height = 4.0
 
 [sub_resource type="StandardMaterial3D" id="Mat_copa"]
-albedo_color = Color(0.22, 0.5, 0.22, 1)
+albedo_color = Color(0.247, 0.420, 0.271, 1)
 
 [sub_resource type="SphereMesh" id="Mesh_copa"]
 radius = 1.6

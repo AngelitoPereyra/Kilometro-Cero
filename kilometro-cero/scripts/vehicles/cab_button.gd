@@ -104,6 +104,8 @@ func _rebuild() -> void:
 	shape.shape = box
 	_add_part(shape)
 	_mesh = MeshInstance3D.new()
+	# Se prende al apretarlo: LookPainter no lo repinta.
+	_mesh.set_meta(LookPainter.KEEP_META, true)
 	var cylinder := CylinderMesh.new()
 	cylinder.top_radius = radius
 	cylinder.bottom_radius = radius

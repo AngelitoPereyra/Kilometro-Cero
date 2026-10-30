@@ -17,10 +17,16 @@ extends StaticBody3D
 const GROUP: StringName = &"terrain"
 const MESH_NODE_NAME: String = "Malla"
 const SHAPE_NODE_NAME: String = "Forma"
-## Colores de bosquejo (tiny, de maqueta): pasto, tierra de los taludes empinados y roca de lo alto.
-const COLOR_GRASS: Color = Color(0.45, 0.58, 0.3)
-const COLOR_DIRT: Color = Color(0.55, 0.45, 0.3)
-const COLOR_ROCK: Color = Color(0.58, 0.56, 0.52)
+## Colores de la paleta (Palette, tarea 62c.3e): pasto, tierra de los taludes empinados y piedra de
+## lo alto; en lo plano el pasto se alterna en manchas grandes con alfalfa y rastrojo (los campos).
+const COLOR_GRASS: Color = Color(0.498, 0.651, 0.353)
+const COLOR_ALFALFA: Color = Color(0.663, 0.761, 0.416)
+const COLOR_STUBBLE: Color = Color(0.788, 0.651, 0.302)
+const COLOR_DIRT: Color = Color(0.604, 0.478, 0.333)
+const COLOR_ROCK: Color = Color(0.725, 0.706, 0.659)
+## Tamaño de las manchas de campos (frecuencia del ruido) y su semilla.
+const FIELD_FREQUENCY: float = 0.0035
+const FIELD_SEED: int = 1888
 ## Desde qué pendiente (1 - normal.y) el pasto pasa a tierra, y en cuánto termina de pasar.
 const DIRT_SLOPE_START: float = 0.08
 const DIRT_SLOPE_FULL: float = 0.25
@@ -341,6 +347,9 @@ func _build_mesh_and_shape() -> void:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
+	var fields := FastNoiseLite.new()
+	fields.seed = FIELD_SEED
+	fields.frequency = FIELD_FREQUENCY
 	vertices.resize(_columns * _rows)
 	normals.resize(_columns * _rows)
 	colors.resize(_columns * _rows)
@@ -356,7 +365,8 @@ func _build_mesh_and_shape() -> void:
 			var ahead: float = vertex_height(i, mini(j + 1, _rows - 1))
 			var normal: Vector3 = Vector3(left - right, 2.0 * cell_size, back - ahead).normalized()
 			normals[index] = normal
-			colors[index] = ground_color(height, normal.y, rock_height)
+			var world: Vector3 = global_transform * Vector3(point.x, height, point.y)
+			colors[index] = ground_color(height, normal.y, rock_height, fields.get_noise_2d(world.x, world.z))
 	var indices := PackedInt32Array()
 	indices.resize((_columns - 1) * (_rows - 1) * 6)
 	var k: int = 0
@@ -379,6 +389,8 @@ func _build_mesh_and_shape() -> void:
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
 	var material := StandardMaterial3D.new()
 	material.vertex_color_use_as_albedo = true
+	# Los colores son de la paleta, en sRGB (en el juego LookPainter lo pasa al material del mundo).
+	material.vertex_color_is_srgb = true
 	# Así no importa para qué lado gira cada triángulo.
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	material.roughness = 1.0
@@ -398,8 +410,11 @@ func _build_mesh_and_shape() -> void:
 	shape_node.shape = mesh.create_trimesh_shape()
 
 
-## Lógica pura: color del suelo según la altura y lo plano (normal.y, 1 en el plano).
-static func ground_color(height: float, flatness: float, rock_from: float) -> Color:
+## Lógica pura: color del suelo según la altura, lo plano (normal.y, 1 en el plano) y la mancha de
+## campo (ruido de -1 a 1: abajo de -0,25 alfalfa, arriba de 0,3 rastrojo, en el medio pasto).
+static func ground_color(height: float, flatness: float, rock_from: float, field: float = 0.0) -> Color:
 	var slope: float = 1.0 - flatness
-	var color: Color = COLOR_GRASS.lerp(COLOR_DIRT, smoothstep(DIRT_SLOPE_START, DIRT_SLOPE_FULL, slope))
+	var grass: Color = COLOR_GRASS.lerp(COLOR_ALFALFA, 1.0 - smoothstep(-0.4, -0.25, field))
+	grass = grass.lerp(COLOR_STUBBLE, smoothstep(0.3, 0.45, field))
+	var color: Color = grass.lerp(COLOR_DIRT, smoothstep(DIRT_SLOPE_START, DIRT_SLOPE_FULL, slope))
 	return color.lerp(COLOR_ROCK, smoothstep(rock_from, rock_from + ROCK_BLEND_M, height))

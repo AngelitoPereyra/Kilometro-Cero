@@ -4,6 +4,8 @@ extends MeshInstance3D
 ## con la niebla del ambiente tapa el borde de la maqueta (nunca se ve la mesa, sección 3 del GDD).
 ## Sale del borde del terreno a su altura, sube a las lomas a `margin` metros y baja por detrás.
 ## Del lado sur (z menor que `sierra_from_z`) son más altas: las sierras de Tandilia.
+## Tarea 62c.3e: los colores cambian con la hora (LookDirector llama a set_colors); cada vértice
+## guarda en el rojo cuánto es del color lejano y el material mezcla los dos.
 
 const STEP: float = 40.0
 
@@ -14,6 +16,8 @@ const STEP: float = 40.0
 @export var near_color: Color = Color(0.43, 0.52, 0.36)
 @export var far_color: Color = Color(0.55, 0.6, 0.66)
 @export var noise_seed: int = 7
+
+var _material: ShaderMaterial
 
 
 func _ready() -> void:
@@ -49,7 +53,8 @@ func build() -> void:
 		var behind: Vector2 = inner + outward * margin * 1.8
 		var top: float = hill_at(noise, crest, hill_height, sierra_height, sierra_from_z)
 		rows.append([Vector3(inner.x, ground, inner.y), Vector3(crest.x, maxf(top, ground), crest.y), Vector3(behind.x, -40.0, behind.y)])
-	var colors: Array[Color] = [near_color, near_color.lerp(far_color, 0.7), far_color]
+	# Cuánto de lejano tiene cada fila: el pie, la cresta y lo de atrás.
+	var colors: Array[Color] = [Color(0.0, 0.0, 0.0), Color(0.7, 0.0, 0.0), Color(1.0, 0.0, 0.0)]
 	for index: int in rows.size():
 		var current: Array = rows[index]
 		var following: Array = rows[(index + 1) % rows.size()]
@@ -61,13 +66,21 @@ func build() -> void:
 				surface.set_color(shades[corner])
 				surface.add_vertex(to_local(corners[corner]))
 	surface.generate_normals()
-	var material := StandardMaterial3D.new()
-	material.vertex_color_use_as_albedo = true
-	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	material.roughness = 1.0
+	if _material == null:
+		_material = Palette.tint_material()
 	mesh = surface.commit()
-	material_override = material
+	material_override = _material
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	set_colors(near_color, far_color)
+
+
+## Los colores de las lomas cercanas (el pie) y de las lejanas.
+func set_colors(near: Color, far: Color) -> void:
+	near_color = near
+	far_color = far
+	if _material != null:
+		_material.set_shader_parameter(&"tint_a", near)
+		_material.set_shader_parameter(&"tint_b", far)
 
 
 # El borde del terreno, de a STEP metros, dando la vuelta.

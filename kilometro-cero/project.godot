@@ -140,3 +140,26 @@ camera_view={
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+
+[shader_globals]
+
+vitality_map={
+"type": "sampler2D",
+"value": ""
+}
+vitality_map_prev={
+"type": "sampler2D",
+"value": ""
+}
+vitality_mix={
+"type": "float",
+"value": 1.0
+}
+vitality_rect={
+"type": "vec4",
+"value": Vector4(0, 0, 1, 1)
+}
+vitality_enabled={
+"type": "float",
+"value": 0.0
+}

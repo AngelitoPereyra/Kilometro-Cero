@@ -50,6 +50,8 @@ func _ready() -> void:
 	_main_material = _make_material(Color(0.95, 0.95, 0.9))
 	_other_material = _make_material(Color(0.95, 0.75, 0.1))
 	_knob = MeshInstance3D.new()
+	# Cambia de color al moverla: LookPainter no la repinta.
+	_knob.set_meta(LookPainter.KEEP_META, true)
 	var knob_mesh := SphereMesh.new()
 	knob_mesh.radius = 0.14
 	knob_mesh.height = 0.28

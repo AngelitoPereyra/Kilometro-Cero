@@ -15,13 +15,13 @@
 [ext_resource type="Script" path="res://scripts/world/station_tracks.gd" id="61b_vias"]
 
 [sub_resource type="StandardMaterial3D" id="Mat_anden"]
-albedo_color = Color(0.55, 0.45, 0.35, 1)
+albedo_color = Color(0.847, 0.780, 0.643, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_edificio"]
-albedo_color = Color(0.45, 0.35, 0.25, 1)
+albedo_color = Color(0.541, 0.416, 0.290, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_troncos"]
-albedo_color = Color(0.5, 0.33, 0.18, 1)
+albedo_color = Color(0.541, 0.416, 0.290, 1)
 
 [sub_resource type="BoxMesh" id="Box_1"]
 size = Vector3(6, 1, 16)
@@ -42,7 +42,7 @@ size = Vector3(14, 4, 22)
 size = Vector3(3, 1, 4)
 
 [sub_resource type="StandardMaterial3D" id="Mat_tablero"]
-albedo_color = Color(0.15, 0.3, 0.2, 1)
+albedo_color = Color(0.122, 0.290, 0.216, 1)
 
 [sub_resource type="BoxMesh" id="Box_tablero"]
 size = Vector3(2.6, 1.8, 0.1)
@@ -51,13 +51,13 @@ size = Vector3(2.6, 1.8, 0.1)
 size = Vector3(0.1, 0.9, 0.1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_mercado"]
-albedo_color = Color(0.55, 0.35, 0.15, 1)
+albedo_color = Color(0.541, 0.416, 0.290, 1)
 
 [sub_resource type="BoxMesh" id="Box_mostrador"]
 size = Vector3(2.4, 1, 0.8)
 
 [sub_resource type="StandardMaterial3D" id="Mat_toldo"]
-albedo_color = Color(0.85, 0.25, 0.2, 1)
+albedo_color = Color(0.659, 0.267, 0.220, 1)
 
 [sub_resource type="BoxMesh" id="Box_toldo"]
 size = Vector3(2.8, 0.1, 1.4)

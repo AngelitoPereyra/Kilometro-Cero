@@ -1,7 +1,7 @@
 @tool
 extends EditorScript
 ## Configuración inicial del proyecto (tarea 3): acciones del InputMap, nombres de
-## capas de colisión y archivos .gitkeep. Se corre desde File > Run (Ctrl+Shift+X).
+## capas de colisión, variables globales de shader (62c.3e) y archivos .gitkeep. Se corre desde File > Run (Ctrl+Shift+X).
 ## Es idempotente: correrlo de nuevo deja todo igual. Por eso la configuración vive
 ## en código versionado y no depende de clics manuales en el editor.
 
@@ -33,6 +33,7 @@ func _run() -> void:
 	_registrar_acciones(acciones)
 	_borrar_obsoletas()
 	_nombrar_capas()
+	_declarar_globales_de_shader()
 
 	var error: Error = ProjectSettings.save()
 	if error != OK:
@@ -108,6 +109,22 @@ func _nombrar_capas() -> void:
 	for i: int in CAPAS_FISICAS_3D.size():
 		# Con nombre, el inspector muestra "mundo" en vez de "Layer 1".
 		ProjectSettings.set_setting("layer_names/3d_physics/layer_%d" % (i + 1), CAPAS_FISICAS_3D[i])
+
+
+# Las variables globales que lee el material del mundo (tarea 62c.3e, vitalidad D141). Sin ellas
+# el shader no compila; Palette.ensure_globals las agrega igual mientras corre el juego.
+func _declarar_globales_de_shader() -> void:
+	var globales: Dictionary = {
+		"vitality_map": {"type": "sampler2D", "value": ""},
+		"vitality_map_prev": {"type": "sampler2D", "value": ""},
+		"vitality_mix": {"type": "float", "value": 1.0},
+		"vitality_rect": {"type": "vec4", "value": Vector4(0.0, 0.0, 1.0, 1.0)},
+		"vitality_enabled": {"type": "float", "value": 0.0},
+	}
+	for nombre: String in globales:
+		var clave: String = "shader_globals/" + nombre
+		if not ProjectSettings.has_setting(clave):
+			ProjectSettings.set_setting(clave, globales[nombre])
 
 
 # Releemos la configuración guardada para confirmar que quedó cargada de verdad.

@@ -35,6 +35,9 @@ func _ready() -> void:
 	_label = get_node_or_null(TEXT_PATH) as Label3D
 	if Engine.is_editor_hint():
 		return
+	if _label != null:
+		# Letra crema de cartel esmaltado sobre el tablero verde (tarea 62c.3e).
+		RailTheme.style_label_3d(_label)
 	if _station == null:
 		push_warning("StationBoard %s: no está dentro de una Station." % name)
 	update_text()

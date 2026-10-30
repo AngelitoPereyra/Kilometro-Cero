@@ -12,9 +12,10 @@ const MODULES_NODE_NAME: String = "Modules"
 # Tolerancia para que un error de redondeo al medir la curva (199.9999 m en vez de
 # 200 m) no haga perder el último módulo.
 const LENGTH_EPSILON_M: float = 0.001
-# Colores del placeholder. El módulo definitivo usará un parámetro "wear" en su shader.
-const COLOR_HEALTHY: Color = Color(0.55, 0.55, 0.60)
-const COLOR_WORN: Color = Color(0.45, 0.25, 0.12)
+# Colores del placeholder (riel y óxido de Palette, tarea 62c.3e). El módulo definitivo usará un
+# parámetro "wear" en su shader. Cambia su propio color: LookPainter no lo repinta (KEEP_META).
+const COLOR_HEALTHY: Color = Color(0.357, 0.376, 0.408)
+const COLOR_WORN: Color = Color(0.541, 0.290, 0.165)
 
 ## Malla del módulo recto. Su origen va en el centro del módulo y su largo corre por el eje Z.
 @export var module_mesh: Mesh:
@@ -123,6 +124,7 @@ func _get_or_create_modules() -> MultiMeshInstance3D:
 	if instance == null:
 		instance = MultiMeshInstance3D.new()
 		instance.name = MODULES_NODE_NAME
+		instance.set_meta(LookPainter.KEEP_META, true)
 		add_child(instance)
 	return instance
 
