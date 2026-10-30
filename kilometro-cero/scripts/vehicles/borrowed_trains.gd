@@ -9,6 +9,7 @@ extends Node
 ## el tablero, o las puertas del coche si lleva gente). Cumplida la principal, desaparece con humo
 ## apenas el jugador se baja, y el tren propio (`player_train` y lo que lleve enganchado) aparece con
 ## humo en una vía libre de esa estación: el viejo lo trae en la maqueta.
+## El tren queda centrado frente al edificio de la estación (sobre el andén), no en la punta de la vía.
 ## Si en la estación productora no hay una vía libre que alcance, espera y vuelve a probar.
 ## Todavía no se guarda (tarea 65): una principal guardada en viaje inaugural vuelve a armar el tren.
 
@@ -134,7 +135,7 @@ func spawn_for(mission_id: StringName) -> bool:
 	loco.name = "TrenPrestado_%s" % mission.item_id
 	loco.reversed = not faces_end
 	path.add_child(loco)
-	var at: float = _head_offset(path, loco.data.length, faces_end)
+	var at: float = _head_at_station(path, source, loco.data.length, length, faces_end)
 	loco.place_on(path, at, not faces_end)
 	var vehicles: Array[Vehicle] = [loco]
 	var dir: float = 1.0 if faces_end else -1.0
@@ -245,7 +246,7 @@ func bring_player_train(station_id: StringName, toward: StringName = &"", ignore
 	head.throttle = 0.0
 	for vehicle: Vehicle in train:
 		vehicle.speed = 0.0
-	head.place_on(path, _head_offset(path, head.data.length, faces_end), not faces_end)
+	head.place_on(path, _head_at_station(path, station_id, head.data.length, length, faces_end), not faces_end)
 	head.forget_route_ahead()
 	SmokePuff.at_vehicles(train)
 	player_train_moved.emit(station_id)
@@ -281,11 +282,23 @@ func _finish(mission_id: StringName) -> void:
 		bring_player_train(trip["station"], trip["source"], gone)
 
 
-# Dónde va la cabeza para que el tren entre entero hacia atrás: END_MARGIN antes de la punta.
-static func _head_offset(path: Path3D, loco_length: float, faces_end: bool) -> float:
+# Dónde va la cabeza para que el tren (de `train_length` metros) quede centrado frente a la
+# estación, sobre el andén, sin pasarse de las puntas de la vía (END_MARGIN).
+func _head_at_station(path: Path3D, station_id: StringName, loco_length: float, train_length: float, faces_end: bool) -> float:
 	var length: float = path.curve.get_baked_length()
-	var from_end: float = END_MARGIN + loco_length * 0.5
-	return length - from_end if faces_end else from_end
+	var center: float = length * 0.5
+	var station: Station = Station.find(get_tree(), station_id)
+	if station != null:
+		center = path.curve.get_closest_offset(path.to_local(station.global_position))
+	var dir: float = 1.0 if faces_end else -1.0
+	var head: float = center + dir * (train_length * 0.5 - loco_length * 0.5)
+	var low: float = END_MARGIN + loco_length * 0.5
+	var high: float = length - END_MARGIN - loco_length * 0.5
+	if faces_end:
+		low += train_length - loco_length
+	else:
+		high -= train_length - loco_length
+	return clampf(head, low, maxf(low, high))
 
 
 # Si la locomotora tiene que mirar hacia el final de la curva: el final queda más cerca del primer

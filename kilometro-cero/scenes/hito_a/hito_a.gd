@@ -46,6 +46,8 @@ const START_AHEAD: float = 12.0
 const SKIP_BEFORE_HOURS: float = 0.25
 ## Sin trenes automáticos, la T lleva a esta hora del día siguiente.
 const SKIP_MORNING_HOUR: float = 7.0
+## Renglones del cartel de misiones (arriba a la derecha).
+const MAX_MISSION_LINES: int = 4
 
 @onready var _player: Player = $Player
 @onready var _loco: Vehicle = $OlavarriaSierrasBayas/Locomotive
@@ -218,17 +220,47 @@ func _nuevo_cartel(nombre: String) -> Label:
 	return cartel
 
 
-# La primera misión en curso con algo por hacer, en el orden de STATIONS: el título y debajo un
-# paso por renglón.
+# Los avisos cortos de misiones (ajuste de Batmi a la 62b.3): con quién hablar, dónde está el tren
+# prestado y "! secundaria disponible en el tablero de X"; el detalle va en los tableros y en la
+# Agenda del TAB. Hasta MAX_MISSION_LINES renglones, en el orden de STATIONS.
 func _mision_que_sigue() -> String:
 	var tablero: MissionBoard = GameState.missions
+	var renglones: PackedStringArray = []
 	for station_id: StringName in STATIONS:
-		for mision: Mission in tablero.get_active_missions(station_id):
-			var pasos: PackedStringArray = tablero.get_pending_steps(mision)
-			if pasos.is_empty():
-				continue
-			var titulo: String = tablero.get_title(mision) if mision.main else mision.data.title
-			return "Ahora: %s\n• %s" % [titulo, "\n• ".join(pasos)]
+		var lugar: String = tablero.station_name(station_id)
+		for mision: Mission in tablero.get_main_missions(station_id):
+			var renglon: String = _aviso_de_principal(tablero, mision, lugar)
+			if renglon != "" and not renglones.has(renglon):
+				renglones.append(renglon)
+		var disponible: bool = false
+		for mision: Mission in tablero.get_side_missions(station_id):
+			if mision.state == Mission.State.AVAILABLE:
+				disponible = true
+			elif mision.is_active():
+				renglones.append("• %s (%s)" % [mision.data.title, lugar])
+		if disponible:
+			renglones.append("! Secundaria disponible en el tablero de %s" % lugar)
+	if renglones.size() > MAX_MISSION_LINES:
+		renglones.resize(MAX_MISSION_LINES)
+	return "\n".join(renglones)
+
+
+# Una principal en una línea: qué hacer y con quién.
+func _aviso_de_principal(tablero: MissionBoard, mision: Mission, lugar: String) -> String:
+	var quien: String = tablero.get_main_giver(mision.station_id)
+	var origen: StringName = tablero.find_source(mision)
+	match tablero.get_stage(mision):
+		MissionBoard.Stage.OPEN_ROUTE:
+			var cortados: Array[StringName] = tablero.get_cut_segments(mision)
+			if origen == &"" or cortados.is_empty() or quien == "":
+				return ""
+			return "• Despejá %s y hablá con %s (%s)" % [", ".join(cortados), quien, lugar]
+		MissionBoard.Stage.REPORT:
+			return "• Hablá con %s (%s)" % [quien, lugar]
+		MissionBoard.Stage.OFFER:
+			return "• Tren prestado a %s: tablero de %s (opcional)" % [lugar, tablero.station_name(origen)]
+		MissionBoard.Stage.INAUGURAL:
+			return "• Llevá el tren prestado de %s a %s" % [tablero.station_name(origen), lugar]
 	return ""
 
 

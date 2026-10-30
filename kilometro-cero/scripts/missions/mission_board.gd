@@ -21,10 +21,12 @@ extends RefCounted
 ##   (`register_main_giver`, lo hace MissionGiver.main_station) el jugador no lleva la primera
 ##   carga. Etapas (`get_stage`): abrir el camino, avisarle (`report`) y, si el camino tiene un
 ##   tramo que abrió el jugador (`opened_check`) y que todavía no estrenó ningún tren
-##   (`is_christened`), el viaje inaugural: el Ferrocarril arma el tren prestado en el productor ya
-##   cargado (`inaugural_started`; lo pone BorrowedTrains) y el jugador lo maneja y entrega como
-##   siempre (tablero o puertas). Si no, al avisar se cumple sola. Cada principal cumplida estrena
-##   los tramos de su camino.
+##   (`is_christened`), el viaje inaugural, que es opcional (ajuste de Batmi): el tablero del
+##   productor lo ofrece (`get_offers_at`) y si el jugador lo toma (`take_inaugural`) el Ferrocarril
+##   arma el tren prestado ya cargado (`inaugural_started`; lo pone BorrowedTrains) y el jugador lo
+##   maneja y entrega como siempre (tablero o puertas); si no lo toma, al terminar el día lo trae
+##   el Ferrocarril y se cumple sola. Sin tramo por estrenar, al avisar se cumple sola. Cada
+##   principal cumplida estrena los tramos de su camino.
 
 ## Una misión nueva: una principal que nace (ya activa) o una secundaria que se puede conseguir.
 signal mission_available(mission: Mission)
@@ -35,12 +37,14 @@ signal mission_progressed(mission: Mission)
 signal mission_completed(mission: Mission)
 ## Una principal que ya no hace falta (otro flujo cubrió ese consumo).
 signal mission_removed(mission: Mission)
-## Se avisó una principal y su primera carga va en el tren prestado (tarea 62b.3).
+## Se avisó una principal con viaje inaugural: el tablero del productor ofrece el tren prestado.
+signal inaugural_offered(mission: Mission)
+## El jugador tomó el tren prestado: su primera carga va en él (tarea 62b.3).
 signal inaugural_started(mission: Mission)
 
-## Etapa de una principal con aviso (tarea 62b.3): abrir el camino, avisarle a quien la da,
-## viaje inaugural en curso, cumplida (o por cumplirse sola).
-enum Stage { OPEN_ROUTE, REPORT, INAUGURAL, DONE }
+## Etapa de una principal con aviso (tarea 62b.3): abrir el camino, avisarle a quien la da, tren
+## prestado ofrecido en el tablero, viaje inaugural en curso, cumplida (o por cumplirse sola).
+enum Stage { OPEN_ROUTE, REPORT, OFFER, INAUGURAL, DONE }
 
 var production: ProductionModel
 ## Tramos del camino más corto entre dos estaciones, también por los cortados:
@@ -73,6 +77,8 @@ var _dirty: bool = false
 var _main_givers: Dictionary[StringName, String] = {}
 # Tramos que ya estrenó un tren del Ferrocarril (tarea 62b.3).
 var _christened: Dictionary[StringName, bool] = {}
+# Secundaria -> nombre de quien la da (para los avisos del HUD y el tablero).
+var _side_givers: Dictionary[StringName, String] = {}
 
 
 func _init(model: ProductionModel = null) -> void:
@@ -82,7 +88,7 @@ func _init(model: ProductionModel = null) -> void:
 	production.flow_removed.connect(func(_flow: ProductionFlow) -> void: refresh())
 	# Una familia nueva cambia lo que pide y lo que da la estación (tarea 62b.2).
 	production.family_added.connect(func(_station_id: StringName, _occupation: OccupationData, _origin: int) -> void: refresh())
-	production.day_processed.connect(refresh)
+	production.day_processed.connect(_on_day_processed)
 
 
 ## Suma una secundaria desde sus datos. Si ya estaba (otra escena, un guardado), la conserva.
@@ -164,6 +170,7 @@ func clear() -> void:
 	_main_counts.clear()
 	_main_givers.clear()
 	_christened.clear()
+	_side_givers.clear()
 
 
 # --- Principales con aviso (tarea 62b.3, D128) ---
@@ -176,6 +183,16 @@ func register_main_giver(station_id: StringName, speaker: String) -> void:
 		return
 	_main_givers[station_id] = speaker
 	refresh()
+
+
+## Anota quién da una secundaria (lo hace MissionGiver al empezar).
+func set_side_giver(mission_id: StringName, speaker: String) -> void:
+	_side_givers[mission_id] = speaker
+
+
+## El nombre de quien da una secundaria ("Doña Rosa"), o vacío.
+func get_side_giver(mission_id: StringName) -> String:
+	return _side_givers.get(mission_id, "")
 
 
 func has_main_giver(station_id: StringName) -> bool:
@@ -200,10 +217,14 @@ func accepts_deliveries(mission: Mission) -> bool:
 
 ## La etapa de una principal con aviso. Las demás: DONE si está cumplida y OPEN_ROUTE si no.
 func get_stage(mission: Mission) -> Stage:
-	if mission == null or mission.is_completed() or (mission.reported and not mission.inaugural):
+	if mission == null or mission.is_completed():
 		return Stage.DONE
 	if mission.inaugural:
 		return Stage.INAUGURAL
+	if mission.offered:
+		return Stage.OFFER
+	if mission.reported:
+		return Stage.DONE
 	if not needs_report(mission):
 		return Stage.OPEN_ROUTE
 	var source: StringName = find_source(mission)
@@ -217,9 +238,9 @@ func can_report(mission: Mission) -> bool:
 	return mission != null and mission.is_active() and needs_report(mission) and get_stage(mission) == Stage.REPORT
 
 
-## Avisa que el camino está habilitado. Con un tramo abierto por el jugador sin estrenar empieza el
-## viaje inaugural (`inaugural_started`); si no, el Ferrocarril manda la carga y la principal se
-## cumple. False si todavía no se podía avisar.
+## Avisa que el camino está habilitado. Con un tramo abierto por el jugador sin estrenar, el tablero
+## del productor ofrece el tren prestado (`inaugural_offered`); si no, el Ferrocarril manda la carga
+## y la principal se cumple. False si todavía no se podía avisar.
 func report(mission_id: StringName) -> bool:
 	var mission: Mission = get_mission(mission_id)
 	if not can_report(mission):
@@ -227,14 +248,49 @@ func report(mission_id: StringName) -> bool:
 	var source: StringName = find_source(mission)
 	mission.source_id = source
 	mission.reported = true
-	mission.inaugural = not get_unchristened_segments(source, mission.station_id).is_empty()
-	if mission.inaugural:
-		inaugural_started.emit(mission)
+	mission.offered = not get_unchristened_segments(source, mission.station_id).is_empty()
+	if mission.offered:
+		inaugural_offered.emit(mission)
 	else:
-		for item_id: StringName in mission.required:
-			mission.delivered[item_id] = mission.required[item_id]
+		_send_load(mission)
 	refresh()
 	return true
+
+
+## Las principales cuyo tren prestado ofrece el tablero de esta estación (la productora).
+func get_offers_at(station_id: StringName) -> Array[Mission]:
+	var result: Array[Mission] = []
+	for mission: Mission in _missions.values():
+		if mission.main and mission.is_active() and mission.offered and find_source(mission) == station_id:
+			result.append(mission)
+	return result
+
+
+## El jugador toma el tren prestado ofrecido: empieza el viaje inaugural (`inaugural_started`).
+func take_inaugural(mission_id: StringName) -> bool:
+	var mission: Mission = get_mission(mission_id)
+	if mission == null or not mission.is_active() or not mission.offered:
+		return false
+	mission.offered = false
+	mission.inaugural = true
+	inaugural_started.emit(mission)
+	refresh()
+	return true
+
+
+# El Ferrocarril trae la primera carga solo: la principal se cumple.
+func _send_load(mission: Mission) -> void:
+	mission.offered = false
+	for item_id: StringName in mission.required:
+		mission.delivered[item_id] = mission.required[item_id]
+
+
+# Al terminar el día, los trenes prestados que nadie tomó los trae el Ferrocarril.
+func _on_day_processed() -> void:
+	for mission: Mission in get_missions():
+		if mission.main and mission.is_active() and mission.offered:
+			_send_load(mission)
+	refresh()
 
 
 ## Los tramos del camino entre dos estaciones que abrió el jugador y que todavía no estrenó ningún
@@ -534,6 +590,8 @@ func _report_steps(mission: Mission) -> PackedStringArray:
 			steps.append("Después, avisarle a %s en %s" % [giver, station_name(mission.station_id)])
 		Stage.REPORT:
 			steps.append("Avisarle a %s en %s que el camino a %s está habilitado" % [giver, station_name(mission.station_id), station_name(source)])
+		Stage.OFFER:
+			steps.append("Si querés llevar vos el tren prestado: F en el tablero de %s (si no, mañana lo trae el Ferrocarril)" % station_name(source))
 		Stage.INAUGURAL:
 			steps.append("Llevar el tren prestado de %s a %s (el maquinista está enfermo)" % [station_name(source), station_name(mission.station_id)])
 			var remaining: Dictionary[StringName, int] = mission.get_remaining()

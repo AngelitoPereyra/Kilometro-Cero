@@ -9,6 +9,10 @@ extends Interactable
 ## Lo que hay al alcance lo junta StationGoods (tarea 59, lo comparte con el mercado).
 ## Los pasajeros no se entregan acá: bajan al abrir las puertas del coche (tarea 60b). Si la
 ## estación pide pasajeros y el coche de regalo no está en la vía, el tablero dice dónde buscarlo.
+## Tren prestado (tarea 62b.3, ajuste de Batmi): si una principal avisada ofrece el viaje inaugural
+## desde esta estación, el tablero lo dice y F (sin nada para entregar) lo toma
+## (MissionBoard.take_inaugural): el tren aparece en el andén. Las secundarias disponibles se
+## anotan con "!" y quién las da.
 
 ## Se aprobó una entrega: id de objeto -> unidades entregadas.
 signal delivered(amounts: Dictionary[StringName, int])
@@ -55,7 +59,20 @@ func get_station() -> Station:
 
 func get_prompt() -> String:
 	var plan: Dictionary[StringName, int] = get_delivery_plan()
-	return "Entregar " + _amounts_text(plan) if not plan.is_empty() else "Mirar el tablero"
+	if not plan.is_empty():
+		return "Entregar " + _amounts_text(plan)
+	var offer: Mission = get_offer()
+	if offer != null:
+		return "Llevar vos el tren prestado a %s" % GameState.missions.station_name(offer.station_id)
+	return "Mirar el tablero"
+
+
+## El primer tren prestado que ofrece esta estación (null si ninguno).
+func get_offer() -> Mission:
+	if _station == null:
+		return null
+	var offers: Array[Mission] = GameState.missions.get_offers_at(_station.get_station_id())
+	return offers[0] if not offers.is_empty() else null
 
 
 ## Lo que hay para entregar ahora: vagones de los trenes detenidos, la mano y la mochila del
@@ -101,7 +118,21 @@ func deliver(player: Player = null) -> Dictionary[StringName, int]:
 
 
 func _on_interact(player: Player) -> void:
+	if get_delivery_plan(player).is_empty() and get_offer() != null:
+		take_offer()
+		return
 	deliver(player)
+
+
+## Toma el tren prestado que ofrece la estación. True si había uno.
+func take_offer() -> bool:
+	var offer: Mission = get_offer()
+	if offer == null or not GameState.missions.take_inaugural(offer.id):
+		return false
+	_message = "El tren prestado sale al andén: llevalo a %s" % GameState.missions.station_name(offer.station_id)
+	_message_left = MESSAGE_TIME
+	update_text()
+	return true
 
 
 ## Escribe el estado en el Label3D "Texto" (también lo devuelve, para pruebas).
@@ -130,11 +161,16 @@ func build_text() -> String:
 	var sides: Array[Mission] = board.get_side_missions(station_id)
 	var shown_sides: PackedStringArray = []
 	for mission: Mission in sides:
-		if mission.state != Mission.State.AVAILABLE:
+		if mission.state == Mission.State.AVAILABLE:
+			var giver: String = board.get_side_giver(mission.id)
+			shown_sides.append("! %s%s" % [mission.data.title, (": hablar con " + giver) if giver != "" else ""])
+		else:
 			shown_sides.append(_mission_line(board, mission))
 	if not shown_sides.is_empty():
 		lines.append("— Secundarias —")
 		lines.append_array(shown_sides)
+	for offer: Mission in board.get_offers_at(station_id):
+		lines.append("Tren prestado listo (%s a %s): F para llevarlo vos; si no, mañana lo trae el Ferrocarril" % [_amounts_text(offer.get_remaining()), board.station_name(offer.station_id)])
 	var coach_hint: String = _coach_hint(mains)
 	if not coach_hint.is_empty():
 		lines.append(coach_hint)

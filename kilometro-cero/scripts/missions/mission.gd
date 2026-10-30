@@ -39,6 +39,9 @@ var data: MissionData
 var outro_told: bool = false
 ## Principal con aviso (tarea 62b.3): ya se le avisó a quien la da que el camino está habilitado.
 var reported: bool = false
+## Principal con aviso: el tren prestado espera en el tablero del productor que el jugador lo tome
+## (viaje inaugural opcional, ajuste de Batmi a la 62b.3); si no, al otro día lo trae el Ferrocarril.
+var offered: bool = false
 ## Principal con aviso: la primera carga va en el tren prestado (viaje inaugural, en curso).
 var inaugural: bool = false
 ## Principal con aviso: la estación productora elegida al avisar (de ahí sale el tren prestado).
@@ -141,6 +144,7 @@ func to_dict() -> Dictionary:
 		values["item"] = String(item_id)
 		values["amount"] = flow_amount
 		values["reported"] = reported
+		values["offered"] = offered
 		values["inaugural"] = inaugural
 		values["source"] = String(source_id)
 	return values
@@ -158,6 +162,7 @@ func apply_dict(values: Dictionary) -> void:
 	state = int(values.get("state", state)) as State
 	outro_told = bool(values.get("outro_told", false))
 	reported = bool(values.get("reported", false))
+	offered = bool(values.get("offered", false))
 	inaugural = bool(values.get("inaugural", false))
 	source_id = StringName(values.get("source", ""))
 	delivered.clear()

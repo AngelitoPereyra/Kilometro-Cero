@@ -10,7 +10,8 @@ extends Interactable
 ## Quien da las principales de una estación (`main_station`, tarea 62b.3, D128: el jefe de
 ## estación, la comisión de fomento, el capataz) pide que le avisen cuando el camino está
 ## habilitado: al hablarle con el camino abierto recibe el aviso (MissionBoard.report) y cuenta si
-## el Ferrocarril manda el tren solo o si el maquinista está enfermo y hay que llevar el prestado.
+## el Ferrocarril manda el tren solo o si el maquinista está enfermo y el jugador puede llevar el
+## prestado (se pide en el tablero del productor).
 ## Lo que dice se ve en su Label3D "Globo" durante SPEECH_TIME; el resto del tiempo el globo
 ## muestra "!" si tiene algo para dar o contar. La interfaz definitiva llega con la tarea 67.
 
@@ -41,6 +42,7 @@ func _ready() -> void:
 		for problem: String in mission_data.validate():
 			push_warning("MissionGiver %s: %s." % [name, problem])
 		GameState.missions.register_side(mission_data)
+		GameState.missions.set_side_giver(mission_data.id, get_short_name())
 	if main_station != &"":
 		GameState.missions.register_main_giver(main_station, get_short_name())
 	_update_bubble()
@@ -126,8 +128,8 @@ static func report_text(mission: Mission) -> String:
 	var board: MissionBoard = GameState.missions
 	var source: String = board.station_name(mission.source_id)
 	var item: String = board.name_of(mission.item_id)
-	if mission.inaugural:
-		return "¡Gracias por avisar! El Ferrocarril ya armó en %s el tren con %d %s, pero el maquinista está enfermo. ¿Lo traés vos? Está en la estación, con un cartel." % [source, mission.required.get(mission.item_id, 0), item]
+	if mission.offered:
+		return "¡Gracias por avisar! El Ferrocarril arma en %s el tren con %d %s, pero el maquinista está enfermo. Si querés traerlo vos, pedilo en el tablero de %s; si no, mañana lo trae uno de reemplazo." % [source, mission.required.get(mission.item_id, 0), item, source]
 	var when: String = "desde mañana" if board.flows_start_next_day else "desde hoy"
 	return "¡Gracias por avisar! El maquinista ya se curó: %s el Ferrocarril trae %d %s por día desde %s." % [when, mission.flow_amount, item, source]
 

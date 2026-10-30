@@ -2,8 +2,9 @@ extends Node
 ## Prueba de la tarea 62b.3 (D127, D128): principales con aviso y tren prestado, en lógica, con los
 ## datos del Hito A y un tablero propio (no toca la partida de GameState). Quien da cada principal
 ## (Don Ernesto, Doña Clara, Ramírez) pide que le avisen cuando el camino está habilitado; con un
-## tramo que abrió el jugador sin estrenar el aviso arranca el viaje inaugural (tren prestado) y si
-## no, el Ferrocarril manda la carga solo. También: tramos abiertos en RailNetwork, los vagones del
+## tramo que abrió el jugador sin estrenar el tablero del productor ofrece el tren prestado (se toma
+## con take_inaugural; si no, al terminar el día lo trae el Ferrocarril) y si no, el Ferrocarril
+## manda la carga solo. También: tramos abiertos en RailNetwork, los vagones del
 ## tren prestado (BorrowedTrains.plan_wagons) y el humo (SmokePuff).
 ## Red: Azul --(o_a)-- Olavarría --(o_s)-- Sierras Bayas. Los dos tramos empiezan tapados.
 ## El tren prestado de verdad (aparecer, manejar, entregar y desaparecer con humo) se prueba
@@ -115,11 +116,16 @@ func _probar_aviso_y_viajes() -> void:
 	pasos = _tablero.get_pending_steps(colonos)
 	_comprobar(pasos.size() == 1 and pasos[0].begins_with("Avisarle a Doña Clara en Azul"), "Paso: avisarle (%s)" % [pasos])
 	_comprobar(colonos.is_active(), "Sin aviso, la principal no se cumple sola")
-	# 3. Aviso con o_a sin estrenar: viaje inaugural desde Olavarría.
+	# 3. Aviso con o_a sin estrenar: el tablero de Olavarría ofrece el tren prestado y se toma.
 	_comprobar(_tablero.get_unchristened_segments(&"olavarria", &"azul") == ([&"o_a"] as Array[StringName]), "o_a lo abrió el jugador y nadie lo estrenó")
 	_comprobar(_tablero.report(colonos.id), "Se le avisa a Doña Clara")
-	_comprobar(colonos.reported and colonos.inaugural and colonos.source_id == &"olavarria" and _inaugurales.has(colonos.id), "Empieza el viaje inaugural: tren prestado desde Olavarría")
-	_comprobar(_tablero.get_stage(colonos) == MissionBoard.Stage.INAUGURAL and not _tablero.report(colonos.id), "En viaje inaugural; no se avisa dos veces")
+	_comprobar(colonos.reported and colonos.offered and not colonos.inaugural and colonos.source_id == &"olavarria" and _inaugurales.is_empty(), "Avisada: el tren prestado se ofrece, todavía no sale")
+	_comprobar(_tablero.get_stage(colonos) == MissionBoard.Stage.OFFER and _tablero.get_offers_at(&"olavarria").has(colonos) and _tablero.get_offers_at(&"azul").is_empty(), "Lo ofrece el tablero de Olavarría (el productor)")
+	pasos = _tablero.get_pending_steps(colonos)
+	_comprobar(pasos.size() == 1 and pasos[0].contains("tablero de Olavarría"), "Paso: llevarlo vos desde el tablero de Olavarría, si querés (%s)" % [pasos])
+	_comprobar(not _tablero.accepts_deliveries(colonos) and not _tablero.report(colonos.id), "Ofrecido: todavía no acepta entregas ni se avisa dos veces")
+	_comprobar(_tablero.take_inaugural(colonos.id) and colonos.inaugural and not colonos.offered and _inaugurales.has(colonos.id), "Tomado en el tablero: empieza el viaje inaugural desde Olavarría")
+	_comprobar(_tablero.get_stage(colonos) == MissionBoard.Stage.INAUGURAL and not _tablero.take_inaugural(colonos.id), "En viaje inaugural; no se toma dos veces")
 	pasos = _tablero.get_pending_steps(colonos)
 	_comprobar(pasos.size() == 2 and pasos[0].begins_with("Llevar el tren prestado de Olavarría a Azul") and pasos[1].begins_with("Abrir las puertas del coche en Azul"), "Pasos: llevar el tren prestado y abrir las puertas (%s)" % [pasos])
 	_comprobar(_tablero.is_reserved_passenger(&"settlers") and _tablero.get_passenger_needs(colonos).get(&"settlers", 0) == 10, "Los 10 colonos del tren prestado van reservados")
@@ -128,10 +134,12 @@ func _probar_aviso_y_viajes() -> void:
 	_trafico.apply_exchange(&"azul", plan)
 	_comprobar(colonos.is_completed() and colonos.flow != null and colonos.flow.pending and not colonos.inaugural, "Bajaron los colonos: principal cumplida y flujo desde mañana")
 	_comprobar(_tablero.is_christened(&"o_a") and not _tablero.is_christened(&"o_s"), "o_a quedó estrenado; o_s todavía no")
-	# 5. Troncos para Sierras Bayas: o_s sin estrenar, otro viaje inaugural desde Azul.
-	_comprobar(_tablero.can_report(troncos) and _tablero.report(troncos.id) and troncos.inaugural and troncos.source_id == &"azul", "Aviso a Ramírez: tren prestado de troncos desde Azul (o_s sin estrenar)")
-	_comprobar(_tablero.plan_delivery(&"sierras_bayas", {&"log": 30} as Dictionary[StringName, int]).get(&"log", 0) == 20, "En el viaje inaugural el tablero acepta los 20 troncos")
-	_comprobar(_tablero.deliver(&"sierras_bayas", &"log", 20) == 20 and troncos.is_completed() and _tablero.is_christened(&"o_s"), "Entregados en el tablero: cumplida y o_s estrenado")
+	# 5. Troncos para Sierras Bayas: o_s sin estrenar, Azul ofrece el tren prestado y nadie lo toma.
+	_comprobar(_tablero.can_report(troncos) and _tablero.report(troncos.id) and troncos.offered and troncos.source_id == &"azul" and _tablero.get_offers_at(&"azul").has(troncos), "Aviso a Ramírez: el tablero de Azul ofrece el tren prestado de troncos (o_s sin estrenar)")
+	_comprobar(_tablero.plan_delivery(&"sierras_bayas", {&"log": 30} as Dictionary[StringName, int]).is_empty(), "Sin tomar el tren, el tablero de Sierras Bayas no acepta troncos del jugador")
+	_modelo.advance_day()
+	_comprobar(troncos.is_completed() and not troncos.offered and _inaugurales.size() == 1 and _tablero.is_christened(&"o_s"), "Al terminar el día lo trajo el Ferrocarril: cumplida y o_s estrenado")
+	_comprobar(troncos.flow != null and troncos.flow.pending, "Nace el flujo de troncos, desde mañana")
 	_modelo.advance_day()
 	_comprobar(_modelo.get_production(&"sierras_bayas").get(&"limestone", 0) == 20, "Al otro día los canteros pican 20 piedras")
 	# 6. Piedra para Olavarría: el camino ya está estrenado, el Ferrocarril la manda solo.
