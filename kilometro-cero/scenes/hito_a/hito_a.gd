@@ -56,6 +56,8 @@ const SKIP_BEFORE_HOURS: float = 0.25
 const SKIP_MORNING_HOUR: float = 7.0
 ## Renglones del cartel de misiones (arriba a la derecha).
 const MAX_MISSION_LINES: int = 4
+## El cartel de misiones cuando no queda ninguna pendiente (tarea 62b.7).
+const SIN_MISIONES: String = "Sin misiones pendientes\nTAB: Agenda"
 
 @onready var _player: Player = $Player
 @onready var _loco: Vehicle = $OlavarriaSierrasBayas/Locomotive
@@ -257,6 +259,9 @@ func _mision_que_sigue() -> String:
 			renglones.append("! Secundaria disponible en el tablero de %s" % lugar)
 	if renglones.size() > MAX_MISSION_LINES:
 		renglones.resize(MAX_MISSION_LINES)
+	if renglones.is_empty():
+		# Tarea 62b.7: el cartel no desaparece cuando no queda nada por hacer.
+		renglones.append(SIN_MISIONES)
 	return "\n".join(renglones)
 
 

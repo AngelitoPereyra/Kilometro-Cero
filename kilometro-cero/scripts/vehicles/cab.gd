@@ -40,10 +40,11 @@ const RUNAWAY_CHECK_TIME: float = 0.5
 ## Muescas de la palanca hacia adelante y hacia atrás; la última de cada lado es a fondo.
 @export_range(1, 10) var forward_notches: int = 4
 @export_range(1, 10) var reverse_notches: int = 2
-## Velocidad de cada muesca adelante y atrás (km/h; ajuste de la tarea 62b.5: 20, 43, 60 y 90). Vacío:
+## Velocidad de cada muesca adelante y atrás (km/h; ajustes de Batmi: adelante 20, 43, 60 y 90 en la
+## 62b.5, atrás 15 y 90 en la 62b.7). Vacío:
 ## cada muesca es una fracción pareja del límite, como antes. Las que falten usan la última.
 @export var forward_speeds_kmh: PackedFloat32Array = PackedFloat32Array([20.0, 43.0, 60.0, 90.0])
-@export var reverse_speeds_kmh: PackedFloat32Array = PackedFloat32Array([10.0, 20.0])
+@export var reverse_speeds_kmh: PackedFloat32Array = PackedFloat32Array([15.0, 90.0])
 ## Distancia horizontal máxima desde el puesto para entrar con F.
 @export_range(0.5, 5.0, 0.1, "suffix:m") var enter_radius: float = 1.5
 ## Cuánto se inclina la palanca visible por muesca.
