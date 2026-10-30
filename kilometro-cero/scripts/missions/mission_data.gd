@@ -5,12 +5,15 @@ extends Resource
 ## Las secundarias se consiguen explorando y hablando con los pobladores (MissionGiver), cuentan
 ## la historia del lugar (`intro` al tomarla, `outro` al cumplirla) y suben la producción local
 ## (`reward_production`), por ejemplo al reabrir la vía a una cantera abandonada.
+## Obra (tarea 62b.4, D127, D130): los materiales de `delivery` no se entregan en el tablero sino
+## en su obra (ConstructionSite), y solo los que trae el jugador; al cumplirse la obra cambia la
+## escena (las carpas pasan a ser casas).
 ## Datos: data/missions/*.tres.
 
-## Entregar objetos en la estación, habilitar un tramo o despejar una zona.
-enum Kind { DELIVERY, OPEN_SEGMENT, CLEAR_ZONE }
+## Entregar objetos en la estación, habilitar un tramo, despejar una zona o levantar una obra.
+enum Kind { DELIVERY, OPEN_SEGMENT, CLEAR_ZONE, BUILD }
 
-const KIND_NAMES: Array[String] = ["entrega", "habilitar tramo", "despejar zona"]
+const KIND_NAMES: Array[String] = ["entrega", "habilitar tramo", "despejar zona", "obra"]
 
 ## Único en todo el juego (se usa para guardar).
 @export var id: StringName
@@ -23,6 +26,7 @@ const KIND_NAMES: Array[String] = ["entrega", "habilitar tramo", "despejar zona"
 @export var station_id: StringName
 @export var kind: Kind = Kind.DELIVERY
 ## DELIVERY: lo que hay que entregar (una vez, en total; puede ser en varios viajes).
+## BUILD: los materiales de la obra (se llevan a su ConstructionSite).
 @export var delivery: Array[ItemAmount] = []
 ## OPEN_SEGMENT: el tramo que tiene que quedar abierto.
 @export var segment_id: StringName
@@ -69,6 +73,9 @@ func validate() -> PackedStringArray:
 		Kind.DELIVERY:
 			if ItemAmount.sum_by_id(delivery).is_empty():
 				problems.append("'%s' es de entrega y no pide nada" % id)
+		Kind.BUILD:
+			if ItemAmount.sum_by_id(delivery).is_empty():
+				problems.append("'%s' es una obra y no pide materiales" % id)
 		Kind.OPEN_SEGMENT:
 			if segment_id == &"":
 				problems.append("'%s' es de habilitar tramo y no tiene segment_id" % id)

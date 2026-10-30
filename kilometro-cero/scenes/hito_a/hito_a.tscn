@@ -41,6 +41,8 @@
 [ext_resource type="Script" path="res://scripts/stations/loading_bay.gd" id="39_bah"]
 [ext_resource type="Script" path="res://scripts/world/station_track.gd" id="40_est"]
 [ext_resource type="Script" path="res://scripts/vehicles/borrowed_trains.gd" id="41_pres"]
+[ext_resource type="PackedScene" path="res://scenes/stations/construction_site.tscn" id="42_obra"]
+[ext_resource type="Resource" path="res://data/missions/primeras_casas.tres" id="43_casas"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Cielo_mat"]
 sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
@@ -536,7 +538,12 @@ missions = Array[ExtResource("27_md")]([ExtResource("29_can")])
 [node name="DonaClara" parent="." instance=ExtResource("26_pob")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.6, 550)
 speaker = "Doña Clara, de la comisión de fomento de Azul"
+missions = Array[ExtResource("27_md")]([ExtResource("43_casas")])
 main_station = &"azul"
+
+[node name="ObraCasas" parent="Azul" instance=ExtResource("42_obra")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -16, 0, 20)
+mission = ExtResource("43_casas")
 
 [node name="Ramirez" parent="." instance=ExtResource("26_pob")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.6, -460)

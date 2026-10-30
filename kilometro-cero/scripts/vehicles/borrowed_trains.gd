@@ -21,6 +21,9 @@ signal train_vanished(mission_id: StringName)
 signal player_train_moved(station_id: StringName)
 
 const GROUP: StringName = &"borrowed_trains"
+## Marca (meta) de los vehículos del tren prestado (tarea 62b.4): sus vagones no cuentan para las
+## obras (StationGoods.own_trains_only, D127).
+const META: StringName = &"borrowed_train"
 const SIGN_TEXT: String = "Tren prestado del Ferrocarril\nEl maquinista está enfermo: ¿lo llevás vos?"
 ## En qué vías se pone un tren, en orden de preferencia.
 const TRACK_ROLES: Array = [StationTrack.Role.MAIN, StationTrack.Role.SIDING, StationTrack.Role.FREIGHT]
@@ -134,6 +137,7 @@ func spawn_for(mission_id: StringName) -> bool:
 	var loco := (load(AutoTrains.LOCOMOTIVE_SCENE) as PackedScene).instantiate() as Vehicle
 	loco.name = "TrenPrestado_%s" % mission.item_id
 	loco.reversed = not faces_end
+	loco.set_meta(META, true)
 	path.add_child(loco)
 	var at: float = _head_at_station(path, source, loco.data.length, length, faces_end)
 	loco.place_on(path, at, not faces_end)
@@ -145,6 +149,7 @@ func spawn_for(mission_id: StringName) -> bool:
 		var wagon := scenes[index].instantiate() as Wagon
 		wagon.name = "%s_Vagon%d" % [loco.name, index + 1]
 		wagon.reversed = loco.reversed
+		wagon.set_meta(META, true)
 		distance += Vehicle.coupling_distance(previous, wagon.data.length)
 		previous = wagon.data.length
 		path.add_child(wagon)

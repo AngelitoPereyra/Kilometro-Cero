@@ -236,6 +236,13 @@ func _mision_que_sigue() -> String:
 		for mision: Mission in tablero.get_side_missions(station_id):
 			if mision.state == Mission.State.AVAILABLE:
 				disponible = true
+			elif mision.is_active() and tablero.is_build(mision):
+				# Obra (tarea 62b.4): cuánto falta llevar a su cartel.
+				var faltan: PackedStringArray = []
+				var restan: Dictionary[StringName, int] = mision.get_remaining()
+				for objeto: StringName in restan:
+					faltan.append("%d %s" % [restan[objeto], tablero.name_of(objeto)])
+				renglones.append("• %s (%s): faltan %s" % [mision.data.title, lugar, ", ".join(faltan)])
 			elif mision.is_active():
 				renglones.append("• %s (%s)" % [mision.data.title, lugar])
 		if disponible:

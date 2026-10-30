@@ -8,6 +8,8 @@ extends RefCounted
 ## (en la mano no se compra: lo grande va al tren).
 ## Sin `with_wagons` (tarea 62.9a: el mercado de una estación con bahía de carga) solo cuentan la
 ## mano y la mochila; los vagones los maneja el punto de carga (LoadingBay).
+## Con `own_trains_only` (tarea 62b.4, D127: las obras) no cuentan los vagones del tren prestado
+## (BorrowedTrains.META); los automáticos nunca cuentan (Station.get_stopped_trains los saltea).
 
 ## Unidades que se piden de más para medir el lugar libre.
 const ROOM_PROBE: int = 9999
@@ -15,6 +17,7 @@ const ROOM_PROBE: int = 9999
 var station: Station
 var player: Player
 var with_wagons: bool = true
+var own_trains_only: bool = false
 
 
 ## `who` null: el jugador que esté en la zona de la estación (o nadie).
@@ -26,6 +29,11 @@ func _init(at: Station, who: Player = null, wagons: bool = true) -> void:
 		player = station.get_present_player()
 
 
+## Si el vehículo es del tren prestado del Ferrocarril (tarea 62b.4).
+static func is_borrowed(vehicle: Node) -> bool:
+	return vehicle != null and vehicle.has_meta(BorrowedTrains.META)
+
+
 ## Las cargas de los vagones de los trenes detenidos en la estación.
 func get_cargos() -> Array[StorageContainer]:
 	var cargos: Array[StorageContainer] = []
@@ -33,6 +41,8 @@ func get_cargos() -> Array[StorageContainer]:
 		return cargos
 	for head: Vehicle in station.get_stopped_trains():
 		for vehicle: Vehicle in head.get_train():
+			if own_trains_only and is_borrowed(vehicle):
+				continue
 			var wagon := vehicle as Wagon
 			if wagon != null and wagon.get_cargo() != null:
 				cargos.append(wagon.get_cargo())

@@ -27,6 +27,10 @@ extends RefCounted
 ##   maneja y entrega como siempre (tablero o puertas); si no lo toma, al terminar el día lo trae
 ##   el Ferrocarril y se cumple sola. Sin tramo por estrenar, al avisar se cumple sola. Cada
 ##   principal cumplida estrena los tramos de su camino.
+## - Obras (tarea 62b.4, D127, D130): una secundaria de tipo obra (MissionData.Kind.BUILD) no recibe
+##   nada en el tablero: sus materiales se llevan a su ConstructionSite (`plan_build`,
+##   `deliver_build`), que solo toma lo que trae el jugador (nunca lo de un automático ni del tren
+##   prestado). Con todo entregado se cumple como cualquier secundaria.
 
 ## Una misión nueva: una principal que nace (ya activa) o una secundaria que se puede conseguir.
 signal mission_available(mission: Mission)
@@ -209,10 +213,11 @@ func needs_report(mission: Mission) -> bool:
 	return mission != null and mission.main and _main_givers.has(mission.station_id)
 
 
-## Si la misión recibe entregas del jugador: todas, salvo las principales con aviso que no están
-## en el viaje inaugural (su carga la trae el Ferrocarril).
+## Si la misión recibe entregas del jugador en el tablero: todas, salvo las principales con aviso
+## que no están en el viaje inaugural (su carga la trae el Ferrocarril) y las obras (se entregan en
+## su ConstructionSite, tarea 62b.4).
 func accepts_deliveries(mission: Mission) -> bool:
-	return mission != null and (not needs_report(mission) or mission.inaugural)
+	return mission != null and not is_build(mission) and (not needs_report(mission) or mission.inaugural)
 
 
 ## La etapa de una principal con aviso. Las demás: DONE si está cumplida y OPEN_ROUTE si no.
@@ -357,6 +362,54 @@ func deliver(station_id: StringName, item_id: StringName, amount: int) -> int:
 	if accepted > 0:
 		refresh()
 	return accepted
+
+
+# --- Obras (tarea 62b.4) ---
+
+
+## Si la misión es una obra (sus materiales van a su ConstructionSite, no al tablero).
+func is_build(mission: Mission) -> bool:
+	return mission != null and not mission.main and mission.kind == MissionData.Kind.BUILD
+
+
+## Cuánto aceptaría la obra en curso de lo que hay disponible (id de objeto -> unidades).
+func plan_build(mission_id: StringName, available: Dictionary[StringName, int]) -> Dictionary[StringName, int]:
+	var plan: Dictionary[StringName, int] = {}
+	var mission: Mission = get_mission(mission_id)
+	if not is_build(mission) or not mission.is_active():
+		return plan
+	var remaining: Dictionary[StringName, int] = mission.get_remaining()
+	for item_id: StringName in remaining:
+		var amount: int = mini(remaining[item_id], available.get(item_id, 0))
+		if amount > 0:
+			plan[item_id] = amount
+	return plan
+
+
+## Entrega materiales a una obra en curso; con todo entregado se cumple. Devuelve cuánto aceptó.
+func deliver_build(mission_id: StringName, item_id: StringName, amount: int) -> int:
+	var mission: Mission = get_mission(mission_id)
+	if not is_build(mission) or not mission.is_active() or amount <= 0:
+		return 0
+	var accepted: int = mission.add_delivery(item_id, amount)
+	if accepted > 0:
+		mission_progressed.emit(mission)
+		refresh()
+	return accepted
+
+
+## Qué parte de los materiales ya llegó: de 0 a 1 (1 si está cumplida).
+func get_build_progress(mission: Mission) -> float:
+	if mission == null:
+		return 0.0
+	if mission.is_completed():
+		return 1.0
+	var total: int = 0
+	var done: int = 0
+	for item_id: StringName in mission.required:
+		total += mission.required[item_id]
+		done += mini(mission.delivered.get(item_id, 0), mission.required[item_id])
+	return float(done) / float(total) if total > 0 else 0.0
 
 
 # --- Textos ---
@@ -567,6 +620,8 @@ func get_pending_steps(mission: Mission) -> PackedStringArray:
 			var source_id: StringName = find_source(mission)
 			if source_id != &"":
 				steps.append("Traer %d %s desde %s (abrí las puertas del coche en las dos estaciones)" % [remaining[item_id], name_of(item_id), station_name(source_id)])
+		elif is_build(mission):
+			steps.append("Llevar %d %s a la obra (F en su cartel)" % [remaining[item_id], name_of(item_id)])
 		else:
 			steps.append("Entregar %d %s" % [remaining[item_id], name_of(item_id)])
 	return steps

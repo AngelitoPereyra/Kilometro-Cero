@@ -1,0 +1,147 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/construction_site.gd" id="1_obra"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_lona"]
+albedo_color = Color(0.9, 0.86, 0.74, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_madera"]
+albedo_color = Color(0.5, 0.36, 0.22, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_cimiento"]
+albedo_color = Color(0.62, 0.6, 0.56, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_pared"]
+albedo_color = Color(0.88, 0.8, 0.66, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_techo"]
+albedo_color = Color(0.62, 0.3, 0.22, 1)
+
+[sub_resource type="PrismMesh" id="Malla_carpa"]
+size = Vector3(2.6, 2, 3.2)
+
+[sub_resource type="BoxMesh" id="Malla_poste"]
+size = Vector3(0.15, 2.4, 0.15)
+
+[sub_resource type="BoxMesh" id="Malla_tabla"]
+size = Vector3(1.4, 0.8, 0.08)
+
+[sub_resource type="BoxMesh" id="Malla_andamio"]
+size = Vector3(0.12, 3.4, 0.12)
+
+[sub_resource type="BoxMesh" id="Malla_cimiento"]
+size = Vector3(10, 0.3, 5)
+
+[sub_resource type="BoxMesh" id="Malla_paredes"]
+size = Vector3(4, 2.6, 4.4)
+
+[sub_resource type="PrismMesh" id="Malla_techo"]
+size = Vector3(4.6, 1.4, 4.8)
+
+[sub_resource type="BoxMesh" id="Malla_chimenea"]
+size = Vector3(0.6, 1.2, 0.6)
+
+[sub_resource type="BoxMesh" id="Malla_cerco"]
+size = Vector3(10, 0.7, 0.1)
+
+[node name="Obra" type="Node3D"]
+script = ExtResource("1_obra")
+reach = 4.0
+
+[node name="Poste" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+material_override = SubResource("Mat_madera")
+mesh = SubResource("Malla_poste")
+
+[node name="Tabla" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0.1)
+material_override = SubResource("Mat_madera")
+mesh = SubResource("Malla_tabla")
+
+[node name="Cartel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.4, 0)
+billboard = 1
+no_depth_test = true
+font_size = 36
+outline_size = 10
+width = 900.0
+autowrap_mode = 3
+text = "Obra"
+
+[node name="Antes" type="Node3D" parent="."]
+
+[node name="Carpa1" type="MeshInstance3D" parent="Antes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 1, -2.5)
+material_override = SubResource("Mat_lona")
+mesh = SubResource("Malla_carpa")
+
+[node name="Carpa2" type="MeshInstance3D" parent="Antes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 1, -2.5)
+material_override = SubResource("Mat_lona")
+mesh = SubResource("Malla_carpa")
+
+[node name="Andamios" type="Node3D" parent="."]
+
+[node name="Poste1" type="MeshInstance3D" parent="Andamios"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 1.7, -4.2)
+material_override = SubResource("Mat_madera")
+mesh = SubResource("Malla_andamio")
+
+[node name="Poste2" type="MeshInstance3D" parent="Andamios"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2, 1.7, -4.2)
+material_override = SubResource("Mat_madera")
+mesh = SubResource("Malla_andamio")
+
+[node name="Poste3" type="MeshInstance3D" parent="Andamios"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 1.7, -9.8)
+material_override = SubResource("Mat_madera")
+mesh = SubResource("Malla_andamio")
+
+[node name="Poste4" type="MeshInstance3D" parent="Andamios"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.2, 1.7, -9.8)
+material_override = SubResource("Mat_madera")
+mesh = SubResource("Malla_andamio")
+
+[node name="Partes" type="Node3D" parent="."]
+
+[node name="Cimientos" type="MeshInstance3D" parent="Partes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -7)
+material_override = SubResource("Mat_cimiento")
+mesh = SubResource("Malla_cimiento")
+
+[node name="Paredes1" type="MeshInstance3D" parent="Partes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 1.6, -7)
+material_override = SubResource("Mat_pared")
+mesh = SubResource("Malla_paredes")
+
+[node name="Paredes2" type="MeshInstance3D" parent="Partes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 1.6, -7)
+material_override = SubResource("Mat_pared")
+mesh = SubResource("Malla_paredes")
+
+[node name="Techo1" type="MeshInstance3D" parent="Partes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 3.6, -7)
+material_override = SubResource("Mat_techo")
+mesh = SubResource("Malla_techo")
+
+[node name="Techo2" type="MeshInstance3D" parent="Partes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 3.6, -7)
+material_override = SubResource("Mat_techo")
+mesh = SubResource("Malla_techo")
+
+[node name="Despues" type="Node3D" parent="."]
+
+[node name="Chimenea1" type="MeshInstance3D" parent="Despues"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 4.2, -8)
+material_override = SubResource("Mat_cimiento")
+mesh = SubResource("Malla_chimenea")
+
+[node name="Chimenea2" type="MeshInstance3D" parent="Despues"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 4.2, -8)
+material_override = SubResource("Mat_cimiento")
+mesh = SubResource("Malla_chimenea")
+
+[node name="Cerco" type="MeshInstance3D" parent="Despues"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, -3.6)
+material_override = SubResource("Mat_madera")
+mesh = SubResource("Malla_cerco")

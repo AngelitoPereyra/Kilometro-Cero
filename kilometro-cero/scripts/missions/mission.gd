@@ -5,7 +5,7 @@ extends RefCounted
 ## - Principal: sale sola de un consumo sin flujo ("Abastecer al pueblo de 10 troncos por día").
 ##   Pide una primera carga de FIRST_DELIVERY_DAYS días de consumo y, con la conexión abierta
 ##   y un productor con producción libre, crea el flujo permanente.
-## - Secundaria: viene de un MissionData (entrega, habilitar tramo o despejar zona).
+## - Secundaria: viene de un MissionData (entrega, habilitar tramo, despejar zona u obra).
 ## - Principal con aviso (tarea 62b.3, D128): si la estación tiene quien da sus principales
 ##   (MissionGiver.main_station), el jugador abre el camino y le avisa (`reported`); el
 ##   Ferrocarril manda la primera carga en un tren prestado que maneja el jugador (`inaugural`)
@@ -71,7 +71,7 @@ static func create_side(mission_data: MissionData) -> Mission:
 	mission.data = mission_data
 	mission.station_id = mission_data.station_id
 	mission.kind = mission_data.kind
-	if mission_data.kind == MissionData.Kind.DELIVERY:
+	if mission_data.kind == MissionData.Kind.DELIVERY or mission_data.kind == MissionData.Kind.BUILD:
 		mission.required = ItemAmount.sum_by_id(mission_data.delivery)
 	return mission
 
