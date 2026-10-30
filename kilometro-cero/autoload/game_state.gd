@@ -5,8 +5,10 @@ extends Node
 ## (PassengerTraffic, tarea 60b) y del dinero (solo pesos, D96).
 ## Los demás datos entran cuando un sistema los necesite.
 
-## Minutos reales que dura un día de juego (D34). Vivía en NeedsConfig, que se borró (D75).
-const DAY_LENGTH_MINUTES: float = 24.0
+## Minutos reales que dura un día de juego (D34). Vivía en NeedsConfig, que se borró (D75). Era 24;
+## desde la 62c.3a es 36 (una hora de juego, minuto y medio), así los viajes de los tramos largos
+## duran menos de hora y media de juego (Batmi, 2026-10-30).
+const DAY_LENGTH_MINUTES: float = 36.0
 
 var clock: GameClock = GameClock.new()
 ## Permite pausar el tiempo (por ejemplo, en menús) sin tocar nada más.

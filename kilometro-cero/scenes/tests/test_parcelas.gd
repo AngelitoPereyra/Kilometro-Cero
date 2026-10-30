@@ -200,7 +200,7 @@ func _probar_hito_a() -> void:
 	_comprobar(anillos.get(TrackLot.Ring.FIELD, 0) == 8 and anillos.get(TrackLot.Ring.INDUSTRY, 0) == 8 and anillos.get(TrackLot.Ring.TOWN, 0) == 4, "Olavarría: 8 de campo, 8 industriales y 4 del pueblo (%s)" % [anillos])
 	_comprobar(fijos == 2, "Dos galpones ferroviarios fijos, uno en cada entrada de Olavarría")
 	var azul := escena.get_node_or_null("Azul") as Node3D
-	_comprobar(azul != null and is_equal_approx(azul.position.z, 1040.0), "Azul quedó 500 m más lejos (z 1040)")
+	_comprobar(azul != null and is_equal_approx(azul.position.z, 2540.0), "Azul quedó a unos 2,5 km de Olavarría (z 2540, tarea 62c.3a)")
 	for nombre: String in ["PrecaucionNorte", "PrecaucionSur"]:
 		var zona := escena.get_node_or_null(nombre) as SpeedZone
 		_comprobar(zona != null and zona.length >= 100.0, "%s: zona de precaución en la entrada de Olavarría" % nombre)

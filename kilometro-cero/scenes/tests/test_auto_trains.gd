@@ -238,8 +238,15 @@ func _probar_escena() -> void:
 
 	# Lejos: avanza sin nodos y no pasa por encima de un tren parado en la vía.
 	var parado: Vehicle = _poner_locomotora(_pm, 150.0)
-	for _i: int in 600:
+	# Hasta que se frena detrás y un rato más, menos que STUCK_SECONDS (si no, vuelve a la estación
+	# de donde salió); desde la 62c.3a los automáticos andan más rápido y llegan antes.
+	var detras: int = -1
+	for i: int in 600:
 		_trains.step(PASO_S * 4.0)
+		if detras < 0 and run.waiting == "esperando vía libre":
+			detras = i
+		if detras >= 0 and i - detras >= 60:
+			break
 	_check(run.is_moving() and run.waiting == "esperando vía libre", "Lejos tampoco pasa por encima de un tren parado")
 	_check(run.position + run.lead_offset() <= 200.0 - 150.0 - 5.0 + 0.01, "Queda detrás del tren parado")
 	parado.get_parent().remove_child(parado)

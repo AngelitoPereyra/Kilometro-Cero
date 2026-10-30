@@ -113,8 +113,9 @@ const TRUNK_PASSENGERS: String = "pasajeros"
 ## así la gente no cruza la vía del tren de carga.
 const DEFAULT_TRACK_ROLES: Array = [StationTrack.Role.FREIGHT, StationTrack.Role.SIDING, StationTrack.Role.MAIN]
 const PASSENGER_TRACK_ROLES: Array = [StationTrack.Role.MAIN, StationTrack.Role.SIDING, StationTrack.Role.FREIGHT]
-## Acelerador con que andan (fracción de la velocidad máxima), también lejos del jugador.
-const AUTO_THROTTLE: float = 0.336
+## Acelerador con que andan (fracción de la velocidad máxima), también lejos del jugador: unos
+## 79 km/h, para que los tramos largos de la 62c.3 no lleven horas (Batmi, 2026-10-30).
+const AUTO_THROTTLE: float = 0.88
 ## Primer horario de ida y cuántas horas después sale el tren siguiente (provisorio).
 const FIRST_HOUR: float = 7.0
 const HOUR_STEP: float = 2.0

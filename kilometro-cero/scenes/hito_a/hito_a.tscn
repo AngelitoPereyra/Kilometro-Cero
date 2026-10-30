@@ -52,6 +52,7 @@
 [ext_resource type="Resource" path="res://data/missions/cueros_dona_rosa.tres" id="50_cueros"]
 [ext_resource type="Resource" path="res://data/missions/los_etchegaray.tres" id="51_etche"]
 [ext_resource type="Script" path="res://scripts/world/terrain.gd" id="52_terreno"]
+[ext_resource type="Texture2D" path="res://scenes/hito_a/alturas_hito_a.png" id="53_alturas"]
 
 [sub_resource type="ProceduralSkyMaterial" id="Cielo_mat"]
 sky_horizon_color = Color(0.66, 0.67, 0.69, 1)
@@ -73,21 +74,21 @@ size = Vector3(1.6, 0.2, 4.8)
 
 [sub_resource type="Curve3D" id="Curva_o_a"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 150, 0, 0, 100, 0, 0, -150, 0, 0, 150, 35, 0, 540, 0, 0, -150, 0, 0, 0, 0, 0, 980),
-"tilts": PackedFloat32Array(0, 0, 0)
+"points": PackedVector3Array(0, 0, 0, 0, 0, 150, 0, 0, 100, 0, 0, -150, 0, 0, 150, 35, 0, 540, 0, 0, -150, 0, 0, 150, 115, 0, 1000, 0, 0, -150, 0, 0, 110, 70, 0, 1450, 0, 0, -110, 0, 0, 85, -40, 5, 1780, 0, 0, -85, 0, 0, 150, 35, 0, 2040, 0, 0, -150, 0, 0, 0, 0, 0, 2480),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0, 0)
 }
-point_count = 3
+point_count = 7
 
 [sub_resource type="Curve3D" id="Curva_o_s"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, -120, 0, 0, -100, 0, 0, 120, 0, 0, -120, -25, 0, -450, 0, 0, 120, 0, 0, 0, 0, 0, -800),
-"tilts": PackedFloat32Array(0, 0, 0)
+"points": PackedVector3Array(0, 0, 0, 0, 0, -120, 0, 0, -100, 0, 0, 120, 0, 0, -130, -25, 0, -450, 0, 0, 130, 0, 0, -130, -100, 3, -850, 0, 0, 130, 0, 0, -130, -55, 8, -1250, 0, 0, 130, 0, 0, -120, -25, 0, -1650, 0, 0, 120, 0, 0, 0, 0, 0, -2000),
+"tilts": PackedFloat32Array(0, 0, 0, 0, 0, 0)
 }
-point_count = 3
+point_count = 6
 
 [sub_resource type="Curve3D" id="Curva_s_c"]
 _data = {
-"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, -940, 0, 0, 0, 0, 0, 0, 0, 0, -1040),
+"points": PackedVector3Array(0, 0, 0, 0, 0, 0, 0, 0, -2140, 0, 0, 0, 0, 0, 0, 0, 0, -2240),
 "tilts": PackedFloat32Array(0, 0)
 }
 point_count = 2
@@ -168,9 +169,11 @@ transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545
 shadow_enabled = true
 
 [node name="Terreno" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 200)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 320)
 script = ExtResource("52_terreno")
-size = Vector2(340, 2600)
+size = Vector2(500, 5400)
+height_map = ExtResource("53_alturas")
+height_map_scale = 80.0
 noise = SubResource("Ruido_lomas")
 noise_height = 6.0
 min_blend = 40.0
@@ -188,11 +191,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 data = ExtResource("15_ola")
 
 [node name="Azul" parent="." instance=ExtResource("13_pue")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1040)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2540)
 data = ExtResource("16_azu")
 
 [node name="SierrasBayas" parent="." instance=ExtResource("14_car")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -870)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, -2070)
 data = ExtResource("17_sie")
 
 [node name="Taller" parent="Olavarria"]
@@ -401,11 +404,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -115)
 segment_id = &"o_s"
 
 [node name="PiedrasDesvio1" parent="." instance=ExtResource("19_pie")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -980)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -2180)
 segment_id = &"s_c"
 
 [node name="PiedrasDesvio2" parent="." instance=ExtResource("19_pie")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, -1000)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, -2200)
 segment_id = &"s_c"
 
 [node name="Clearable" parent="PiedrasDesvio1"]
@@ -417,78 +420,78 @@ required_tool = ExtResource("38_picd")
 [node name="Bosquecito" type="Node3D" parent="."]
 
 [node name="Arbol1" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0, 1020)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0, 2520)
 
 [node name="Arbol2" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, 0, 1028)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 33, 0, 2528)
 
 [node name="Arbol3" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 0, 1034)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 0, 2534)
 
 [node name="Arbol4" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 0, 1040)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 0, 2540)
 
 [node name="Arbol5" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 0, 1046)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 0, 2546)
 
 [node name="Arbol6" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0, 1052)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0, 2552)
 
 [node name="Arbol7" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 36, 0, 1058)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 36, 0, 2558)
 
 [node name="Arbol8" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 0, 1065)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 29, 0, 2565)
 
 [node name="Arbol9" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 0, 1030)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 42, 0, 2530)
 
 [node name="Arbol10" parent="Bosquecito" instance=ExtResource("20_bos")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 1052)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 2552)
 
 [node name="Panal1" parent="Bosquecito" instance=ExtResource("48_panal")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 1036)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 2536)
 
 [node name="Panal2" parent="Bosquecito" instance=ExtResource("48_panal")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 44, 0, 1044)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 44, 0, 2544)
 
 [node name="Panal3" parent="Bosquecito" instance=ExtResource("48_panal")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 26, 0, 1060)
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 26, 0, 2560)
 
 [node name="Cantera" type="Node3D" parent="."]
 
 [node name="Afloramiento1" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -855)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -2055)
 
 [node name="Afloramiento2" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 0, -870)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -49, 0, -2070)
 
 [node name="Afloramiento3" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -885)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -2085)
 
 [node name="Afloramiento4" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53, 0, -850)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -53, 0, -2050)
 
 [node name="Afloramiento5" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, -865)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, -2065)
 
 [node name="Afloramiento6" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, -880)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, -2080)
 
 [node name="Afloramiento7" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 0, -895)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -52, 0, -2095)
 
 [node name="FrenteViejo1" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -1035)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -2235)
 
 [node name="FrenteViejo2" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -1028)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, -2228)
 
 [node name="FrenteViejo3" parent="Cantera" instance=ExtResource("21_afl")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -1032)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -2232)
 
 [node name="CartelCanteraVieja" type="Label3D" parent="Cantera"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3, -1045)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3, -2245)
 billboard = 1
 font_size = 64
 outline_size = 10
@@ -517,11 +520,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0.4, 0)
 shape = SubResource("Forma_mesa")
 
 [node name="Pico" parent="." instance=ExtResource("37_pic")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1, 1048)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 1, 2548)
 start_item = ExtResource("38_picd")
 
 [node name="MarcaPico" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3.2, 1048)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 3.2, 2548)
 billboard = 1
 no_depth_test = true
 modulate = Color(1, 0.85, 0.2, 1)
@@ -538,17 +541,17 @@ missions = Array[ExtResource("27_md")]([ExtResource("36_via"), ExtResource("49_m
 main_station = &"olavarria"
 
 [node name="Vecina" parent="." instance=ExtResource("26_pob")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.6, 1032)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.6, 2532)
 speaker = "Doña Elvira, vecina de Azul"
 missions = Array[ExtResource("27_md")]([ExtResource("28_mae")])
 
 [node name="Cantero" parent="." instance=ExtResource("26_pob")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 1, -878)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 1, -2078)
 speaker = "Don Aurelio, el cantero"
 missions = Array[ExtResource("27_md")]([ExtResource("29_can")])
 
 [node name="DonaClara" parent="." instance=ExtResource("26_pob")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.6, 1050)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.6, 2550)
 speaker = "Doña Clara, de la comisión de fomento de Azul"
 missions = Array[ExtResource("27_md")]([ExtResource("43_casas")])
 main_station = &"azul"
@@ -566,19 +569,19 @@ move_after = ExtResource("51_etche")
 move_to = NodePath("../LlegadaEtchegaray")
 
 [node name="LlegadaEtchegaray" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.6, 1062)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.6, 2562)
 
 [node name="ObraCasas" parent="Azul" instance=ExtResource("42_obra")]
 transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -16, 0, 20)
 mission = ExtResource("43_casas")
 
 [node name="Ramirez" parent="." instance=ExtResource("26_pob")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.6, -860)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0.6, -2060)
 speaker = "Ramírez, el capataz de Sierras Bayas"
 main_station = &"sierras_bayas"
 
 [node name="RegaloAzul" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 1045)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 2545)
 script = ExtResource("33_reg")
 wagon_scene = ExtResource("9_plat")
 wagon_name = "una plataforma vacía"
@@ -714,82 +717,82 @@ script = ExtResource("45_lote")
 station_id = &"olavarria"
 
 [node name="LoteAzul1" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0.0551, 0, 0.9985, 0, 1, 0, -0.9985, 0, 0.0551, -56.1863, 0, 916.8393)
+transform = Transform3D(0.0551, 0, 0.9985, 0, 1, 0, -0.9985, 0, 0.0551, -56.1863, 0, 2416.84)
 script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteAzul2" type="Marker3D" parent="Lotes"]
-transform = Transform3D(-0.0551, 0, -0.9985, 0, 1, 0, 0.9985, 0, -0.0551, 59.6377, 0, 923.2255)
+transform = Transform3D(-0.0551, 0, -0.9985, 0, 1, 0, 0.9985, 0, -0.0551, 59.6377, 0, 2423.23)
 script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteAzul3" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0.112, 0, 0.9937, 0, 1, 0, -0.9937, 0, 0.112, -46.6783, 0, 808.9599)
+transform = Transform3D(0.112, 0, 0.9937, 0, 1, 0, -0.9937, 0, 0.112, -46.6783, 0, 2308.96)
 script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteAzul4" type="Marker3D" parent="Lotes"]
-transform = Transform3D(-0.112, 0, -0.9937, 0, 1, 0, 0.9937, 0, -0.112, 68.5924, 0, 821.9473)
+transform = Transform3D(-0.112, 0, -0.9937, 0, 1, 0, 0.9937, 0, -0.112, 68.5924, 0, 2321.95)
 script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteAzul5" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0.1137, 0, 0.9935, 0, 1, 0, -0.9935, 0, 0.1137, -34.334, 0, 704.5856)
+transform = Transform3D(0.1137, 0, 0.9935, 0, 1, 0, -0.9935, 0, 0.1137, -34.334, 0, 2204.59)
 script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteAzul6" type="Marker3D" parent="Lotes"]
-transform = Transform3D(-0.1137, 0, -0.9935, 0, 1, 0, 0.9935, 0, -0.1137, 80.9136, 0, 717.7756)
+transform = Transform3D(-0.1137, 0, -0.9935, 0, 1, 0, 0.9935, 0, -0.1137, 80.9136, 0, 2217.78)
 script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteAzul7" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -58, 0, 1188)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -58, 0, 2688)
 script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteAzul8" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 58, 0, 1188)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 58, 0, 2688)
 script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteAzul9" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -58, 0, 1293)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -58, 0, 2793)
 script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteAzul10" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 58, 0, 1293)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 58, 0, 2793)
 script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteAzul11" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -58, 0, 1398)
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -58, 0, 2898)
 script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteAzul12" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 58, 0, 1398)
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 58, 0, 2898)
 script = ExtResource("45_lote")
 station_id = &"azul"
 
 [node name="LoteSierrasBayas1" type="Marker3D" parent="Lotes"]
-transform = Transform3D(-0.0596, 0, -0.9982, 0, 1, 0, 0.9982, 0, -0.0596, 56.0034, 0, -736.5844)
+transform = Transform3D(-0.0596, 0, -0.9982, 0, 1, 0, 0.9982, 0, -0.0596, 56.0034, 0, -1936.58)
 script = ExtResource("45_lote")
 station_id = &"sierras_bayas"
 
 [node name="LoteSierrasBayas2" type="Marker3D" parent="Lotes"]
-transform = Transform3D(-0.1076, 0, -0.9942, 0, 1, 0, 0.9942, 0, -0.1076, 46.3004, 0, -629.2342)
+transform = Transform3D(-0.1076, 0, -0.9942, 0, 1, 0, 0.9942, 0, -0.1076, 46.3004, 0, -1829.23)
 script = ExtResource("45_lote")
 station_id = &"sierras_bayas"
 
 [node name="LoteSierrasBayas3" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0.1076, 0, 0.9942, 0, 1, 0, -0.9942, 0, 0.1076, -69.0256, 0, -641.7206)
+transform = Transform3D(0.1076, 0, 0.9942, 0, 1, 0, -0.9942, 0, 0.1076, -69.0256, 0, -1841.72)
 script = ExtResource("45_lote")
 station_id = &"sierras_bayas"
 
 [node name="LoteSierrasBayas4" type="Marker3D" parent="Lotes"]
-transform = Transform3D(0.0754, 0, 0.9972, 0, 1, 0, -0.9972, 0, 0.0754, -79.5112, 0, -535.3618)
+transform = Transform3D(0.0754, 0, 0.9972, 0, 1, 0, -0.9972, 0, 0.0754, -79.5112, 0, -1735.36)
 script = ExtResource("45_lote")
 station_id = &"sierras_bayas"
 
