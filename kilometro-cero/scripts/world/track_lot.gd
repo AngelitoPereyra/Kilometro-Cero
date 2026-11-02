@@ -11,6 +11,8 @@ extends Marker3D
 ## (50 × 50 m: galpones de ladrillo de la industria y de chapa del ferrocarril) y el anillo del
 ## pueblo lotes chicos (16 × 12 m). Un lote con `fixed_scene` ya está ocupado desde el principio
 ## (el galpón ferroviario) y nunca recibe familias.
+## Tarea 62c.3f: cuando la parcela termina de brotar, sus mallas se juntan (MeshBatcher), una por
+## material, y se dejan de ver de lejos (PARCEL_VIEW_DISTANCE): eran miles de piezas sueltas.
 
 ## Grupo de todos los lotes.
 const GROUP: StringName = &"track_lots"
@@ -18,6 +20,10 @@ const GROUP: StringName = &"track_lots"
 const MESSAGE_TIME: float = 4.0
 const MESSAGE_RISE: float = 2.0
 const STAKE_HEIGHT: float = 0.8
+## Distancia de vista de la parcela ya juntada.
+const PARCEL_VIEW_DISTANCE: float = 450.0
+## Segundos de más que espera, después de brotar, para juntar las mallas.
+const MERGE_WAIT: float = 0.5
 
 ## Anillo del lote: campo (hectáreas), zona industrial o pueblo.
 enum Ring { FIELD, INDUSTRY, TOWN }
@@ -41,6 +47,8 @@ const RING_SIZES: Array[Vector2] = [Vector2(100.0, 100.0), Vector2(50.0, 50.0), 
 		_build_stakes()
 ## Algo que ya está en el lote desde el principio (el galpón ferroviario). El lote no recibe familias.
 @export var fixed_scene: PackedScene
+## Junta las mallas de la parcela al terminar de brotar (tarea 62c.3f).
+@export var merge_meshes: bool = true
 
 var _parcel: Node3D
 var _occupation: OccupationData
@@ -58,6 +66,8 @@ func _ready() -> void:
 			# Interno: en el editor se ve pero no se guarda en la escena.
 			add_child(_parcel, false, Node.INTERNAL_MODE_FRONT)
 			_stakes.visible = false
+			if merge_meshes and not Engine.is_editor_hint():
+				_merge_later(MERGE_WAIT)
 
 
 func is_free() -> bool:
@@ -115,7 +125,26 @@ func place(occupation: OccupationData, animate: bool = true) -> Node3D:
 			GrowthCelebration.pop(piece, delay)
 			delay += GrowthCelebration.POP_STAGGER
 		_show_message("¡Llegaron los %s!" % occupation.display_name)
+		if merge_meshes and not Engine.is_editor_hint():
+			_merge_later(delay + GrowthCelebration.POP_TIME + MERGE_WAIT)
+	elif merge_meshes and not Engine.is_editor_hint():
+		_merge_later(MERGE_WAIT)
 	return _parcel
+
+
+## Junta ya las mallas de la parcela (MeshBatcher). Devuelve cuántas piezas juntó.
+func merge_parcel_meshes() -> int:
+	if not is_instance_valid(_parcel) or not _parcel.is_inside_tree():
+		return 0
+	return MeshBatcher.merge(_parcel, PARCEL_VIEW_DISTANCE)
+
+
+# Espera a que brote (y a que LookPainter la pinte) y junta sus mallas.
+func _merge_later(seconds: float) -> void:
+	if not is_inside_tree():
+		return
+	await get_tree().create_timer(seconds).timeout
+	merge_parcel_meshes()
 
 
 ## "Lote de azul (campo, libre)" o "Lote de azul (campo): hacheros".

@@ -13,10 +13,18 @@ extends StaticBody3D
 ## empezar. El origen del nodo es el centro del terreno y su y es la altura 0 del mapa; no se gira.
 ## Tarea 62c.3c: los arroyos (TerrainCarve) se cavan después de aplanar, también debajo de las
 ## vías (las cruzan con un puente); `is_carved` dice si un punto cae en uno.
+## Tarea 62c.3f: un borde invisible (cuatro paredes de choque, `edge_walls`) cierra la maqueta: más
+## allá solo está el horizonte (HorizonRing), que no se pisa, y el jugador se caía al vacío.
 
 const GROUP: StringName = &"terrain"
 const MESH_NODE_NAME: String = "Malla"
 const SHAPE_NODE_NAME: String = "Forma"
+## Prefijo de las cuatro paredes del borde ("Borde0" a "Borde3").
+const EDGE_NODE_PREFIX: String = "Borde"
+const EDGE_THICKNESS: float = 4.0
+## Alto de las paredes del borde: de EDGE_BOTTOM hasta EDGE_BOTTOM + EDGE_HEIGHT.
+const EDGE_BOTTOM: float = -100.0
+const EDGE_HEIGHT: float = 500.0
 ## Colores de la paleta (Palette, tarea 62c.3e): pasto, tierra de los taludes empinados y piedra de
 ## lo alto; en lo plano el pasto se alterna en manchas grandes con alfalfa y rastrojo (los campos).
 const COLOR_GRASS: Color = Color(0.498, 0.651, 0.353)
@@ -55,6 +63,8 @@ const ROCK_BLEND_M: float = 6.0
 @export var station_flat_size: Vector2 = Vector2(120.0, 260.0)
 ## Altura desde la que lo alto se pinta de roca (la sierra).
 @export_range(0.0, 500.0, 0.5, "suffix:m") var rock_height: float = 18.0
+## Paredes invisibles en el borde del terreno (tarea 62c.3f).
+@export var edge_walls: bool = true
 @export_tool_button("Rehacer terreno") var rebuild_button: Callable = rebuild
 
 var _heights: PackedFloat32Array = PackedFloat32Array()
@@ -113,6 +123,7 @@ func rebuild() -> void:
 	_flat_target = PackedFloat32Array()
 	_image = null
 	_build_mesh_and_shape()
+	_build_edge_walls()
 
 
 ## Si el punto (global) cae en un arroyo o en sus barrancas.
@@ -408,6 +419,48 @@ func _build_mesh_and_shape() -> void:
 		add_child(shape_node)
 	# La misma malla, triángulo por triángulo: el jugador pisa justo lo que se ve.
 	shape_node.shape = mesh.create_trimesh_shape()
+
+
+## Los rectángulos (centro local y medio tamaño, en x y z) de las cuatro paredes del borde, por
+## fuera de la grilla. Lógica pura.
+static func edge_wall_rects(extent: Vector2, thickness: float) -> Array[Rect2]:
+	var half: Vector2 = extent * 0.5
+	var t: float = thickness * 0.5
+	var rects: Array[Rect2] = [
+		Rect2(Vector2(-half.x - t, 0.0), Vector2(t, half.y + thickness)),
+		Rect2(Vector2(half.x + t, 0.0), Vector2(t, half.y + thickness)),
+		Rect2(Vector2(0.0, -half.y - t), Vector2(half.x + thickness, t)),
+		Rect2(Vector2(0.0, half.y + t), Vector2(half.x + thickness, t)),
+	]
+	return rects
+
+
+## Si `edge_walls`, cuántas paredes del borde tiene armadas (para pruebas).
+func get_edge_wall_count() -> int:
+	var count: int = 0
+	for index: int in 4:
+		var wall := get_node_or_null(EDGE_NODE_PREFIX + str(index)) as CollisionShape3D
+		if wall != null and not wall.disabled:
+			count += 1
+	return count
+
+
+# Cuatro cajas de choque alrededor de la grilla (Rect2: posición = centro, tamaño = medio tamaño).
+func _build_edge_walls() -> void:
+	var extent := Vector2(_columns - 1, _rows - 1) * cell_size
+	var rects: Array[Rect2] = edge_wall_rects(extent, EDGE_THICKNESS)
+	for index: int in rects.size():
+		var wall := get_node_or_null(EDGE_NODE_PREFIX + str(index)) as CollisionShape3D
+		if wall == null:
+			wall = CollisionShape3D.new()
+			wall.name = EDGE_NODE_PREFIX + str(index)
+			add_child(wall)
+		var rect: Rect2 = rects[index]
+		var box := BoxShape3D.new()
+		box.size = Vector3(rect.size.x * 2.0, EDGE_HEIGHT, rect.size.y * 2.0)
+		wall.shape = box
+		wall.position = Vector3(rect.position.x, EDGE_BOTTOM + EDGE_HEIGHT * 0.5, rect.position.y)
+		wall.disabled = not edge_walls
 
 
 ## Lógica pura: color del suelo según la altura, lo plano (normal.y, 1 en el plano) y la mancha de

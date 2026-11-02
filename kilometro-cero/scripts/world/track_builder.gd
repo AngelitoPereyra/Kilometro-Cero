@@ -52,16 +52,26 @@ var _path: Path3D
 var _material: Material
 
 
-## Cuántos módulos enteros entran en un tramo. Un resto menor a un módulo queda sin rieles.
+## Cuántos módulos cubren un tramo (tarea 62c.3f): los más cercanos a `module_size` que entran
+## enteros, estirados o achicados un poco para que no quede ningún pedazo sin rieles (antes el
+## resto menor a un módulo quedaba pelado y en cada unión se veía un salto). Un tramo más corto que
+## un módulo lleva uno solo, achicado.
 static func module_count(track_length: float, module_size: float) -> int:
-	if module_size <= 0.0 or track_length <= 0.0:
+	if module_size <= 0.0 or track_length <= LENGTH_EPSILON_M:
 		return 0
-	return floori((track_length + LENGTH_EPSILON_M) / module_size)
+	return maxi(1, roundi(track_length / module_size))
 
 
-## Distancia desde el inicio de la curva hasta el centro del módulo `index`.
-static func module_offset(index: int, module_size: float) -> float:
-	return (index + 0.5) * module_size
+## Largo real de cada módulo en ese tramo (lo que avanza de uno al siguiente).
+static func module_step(track_length: float, module_size: float) -> float:
+	var count: int = module_count(track_length, module_size)
+	return track_length / count if count > 0 else module_size
+
+
+## Distancia desde el inicio de la curva hasta el centro del módulo `index`, con módulos de
+## `step` metros (module_step).
+static func module_offset(index: int, step: float) -> float:
+	return (index + 0.5) * step
 
 
 func _ready() -> void:
@@ -95,7 +105,11 @@ func rebuild() -> void:
 		update_configuration_warnings()
 		return
 
-	var count: int = module_count(curve.get_baked_length(), module_length)
+	var length: float = curve.get_baked_length()
+	var count: int = module_count(length, module_length)
+	var step: float = module_step(length, module_length)
+	# Cada módulo se estira a lo largo (Z) lo que haga falta para cubrir el tramo entero.
+	var stretch := Basis.from_scale(Vector3(1.0, 1.0, step / module_length))
 	var multimesh := MultiMesh.new()
 	# El formato se define antes de la cantidad: cambiarlo después borra las instancias.
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
@@ -103,7 +117,8 @@ func rebuild() -> void:
 	multimesh.instance_count = count
 	for i: int in count:
 		# Posición y orientación de la curva en el centro del módulo.
-		multimesh.set_instance_transform(i, curve.sample_baked_with_rotation(module_offset(i, module_length), true))
+		var placed: Transform3D = curve.sample_baked_with_rotation(module_offset(i, step), true)
+		multimesh.set_instance_transform(i, Transform3D(placed.basis * stretch, placed.origin))
 	instance.multimesh = multimesh
 
 	_material = _make_material()

@@ -70,6 +70,8 @@ func _definir_acciones() -> Dictionary:
 		&"doors": [_tecla(KEY_O)],           # puertas de los coches de pasajeros (tarea 60b)
 		&"camera_view": [_tecla(KEY_V)],     # cabina o cámara exterior del tren (tarea 60c)
 		&"use_tool": [_boton_mouse(MOUSE_BUTTON_LEFT)],  # golpear con la herramienta clave (D91, tarea 55)
+		&"fullscreen": [_tecla(KEY_F11)],    # pantalla completa o ventana (tarea 62c.3f)
+		&"debug_stats": [_tecla(KEY_F3)],    # medidor de rendimiento (tarea 62c.3f)
 	}
 
 

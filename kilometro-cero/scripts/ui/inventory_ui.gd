@@ -4,7 +4,9 @@ extends CanvasLayer
 ## y la cierra; Esc también la cierra. Muestra las ranuras de la mochila y la mano.
 ## Clic en una ranura: pasa una unidad a la mano (Grabber.take_from_backpack).
 ## Clic en la mano: la guarda en la mochila (Grabber.stow_held).
-## Abierta, libera el mouse, pausa el reloj de juego y apaga los controles del jugador.
+## Abierta, libera el mouse, pausa el juego entero (el árbol de escenas: reloj, trenes, flujos,
+## automáticos y pobladores; tarea 62c.3f) y apaga los controles del jugador. La ventana sigue
+## andando en pausa (process_mode ALWAYS).
 ## Arma sus nodos por código: en la escena es solo un CanvasLayer con este script,
 ## hijo directo de Player (o con `player` asignado desde el inspector).
 ## No tiene lógica de inventario: observa señales y le pide todo al Grabber.
@@ -32,6 +34,7 @@ var agenda_extra: Callable
 
 var _open: bool = false
 var _clock_was_running: bool = true
+var _tree_was_paused: bool = false
 var _grabber: Grabber
 var _backpack: Inventory
 var _hands: Hands
@@ -85,6 +88,8 @@ static func failure_text(reason: StringName) -> String:
 func _ready() -> void:
 	layer = 10
 	visible = false
+	# Abierta pausa el árbol entero: la ventana tiene que seguir leyendo teclas y clics.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	if player == null:
 		player = get_parent() as Player
 	if player == null:
@@ -131,12 +136,15 @@ func set_open(value: bool) -> void:
 		# Se recuerda cómo estaba el reloj: si otro menú ya lo había pausado, se respeta.
 		_clock_was_running = GameState.clock_running
 		GameState.clock_running = false
+		_tree_was_paused = get_tree().paused
+		get_tree().paused = true
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		_status.text = ""
 		_refresh()
 		_refresh_texts()
 	else:
 		GameState.clock_running = _clock_was_running
+		get_tree().paused = _tree_was_paused
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	toggled.emit(value)
 

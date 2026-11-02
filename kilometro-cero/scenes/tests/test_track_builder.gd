@@ -27,8 +27,11 @@ func _ready() -> void:
 func _probar_calculo_de_modulos() -> void:
 	_comprobar(TrackBuilder.module_count(200.0, 5.0) == 40, "200 m con módulos de 5 m: 40 módulos")
 	_comprobar(TrackBuilder.module_count(199.9999, 5.0) == 40, "Un error de redondeo (199.9999 m) no pierde un módulo")
-	_comprobar(TrackBuilder.module_count(203.0, 5.0) == 40, "Un resto menor a un módulo no suma uno extra")
-	_comprobar(TrackBuilder.module_count(4.0, 5.0) == 0, "Un tramo menor a un módulo no genera ninguno")
+	_comprobar(TrackBuilder.module_count(203.0, 5.0) == 41, "Un resto de 3 m suma un módulo (se achican un poco, 62c.3f)")
+	_comprobar(TrackBuilder.module_count(201.0, 5.0) == 40, "Un resto de 1 m estira los 40 módulos")
+	_comprobar(is_equal_approx(TrackBuilder.module_step(201.0, 5.0), 5.025), "Estirados cubren el tramo entero: 40 de 5,025 m")
+	_comprobar(TrackBuilder.module_count(4.0, 5.0) == 1, "Un tramo menor a un módulo lleva uno, achicado")
+	_comprobar(TrackBuilder.module_count(0.0, 5.0) == 0, "Un tramo de largo 0 no lleva ninguno")
 	_comprobar(TrackBuilder.module_count(100.0, 0.0) == 0, "Módulo de largo 0 no divide por cero")
 	_comprobar(is_equal_approx(TrackBuilder.module_offset(0, 5.0), 2.5), "El primer módulo se centra a 2.5 m del inicio")
 
@@ -57,6 +60,7 @@ func _probar_constructor() -> void:
 	var multimesh: MultiMesh = instancia.multimesh
 	var curva: Curve3D = _track.curve
 	var esperado: int = TrackBuilder.module_count(curva.get_baked_length(), _builder.module_length)
+	var paso: float = TrackBuilder.module_step(curva.get_baked_length(), _builder.module_length)
 	_comprobar(multimesh.instance_count == esperado, "Cantidad de módulos: %d (esperado %d)" % [multimesh.instance_count, esperado])
 	if multimesh.instance_count < 2:
 		return
@@ -65,12 +69,14 @@ func _probar_constructor() -> void:
 	var primero: Vector3 = multimesh.get_instance_transform(0).origin
 	var segundo: Vector3 = multimesh.get_instance_transform(1).origin
 	var ultimo: Vector3 = multimesh.get_instance_transform(multimesh.instance_count - 1).origin
-	var esperado_primero: Vector3 = curva.sample_baked(TrackBuilder.module_offset(0, _builder.module_length), true)
-	var esperado_ultimo: Vector3 = curva.sample_baked(TrackBuilder.module_offset(multimesh.instance_count - 1, _builder.module_length), true)
+	var esperado_primero: Vector3 = curva.sample_baked(TrackBuilder.module_offset(0, paso), true)
+	var esperado_ultimo: Vector3 = curva.sample_baked(TrackBuilder.module_offset(multimesh.instance_count - 1, paso), true)
 	_comprobar(primero.distance_to(esperado_primero) < TOLERANCIA_M, "El primer módulo está sobre la curva")
 	_comprobar(ultimo.distance_to(esperado_ultimo) < TOLERANCIA_M, "El último módulo está sobre la curva")
 	# En una vía recta, módulos consecutivos quedan separados justo por el largo del módulo.
-	_comprobar(absf(primero.distance_to(segundo) - _builder.module_length) < TOLERANCIA_M, "Módulos consecutivos separados %.1f m" % _builder.module_length)
+	_comprobar(absf(primero.distance_to(segundo) - paso) < TOLERANCIA_M, "Módulos consecutivos separados %.2f m" % paso)
+	# El último módulo llega justo al final de la curva: no queda pedazo sin rieles (62c.3f).
+	_comprobar(absf(TrackBuilder.module_offset(multimesh.instance_count - 1, paso) + paso * 0.5 - curva.get_baked_length()) < TOLERANCIA_M, "Los módulos cubren el tramo hasta la punta")
 
 	var material := instancia.material_override as StandardMaterial3D
 	_comprobar(material != null, "El módulo usa el material placeholder")

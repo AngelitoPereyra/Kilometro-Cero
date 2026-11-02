@@ -10,19 +10,22 @@
 albedo_color = Color(0.357, 0.376, 0.408, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_chasis"]
-albedo_color = Color(0.149, 0.161, 0.180, 1)
+albedo_color = Color(0.114, 0.165, 0.29, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_caldera"]
-albedo_color = Color(0.184, 0.420, 0.310, 1)
+albedo_color = Color(0.969, 0.961, 0.937, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_cabina"]
-albedo_color = Color(0.122, 0.290, 0.216, 1)
+albedo_color = Color(0.204, 0.314, 0.478, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_techo"]
-albedo_color = Color(0.149, 0.161, 0.180, 1)
+albedo_color = Color(0.114, 0.165, 0.29, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_chimenea"]
+albedo_color = Color(0.91, 0.773, 0.278, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_baranda"]
-albedo_color = Color(0.851, 0.643, 0.255, 1)
+albedo_color = Color(0.204, 0.314, 0.478, 1)
 
 [sub_resource type="StandardMaterial3D" id="Mat_rampa"]
 albedo_color = Color(0.541, 0.416, 0.290, 1)
@@ -227,7 +230,7 @@ mesh = SubResource("Mesh_Caldera")
 
 [node name="Chimenea" type="MeshInstance3D" parent="Visual"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.7, -4)
-material_override = SubResource("Mat_techo")
+material_override = SubResource("Mat_chimenea")
 mesh = SubResource("Mesh_Chimenea")
 
 [node name="BarandaFrente" type="MeshInstance3D" parent="Visual"]

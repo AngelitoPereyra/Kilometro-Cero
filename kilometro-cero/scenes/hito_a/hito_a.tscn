@@ -67,6 +67,7 @@
 [ext_resource type="Script" path="res://scripts/look/look_director.gd" id="65_estetica"]
 [ext_resource type="Resource" path="res://data/look/dia_pampa.tres" id="66_dia"]
 [ext_resource type="Script" path="res://scripts/look/vitality_field.gd" id="67_vida"]
+[ext_resource type="Script" path="res://scripts/world/level_crossing.gd" id="68_paso"]
 
 [sub_resource type="ShaderMaterial" id="Cielo_mat"]
 shader = ExtResource("64_cielo")
@@ -1239,6 +1240,7 @@ script = ExtResource("58_camino")
 
 [node name="PasoANivel" type="Node3D" parent="."]
 transform = Transform3D(0.969, 0, 0.246, 0, 1, 0, -0.246, 0, 0.969, 82.7, 0, 800)
+script = ExtResource("68_paso")
 
 [node name="Casilla" type="StaticBody3D" parent="PasoANivel"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 0, 9)

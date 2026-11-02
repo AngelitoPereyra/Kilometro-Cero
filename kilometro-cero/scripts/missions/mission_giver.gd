@@ -16,6 +16,8 @@ extends Interactable
 ## muestra "!" si tiene algo para dar o contar. La interfaz definitiva llega con la tarea 67.
 ## Mudanza (tarea 62b.6): con `move_after` cumplida, el poblador se muda a `move_to` con humo (los
 ## Etchegaray esperan en Olavarría y, cumplida la mudanza, viven en Azul y cuentan el cierre ahí).
+## Tarea 62c.3f: al empezar (y al mudarse) se apoya en lo que tiene debajo (andén, piso o terreno),
+## así no queda flotando donde el terreno quedó más bajo que su posición en la escena.
 
 ## Dijo algo (para la interfaz).
 signal said(text: String)
@@ -23,6 +25,9 @@ signal said(text: String)
 const BUBBLE_PATH: NodePath = ^"Globo"
 ## Cuánto (s) queda a la vista lo que dijo.
 const SPEECH_TIME: float = 10.0
+## Desde cuánto más arriba y hasta cuánto más abajo busca el suelo.
+const GROUND_PROBE_UP: float = 1.5
+const GROUND_PROBE_DOWN: float = 30.0
 
 ## Nombre del que habla ("Don Aurelio, el jefe de estación").
 @export var speaker: String = ""
@@ -34,6 +39,8 @@ const SPEECH_TIME: float = 10.0
 @export var move_after: MissionData
 ## Adónde se muda (se para en su posición).
 @export var move_to: Node3D
+## Se apoya en el suelo al empezar y al mudarse (tarea 62c.3f).
+@export var snap_to_ground: bool = true
 
 var _bubble: Label3D
 var _speech_left: float = 0.0
@@ -53,6 +60,8 @@ func _ready() -> void:
 	if main_station != &"":
 		GameState.missions.register_main_giver(main_station, get_short_name())
 	_update_bubble()
+	if snap_to_ground and not Engine.is_editor_hint():
+		_snap_when_ready()
 
 
 func _process(delta: float) -> void:
@@ -84,8 +93,40 @@ func move_now() -> bool:
 	var scene_root: Node = get_tree().current_scene if get_tree().current_scene != null else get_parent()
 	SmokePuff.spawn(scene_root, global_position + Vector3(0.0, 1.0, 0.0))
 	global_position = move_to.global_position
+	if snap_to_ground:
+		snap_now()
 	SmokePuff.spawn(scene_root, global_position + Vector3(0.0, 1.0, 0.0), 1.0, false)
 	return true
+
+
+## Lo apoya ya sobre lo que tiene debajo (sin contar su propio cuerpo). False si no encontró suelo.
+func snap_now() -> bool:
+	if not is_inside_tree():
+		return false
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(global_position + Vector3.UP * GROUND_PROBE_UP, global_position + Vector3.DOWN * GROUND_PROBE_DOWN)
+	query.exclude = _own_bodies()
+	query.collide_with_areas = false
+	var hit: Dictionary = space.intersect_ray(query)
+	if hit.is_empty():
+		return false
+	global_position.y = (hit["position"] as Vector3).y
+	return true
+
+
+# Espera a que el terreno y los andenes estén en el mundo de física y recién ahí se apoya.
+func _snap_when_ready() -> void:
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	if is_inside_tree():
+		snap_now()
+
+
+func _own_bodies() -> Array[RID]:
+	var bodies: Array[RID] = []
+	for child: Node in find_children("*", "CollisionObject3D", true, false):
+		bodies.append((child as CollisionObject3D).get_rid())
+	return bodies
 
 
 func has_moved() -> bool:

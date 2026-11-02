@@ -44,6 +44,20 @@ func _ready() -> void:
 	EventBus.tool_used.connect(func(_tool_id: StringName) -> void: _refresh_missions.call_deferred())
 
 
+## F11 (acción `fullscreen`, tarea 62c.3f): pasa de ventana a pantalla completa y vuelve.
+func _unhandled_input(event: InputEvent) -> void:
+	if InputMap.has_action(&"fullscreen") and event.is_action_pressed(&"fullscreen"):
+		toggle_fullscreen()
+		get_viewport().set_input_as_handled()
+
+
+## Pantalla completa o ventana. Devuelve true si quedó en pantalla completa.
+func toggle_fullscreen() -> bool:
+	var full: bool = DisplayServer.window_get_mode() in [DisplayServer.WINDOW_MODE_FULLSCREEN, DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN]
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if full else DisplayServer.WINDOW_MODE_FULLSCREEN)
+	return not full
+
+
 func _process(delta: float) -> void:
 	if clock_running:
 		clock.advance(delta * _hours_per_second * time_scale)

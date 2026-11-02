@@ -12,6 +12,9 @@ extends Node3D
 
 enum Hat { NONE, BERET, BRIMMED, CAP }
 
+## Grupo de todos los personajes (lo cuenta el medidor de rendimiento, PerfOverlay).
+const GROUP: StringName = &"big_head_figures"
+
 const SKINS: Array[StringName] = [&"piel_clara", &"piel_media", &"piel_morena"]
 const HAIRS: Array[StringName] = [&"pelo", &"barro", &"durmiente", &"gris_claro", &"tierra"]
 const SHIRTS: Array[StringName] = [&"ropa_azul", &"ropa_roja", &"ropa_verde", &"crema", &"ocre", &"celeste_pared", &"rosa_pared", &"blanco", &"mostaza", &"bordo"]
@@ -23,6 +26,9 @@ const HEAD_RADIUS: float = 0.29
 ## Cuánto se mueven al caminar: giro de piernas y brazos (radianes) y salto (metros).
 const SWING: float = 0.6
 const BOB: float = 0.05
+## Más lejos que esto de la cámara no se dibuja ni se anima (tarea 62c.3f: con los pueblos
+## llenos eran cientos de piezas).
+const VIEW_DISTANCE: float = 110.0
 
 @export var look_seed: int = 0:
 	set(value):
@@ -72,6 +78,7 @@ var _chosen: Dictionary[StringName, Variant] = {}
 
 
 func _ready() -> void:
+	add_to_group(GROUP)
 	rebuild()
 	_last_position = global_position
 	_body = _find_body()
@@ -79,6 +86,10 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if Engine.is_editor_hint() or not auto_walk or delta <= 0.0:
+		return
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	if camera != null and camera.global_position.distance_squared_to(global_position) > VIEW_DISTANCE * VIEW_DISTANCE:
+		_last_position = global_position
 		return
 	var speed: float
 	if _body != null:
@@ -189,6 +200,10 @@ func _add(parent: Node3D, mesh: Mesh, swatch: StringName, at: Vector3) -> MeshIn
 	instance.mesh = mesh
 	instance.material_override = Palette.figure_material(swatch)
 	instance.position = at
+	instance.visibility_range_end = VIEW_DISTANCE
+	# Las piezas chicas (ojos, nariz, manos) no hacen sombra que se note.
+	if mesh.get_aabb().size.length() < 0.25:
+		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(instance)
 	return instance
 

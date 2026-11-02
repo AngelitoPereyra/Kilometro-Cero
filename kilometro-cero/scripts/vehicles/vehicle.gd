@@ -50,6 +50,9 @@ const GRADE_GRAVITY: float = 9.8
 const ROLL_MIN_SPEED: float = 0.05
 ## En subida nunca pide menos que esta fracción de su marcha.
 const MIN_CLIMB_FRACTION: float = 0.2
+## Distancia de vista de las piezas del vehículo (tarea 62c.3f): más lejos no se dibujan (con la
+## niebla ya casi no se veían) y los automáticos lejanos dejan de costar.
+const VIEW_DISTANCE: float = 600.0
 
 @export var data: VehicleData
 ## Tramo que recorre. Si queda vacío, se usa el TrackSegment que cuelga del mismo Path3D:
@@ -126,6 +129,7 @@ func _ready() -> void:
 		push_error("Vehicle necesita un VehicleData asignado.")
 		set_physics_process(false)
 		return
+	set_view_distance(self, VIEW_DISTANCE)
 	_update_gangway()
 	_coupler = Coupler.new()
 	_coupler.name = "Enganche"
@@ -135,6 +139,15 @@ func _ready() -> void:
 	if couple_on_start:
 		# Diferido: los demás vehículos de la escena todavía pueden no estar listos.
 		_couple_to_vehicle_ahead.call_deferred()
+
+
+## Pone esa distancia de vista a las piezas de `root` que no tienen una (tarea 62c.3f).
+static func set_view_distance(root: Node, distance: float) -> void:
+	for node: Node in root.find_children("*", "GeometryInstance3D", true, false):
+		var piece := node as GeometryInstance3D
+		if piece.visibility_range_end <= 0.0:
+			piece.visibility_range_end = distance
+			piece.visibility_range_end_margin = distance * 0.05
 
 
 func _physics_process(delta: float) -> void:

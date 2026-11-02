@@ -57,6 +57,8 @@ const SKIP_MORNING_HOUR: float = 7.0
 ## Renglones del cartel de misiones (arriba a la derecha).
 const MAX_MISSION_LINES: int = 4
 ## El cartel de misiones cuando no queda ninguna pendiente (tarea 62b.7).
+## Cada cuánto (s) se rearman los carteles de la pantalla.
+const HUD_REFRESH: float = 0.15
 const SIN_MISIONES: String = "Sin misiones pendientes\nTAB: Agenda"
 
 @onready var _player: Player = $Player
@@ -76,6 +78,7 @@ var _mostrar_teclas: bool = false
 var _hud_teclas: Label
 var _hud_mision: Label
 var _hud_abajo: Label
+var _hud_left: float = 0.0
 
 
 func _ready() -> void:
@@ -94,6 +97,8 @@ func _ready() -> void:
 		if hijo is InventoryUI:
 			(hijo as InventoryUI).agenda_extra = _renglones_de_agenda
 	_armar_hud()
+	# F3: medidor de rendimiento (tarea 62c.3f).
+	add_child(PerfOverlay.new())
 	# Las vías de estación y el acople de los vagones se arman diferidos.
 	for _i: int in 3:
 		await get_tree().physics_frame
@@ -145,7 +150,13 @@ func _avisar(texto: String) -> void:
 	_aviso_hasta = Time.get_ticks_msec() / 1000.0 + 4.0
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	# Los carteles se rearman unas veces por segundo, no en cada cuadro (tarea 62c.3f: buscar lo
+	# que hay cerca y lo que falta de cada misión cuesta más con los días).
+	_hud_left -= delta
+	if _hud_left > 0.0:
+		return
+	_hud_left = HUD_REFRESH
 	if _marca_pico.visible and not is_instance_valid(_pico):
 		_marca_pico.visible = false
 	_hud.text = "Día %d / %s\n$%d" % [GameState.clock.current_day, GameClock.format_time(GameState.clock.time_of_day), GameState.money]
