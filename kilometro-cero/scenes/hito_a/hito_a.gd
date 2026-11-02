@@ -36,6 +36,11 @@ extends Node3D
 ## primeras casas) y al llegar se mudan con humo a LlegadaEtchegaray, en Azul. La vecina de Azul que
 ## pide la maestra ahora es Doña Elvira (Doña Rosa es la de Olavarría). Las familias que trae el
 ## jugador se ven en la pestaña Vecinos del TAB.
+## Tarea 62c.3g (D142): cadena de inicio con el tren propio, sin avisos ni trenes prestados. Al despejar
+## o_a sale del taller de Olavarría el coche con 10 colonos (sin reparar); bajados en Azul, Azul regala
+## una plataforma con 20 troncos para Sierras Bayas (RegaloAzul); entregados, al día siguiente Sierras
+## Bayas regala dos con 20 piedras cada una para Olavarría (RegaloSierrasBayas y 2). Las principales que vienen
+## después se cumplen solas si su camino ya está estrenado (MissionBoard.auto_flows).
 
 const CONTROLES: String = "WASD: caminar\nE: agarrar (va a la mochila)\nClic: golpear (hacha, pico) o juntar miel\nQ con la mano vacía junto al vagón: pasarle la mochila\nF: cabina, tablero, mercado, taller o hablar\nO: puertas del coche (en la cabina)\nT: hasta la próxima salida de un tren\nTAB: inventario\nH: esconder las teclas"
 const AYUDA: String = "TAB: Inventario\nH: Teclas"
@@ -45,9 +50,15 @@ const MISSION_FONT_SIZE: int = 12
 const MISSION_CHARS: int = 28
 ## Margen de los carteles de pantalla al borde.
 const HUD_MARGIN: int = 16
-## Pesos con que arranca la partida (D119): alcanzan para el cemento del coche de regalo.
+## Pesos con que arranca la partida (D119).
 const START_MONEY: int = 150
 const STATIONS: Array[StringName] = [&"azul", &"olavarria", &"sierras_bayas"]
+## Cadena de inicio (tarea 62c.3g, D142), en orden: [estación, objeto, lo que dice el paso].
+const CADENA: Array = [
+	[&"azul", &"settlers", "Llevar a Azul los 10 colonos del coche de regalo de Olavarría y abrir las puertas"],
+	[&"sierras_bayas", &"log", "Llevar a Sierras Bayas la plataforma de troncos que regala Azul"],
+	[&"olavarria", &"limestone", "Bajar a Olavarría las dos plataformas de piedra que regala Sierras Bayas (salen al día siguiente de los troncos)"],
+]
 ## Dónde queda la locomotora en la principal de Olavarría: metros al norte del centro del andén.
 const START_AHEAD: float = 12.0
 ## Con la T el reloj queda esto (horas) antes de la próxima salida, para verla.
@@ -85,6 +96,10 @@ func _ready() -> void:
 	if GameState.money < START_MONEY:
 		GameState.add_money(START_MONEY - GameState.money)
 	GameState.missions.flows_start_next_day = true
+	for paso: Array in CADENA:
+		GameState.missions.set_chain_step(paso[0], paso[1], paso[2])
+	GameState.missions.auto_flows = true
+	GameState.missions.refresh()
 	var agarrador: Grabber = null
 	for hijo: Node in _player.get_children():
 		if hijo is Grabber:
@@ -286,7 +301,23 @@ func _aviso_de_principal(tablero: MissionBoard, mision: Mission, lugar: String) 
 			return "• Tren prestado a %s: tablero de %s (opcional)" % [lugar, tablero.station_name(origen)]
 		MissionBoard.Stage.INAUGURAL:
 			return "• Llevá el tren prestado de %s a %s" % [tablero.station_name(origen), lugar]
+		MissionBoard.Stage.CHAIN:
+			# Solo el paso de la cadena que sigue (tarea 62c.3g).
+			if _paso_de_cadena() != [mision.station_id, mision.item_id]:
+				return ""
+			var por_despejar: Array[StringName] = tablero.get_cut_segments(mision)
+			if not por_despejar.is_empty():
+				return "• Despejá %s" % ", ".join(por_despejar)
+			return "• " + tablero.get_chain_hint(mision)
 	return ""
+
+
+# El paso de la cadena de inicio que sigue: [estación, objeto], o vacío si ya se cumplió entera.
+func _paso_de_cadena() -> Array:
+	for paso: Array in CADENA:
+		if not GameState.missions.is_chain_done(paso[0], paso[1]):
+			return [paso[0], paso[1]]
+	return []
 
 
 # Lo que la agenda del TAB suma en el Hito A: el coche de regalo.
@@ -294,7 +325,9 @@ func _renglones_de_agenda() -> PackedStringArray:
 	var renglones: PackedStringArray = []
 	var tablero: MissionBoard = GameState.missions
 	var coche: PassengerTraffic.CoachState = GameState.passengers.coach_state
-	if coche == PassengerTraffic.CoachState.REPAIRING and _taller != null:
+	if coche == PassengerTraffic.CoachState.REPAIRING and GameState.passengers.coach_hint != "":
+		renglones.append(GameState.passengers.coach_hint)
+	elif coche == PassengerTraffic.CoachState.REPAIRING and _taller != null:
 		var faltan_coche: PackedStringArray = []
 		for item_id: StringName in _taller.get_remaining():
 			faltan_coche.append("%d %s" % [_taller.get_remaining()[item_id], tablero.name_of(item_id)])

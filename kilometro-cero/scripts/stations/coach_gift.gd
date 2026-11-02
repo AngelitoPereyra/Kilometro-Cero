@@ -9,6 +9,8 @@ extends Interactable
 ## como cualquier vagón, tocándolo marcha atrás con la cola del tren. Una sola vez por partida.
 ## Hijos: "Texto" (Label3D), "CocheEnReparacion" (lo que se ve mientras se arregla) y "Salida"
 ## (Marker3D sobre la vía).
+## Cadena de inicio (tarea 62c.3g, D142): con `open_segment` no se repara; el coche sale solo al abrirse
+## ese tramo (después de haberlo visto cortado), con la gente de `passengers` ya sentada.
 
 ## El coche salió a la vía.
 signal coach_placed(coach: PassengerCoach)
@@ -28,6 +30,10 @@ const CLEARANCE: float = 1.0
 ## Materiales para dejarlo andando (provisorio: troncos para los asientos; en la 62, rieles y
 ## cueros, D102).
 @export var repair_cost: Array[ItemAmount] = []
+## Tarea 62c.3g: si no está vacío, el coche sale gratis al abrirse este tramo (sin reparación).
+@export var open_segment: StringName
+## Tarea 62c.3g: la gente que ya viaja sentada en el coche al salir (los 10 colonos para Azul).
+@export var passengers: Array[ItemAmount] = []
 
 var _station: Station
 var _label: Label3D
@@ -36,6 +42,7 @@ var _exit: Node3D
 var _timer: float = 0.0
 var _message: String = ""
 var _coach: PassengerCoach
+var _seen_cut: bool = false
 
 
 func _ready() -> void:
@@ -94,7 +101,7 @@ func get_repair_plan(player: Player = null) -> Dictionary[StringName, int]:
 
 
 func can_interact(player: Player) -> bool:
-	return super.can_interact(player) and get_state() == PassengerTraffic.CoachState.REPAIRING
+	return super.can_interact(player) and open_segment == &"" and get_state() == PassengerTraffic.CoachState.REPAIRING
 
 
 func get_prompt() -> String:
@@ -127,6 +134,8 @@ func refresh() -> void:
 	if _station == null:
 		return
 	GameState.passengers.check_offer()
+	if open_segment != &"":
+		_check_segment()
 	var state: PassengerTraffic.CoachState = get_state()
 	if state == PassengerTraffic.CoachState.READY:
 		place_coach()
@@ -138,6 +147,8 @@ func refresh() -> void:
 
 
 func build_text() -> String:
+	if open_segment != &"" and get_state() == PassengerTraffic.CoachState.REPAIRING:
+		return "Taller: coche de pasajeros (regalo de la ciudad)\nSale al despejar " + String(open_segment)
 	match get_state():
 		PassengerTraffic.CoachState.REPAIRING:
 			var lines: PackedStringArray = ["Taller: coche de pasajeros (regalo de la ciudad)", "Para dejarlo andando faltan " + _amounts_text(get_remaining())]
@@ -174,6 +185,12 @@ func place_coach() -> PassengerCoach:
 	path.add_child(coach)
 	coach.place_on(path, offset)
 	_coach = coach
+	var box: StorageContainer = coach.get_cargo()
+	for entry: ItemAmount in passengers:
+		if box != null and entry != null and entry.item != null and entry.amount > 0:
+			box.try_store(ItemStack.new(entry.item, entry.amount))
+	# Lo pone el viejo en la maqueta (tarea 62b.3): con humo.
+	SmokePuff.at_vehicles([coach])
 	GameState.passengers.mark_coach_delivered()
 	var visual := coach.get_node_or_null(^"Visual") as Node3D
 	if visual != null:
@@ -212,6 +229,25 @@ func is_track_free(path: Path3D, offset: float, length: float) -> bool:
 		if absf(vehicle.progress - offset) < (vehicle.data.length + length) * 0.5 + CLEARANCE:
 			return false
 	return true
+
+
+# Con `open_segment` (tarea 62c.3g): abierto el tramo después de verlo cortado, el coche queda listo
+# sin reparar.
+func _check_segment() -> void:
+	var traffic: PassengerTraffic = GameState.passengers
+	if traffic.coach_state == PassengerTraffic.CoachState.DELIVERED or traffic.coach_state == PassengerTraffic.CoachState.READY:
+		return
+	if traffic.coach_state == PassengerTraffic.CoachState.REPAIRING and not is_gift_here():
+		return
+	traffic.coach_hint = "Coche de pasajeros: sale en el taller de %s al despejar %s" % [_station.get_display_name(), open_segment]
+	var network: RailNetwork = RailNetwork.find_in(get_tree()) if is_inside_tree() else null
+	if network == null or not network.has_segment(open_segment):
+		return
+	if network.is_cut(open_segment):
+		_seen_cut = true
+		return
+	if _seen_cut:
+		traffic.give_coach(_station.get_station_id())
 
 
 func _on_interact(player: Player) -> void:

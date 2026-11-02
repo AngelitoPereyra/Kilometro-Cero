@@ -36,6 +36,14 @@ extends RefCounted
 ##   familia del jugador con nombre (ProductionModel.add_player_family) y solo se desbloquea si la
 ##   estación todavía tiene lugar para ella (tope de D129). La gente de una mudanza espera en
 ##   `MissionData.passenger_from` y sube gratis al abrir las puertas ahí.
+## - Cadena de inicio (tarea 62c.3g, D142): las principales marcadas con `set_chain_step` (en el Hito
+##   A, los colonos de Azul, los troncos de Sierras Bayas y la piedra de Olavarría) no piden aviso ni
+##   tren prestado: la primera carga la lleva el jugador en su tren, con los vagones de regalo que
+##   salen cargados al cumplirse la anterior (WagonGift, CoachGift). Cada paso vale una sola vez.
+## - Flujos solos (tarea 62c.3g, D142, Batmi: "una vez abierto el flujo ya está"): con `auto_flows`
+##   una principal con aviso cuyo camino ya está abierto y estrenado se cumple sola, sin hablar con
+##   nadie; el Ferrocarril manda la carga y nace el flujo. El jugador solo abre caminos. Empieza
+##   recién con la cadena de inicio cumplida, así no le saca producción a un paso de la cadena.
 
 ## Una misión nueva: una principal que nace (ya activa) o una secundaria que se puede conseguir.
 signal mission_available(mission: Mission)
@@ -53,7 +61,8 @@ signal inaugural_started(mission: Mission)
 
 ## Etapa de una principal con aviso (tarea 62b.3): abrir el camino, avisarle a quien la da, tren
 ## prestado ofrecido en el tablero, viaje inaugural en curso, cumplida (o por cumplirse sola).
-enum Stage { OPEN_ROUTE, REPORT, OFFER, INAUGURAL, DONE }
+## CHAIN (tarea 62c.3g): paso de la cadena de inicio, la carga la lleva el jugador.
+enum Stage { OPEN_ROUTE, REPORT, OFFER, INAUGURAL, DONE, CHAIN }
 
 var production: ProductionModel
 ## Tramos del camino más corto entre dos estaciones, también por los cortados:
@@ -76,6 +85,9 @@ var opened_check: Callable = Callable()
 ## Precio de mercado de un objeto en una estación, para los encargos (tarea 62b.6):
 ## func(station_id, item_id) -> int. Vacío o 0: el valor base del objeto (ItemData.base_value).
 var price_check: Callable = Callable()
+## Tarea 62c.3g (D142): una principal con aviso cuyo camino ya está abierto y estrenado se cumple
+## sola (sin avisar). Apagado, como antes; lo prende la escena del Hito A.
+var auto_flows: bool = false
 
 # id -> misión, en orden de creación.
 var _missions: Dictionary[StringName, Mission] = {}
@@ -91,6 +103,10 @@ var _main_givers: Dictionary[StringName, String] = {}
 var _christened: Dictionary[StringName, bool] = {}
 # Secundaria -> nombre de quien la da (para los avisos del HUD y el tablero).
 var _side_givers: Dictionary[StringName, String] = {}
+# Cadena de inicio (tarea 62c.3g): "estación:objeto" -> lo que dice el paso. Los cumplidos pasan a
+# _chain_done y ya no se pueden volver a marcar.
+var _chain: Dictionary[String, String] = {}
+var _chain_done: Dictionary[String, bool] = {}
 
 
 func _init(model: ProductionModel = null) -> void:
@@ -186,6 +202,43 @@ func clear() -> void:
 	_main_givers.clear()
 	_christened.clear()
 	_side_givers.clear()
+	_chain.clear()
+	_chain_done.clear()
+
+
+# --- Cadena de inicio (tarea 62c.3g, D142) ---
+
+
+## Marca la principal de `station_id` que pide `item_id` como paso de la cadena de inicio: no pide
+## aviso y la primera carga la lleva el jugador. `hint` es lo que dice el paso ("Llevar la
+## plataforma de troncos de Azul a Sierras Bayas"). Un paso ya cumplido no se vuelve a marcar.
+func set_chain_step(station_id: StringName, item_id: StringName, hint: String = "") -> void:
+	var key: String = _chain_key(station_id, item_id)
+	if _chain_done.has(key):
+		return
+	_chain[key] = hint
+	refresh()
+
+
+## Si la principal es un paso de la cadena de inicio que todavía no se cumplió.
+func is_chain(mission: Mission) -> bool:
+	return mission != null and mission.main and mission.is_active() and not mission.reported and _chain.has(_chain_key(mission.station_id, mission.item_id))
+
+
+## Lo que dice el paso de la cadena ("" si no es un paso o no tiene texto).
+func get_chain_hint(mission: Mission) -> String:
+	if not is_chain(mission):
+		return ""
+	return _chain.get(_chain_key(mission.station_id, mission.item_id), "")
+
+
+## Si ese paso de la cadena ya se cumplió.
+func is_chain_done(station_id: StringName, item_id: StringName) -> bool:
+	return _chain_done.has(_chain_key(station_id, item_id))
+
+
+static func _chain_key(station_id: StringName, item_id: StringName) -> String:
+	return "%s:%s" % [station_id, item_id]
 
 
 # --- Principales con aviso (tarea 62b.3, D128) ---
@@ -221,7 +274,7 @@ func get_main_giver(station_id: StringName) -> String:
 
 ## Si la principal pide aviso (su estación tiene quien la da).
 func needs_report(mission: Mission) -> bool:
-	return mission != null and mission.main and _main_givers.has(mission.station_id)
+	return mission != null and mission.main and _main_givers.has(mission.station_id) and not is_chain(mission)
 
 
 ## Si la misión recibe entregas del jugador en el tablero: todas, salvo las principales con aviso
@@ -235,6 +288,8 @@ func accepts_deliveries(mission: Mission) -> bool:
 func get_stage(mission: Mission) -> Stage:
 	if mission == null or mission.is_completed():
 		return Stage.DONE
+	if is_chain(mission):
+		return Stage.CHAIN
 	if mission.inaugural:
 		return Stage.INAUGURAL
 	if mission.offered:
@@ -670,6 +725,8 @@ func get_pending_steps(mission: Mission) -> PackedStringArray:
 		return steps
 	if needs_report(mission):
 		return _report_steps(mission)
+	if is_chain(mission) and get_chain_hint(mission) != "":
+		return _chain_steps(mission)
 	if mission.main:
 		var source: StringName = find_source(mission)
 		if source == &"":
@@ -703,6 +760,21 @@ func get_pending_steps(mission: Mission) -> PackedStringArray:
 			steps.append("Entregar %d %s" % [remaining[item_id], name_of(item_id)])
 	if is_order(mission) and not remaining.is_empty():
 		steps.append("Paga $%d al entregar todo" % get_reward_money(mission))
+	return steps
+
+
+# Los pasos de un paso de la cadena de inicio con texto (tarea 62c.3g): primero los tramos
+# cortados, después lo que dice el paso y, si ya se entregó una parte, lo que falta.
+func _chain_steps(mission: Mission) -> PackedStringArray:
+	var steps: PackedStringArray = []
+	var source: StringName = find_source(mission)
+	for segment_id: StringName in get_cut_segments(mission):
+		steps.append("Habilitar el tramo %s (hacia %s)" % [segment_id, station_name(source)])
+	steps.append(get_chain_hint(mission))
+	var remaining: Dictionary[StringName, int] = mission.get_remaining()
+	for item_id: StringName in remaining:
+		if mission.delivered.get(item_id, 0) > 0:
+			steps.append("Faltan %d %s" % [remaining[item_id], name_of(item_id)])
 	return steps
 
 
@@ -812,6 +884,14 @@ func _unlock_side_missions() -> void:
 
 func _complete_ready_missions() -> void:
 	for mission: Mission in get_missions():
+		# Flujos solos (tarea 62c.3g): camino abierto y ya estrenado, el Ferrocarril manda la carga.
+		# Recién con la cadena de inicio cumplida: si no, un flujo solo le saca a un paso de la cadena
+		# la producción que necesita (la piedra para Azul dejaba sin piedra a Olavarría).
+		if auto_flows and _chain.is_empty() and can_report(mission) and get_unchristened_segments(find_source(mission), mission.station_id).is_empty():
+			var source: StringName = find_source(mission)
+			mission.source_id = source
+			mission.reported = true
+			_send_load(mission)
 		if mission.is_active() and _is_ready(mission):
 			_complete(mission)
 
@@ -839,6 +919,11 @@ func _complete(mission: Mission) -> void:
 		var source: StringName = find_source(mission)
 		mission.flow = production.add_flow(source, mission.station_id, mission.item_id, mission.flow_amount, is_passenger(mission.item_id), flows_start_next_day)
 		mission.inaugural = false
+		# Un paso de la cadena de inicio vale una sola vez (tarea 62c.3g).
+		var key: String = _chain_key(mission.station_id, mission.item_id)
+		if _chain.has(key):
+			_chain.erase(key)
+			_chain_done[key] = true
 		# Su camino ya lo estrenó un tren (tarea 62b.3): el prestado o el del flujo.
 		christen_route(source, mission.station_id)
 	elif mission.data != null:
@@ -894,7 +979,7 @@ func to_dict() -> Dictionary:
 	var christened: Array = []
 	for segment_id: StringName in _christened:
 		christened.append(String(segment_id))
-	return {"missions": missions, "main_counts": _main_counts.duplicate(), "christened": christened}
+	return {"missions": missions, "main_counts": _main_counts.duplicate(), "christened": christened, "chain": _chain.duplicate(), "chain_done": _chain_done.keys()}
 
 
 ## Carga el estado. Las principales vuelven solas; las secundarias se unen a sus datos al
@@ -910,6 +995,13 @@ func load_dict(values: Dictionary) -> void:
 	_christened.clear()
 	for segment_id: Variant in values.get("christened", []):
 		_christened[StringName(str(segment_id))] = true
+	_chain.clear()
+	var saved_chain: Dictionary = values.get("chain", {})
+	for key: Variant in saved_chain:
+		_chain[str(key)] = str(saved_chain[key])
+	_chain_done.clear()
+	for key: Variant in values.get("chain_done", []):
+		_chain_done[str(key)] = true
 	for entry: Dictionary in values.get("missions", []):
 		if bool(entry.get("main", false)):
 			var mission: Mission = Mission.main_from_dict(entry)

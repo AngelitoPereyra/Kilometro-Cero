@@ -68,6 +68,7 @@
 [ext_resource type="Resource" path="res://data/look/dia_pampa.tres" id="66_dia"]
 [ext_resource type="Script" path="res://scripts/look/vitality_field.gd" id="67_vida"]
 [ext_resource type="Script" path="res://scripts/world/level_crossing.gd" id="68_paso"]
+[ext_resource type="Resource" path="res://data/items/settlers.tres" id="69_colonos"]
 
 [sub_resource type="ShaderMaterial" id="Cielo_mat"]
 shader = ExtResource("64_cielo")
@@ -183,10 +184,20 @@ _data = {
 }
 point_count = 2
 
-[sub_resource type="Resource" id="Costo_cemento"]
+[sub_resource type="Resource" id="Colonos_coche"]
 script = ExtResource("30_cant")
-item = ExtResource("31_cem")
-amount = 5
+item = ExtResource("69_colonos")
+amount = 10
+
+[sub_resource type="Resource" id="Troncos_regalo"]
+script = ExtResource("30_cant")
+item = ExtResource("34_tro")
+amount = 20
+
+[sub_resource type="Resource" id="Piedra_regalo"]
+script = ExtResource("30_cant")
+item = ExtResource("35_pie")
+amount = 20
 
 [sub_resource type="StandardMaterial3D" id="Mat_galpon"]
 albedo_color = Color(0.541, 0.416, 0.290, 1)
@@ -462,7 +473,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -167, 0, -1830)
 data = ExtResource("17_sie")
 
 [node name="Taller" parent="Olavarria"]
-repair_cost = Array[ExtResource("30_cant")]([SubResource("Costo_cemento")])
+open_segment = &"o_a"
+passengers = Array[ExtResource("30_cant")]([SubResource("Colonos_coche")])
 
 [node name="Vias" parent="Azul"]
 turntable = true
@@ -929,12 +941,50 @@ main_station = &"sierras_bayas"
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 2545)
 script = ExtResource("33_reg")
 wagon_scene = ExtResource("9_plat")
-wagon_name = "una plataforma vacía"
-hint = "Tu plataforma: cargala con troncos del monte (hacha) para vender o para las obras"
-open_segment = &"o_a"
+cargo = Array[ExtResource("30_cant")]([SubResource("Troncos_regalo")])
+mission_station = &"azul"
+mission_item = &"settlers"
+wagon_name = "una plataforma"
+hint = "Llevala a Sierras Bayas: Ramírez espera los troncos"
 giver_name = "Azul"
 
 [node name="Texto" type="Label3D" parent="RegaloAzul"]
+billboard = 1
+font_size = 40
+outline_size = 10
+text = "Regalo"
+
+[node name="RegaloSierrasBayas" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -164, 0, -1885)
+script = ExtResource("33_reg")
+wagon_scene = ExtResource("9_plat")
+cargo = Array[ExtResource("30_cant")]([SubResource("Piedra_regalo")])
+mission_station = &"sierras_bayas"
+mission_item = &"log"
+next_day = true
+wagon_name = "una plataforma"
+hint = "Bajala a Olavarría: Don Ernesto espera la piedra"
+giver_name = "Sierras Bayas"
+
+[node name="Texto" type="Label3D" parent="RegaloSierrasBayas"]
+billboard = 1
+font_size = 40
+outline_size = 10
+text = "Regalo"
+
+[node name="RegaloSierrasBayas2" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -164, 0, -1871)
+script = ExtResource("33_reg")
+wagon_scene = ExtResource("9_plat")
+cargo = Array[ExtResource("30_cant")]([SubResource("Piedra_regalo")])
+mission_station = &"sierras_bayas"
+mission_item = &"log"
+next_day = true
+wagon_name = "una plataforma"
+hint = "Bajala a Olavarría: Don Ernesto espera la piedra"
+giver_name = "Sierras Bayas"
+
+[node name="Texto" type="Label3D" parent="RegaloSierrasBayas2"]
 billboard = 1
 font_size = 40
 outline_size = 10

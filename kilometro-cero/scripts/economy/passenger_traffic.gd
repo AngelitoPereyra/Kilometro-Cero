@@ -44,6 +44,9 @@ var economy: Economy
 var coach_state: CoachState = CoachState.NONE
 ## La ciudad que regala el coche (su taller lo muestra).
 var gift_station: StringName = &""
+## Qué dice el tablero mientras el coche espera (tarea 62c.3g): lo pone el taller que lo regala sin
+## reparación ("Coche de pasajeros: sale en Olavarría al despejar o_a"). Vacío: el de la reparación.
+var coach_hint: String = ""
 ## Lo entregado para reparar el coche: id de objeto -> unidades.
 var repair_delivered: Dictionary[StringName, int] = {}
 
@@ -68,6 +71,7 @@ static func coach_state_name(value: CoachState) -> String:
 func clear() -> void:
 	coach_state = CoachState.NONE
 	gift_station = &""
+	coach_hint = ""
 	repair_delivered.clear()
 	_demand_used.clear()
 	_workers.clear()
@@ -246,6 +250,16 @@ func add_repair(item_id: StringName, amount: int, cost: Dictionary[StringName, i
 	if get_repair_remaining(cost).is_empty():
 		_set_coach_state(CoachState.READY)
 	return accepted
+
+
+## Regala el coche sin reparación (tarea 62c.3g, D142: en la cadena de inicio sale al abrir un
+## tramo): queda listo para salir a la vía en el taller de `station_id`. False si ya salió.
+func give_coach(station_id: StringName) -> bool:
+	if station_id == &"" or coach_state == CoachState.DELIVERED or coach_state == CoachState.READY:
+		return false
+	gift_station = station_id
+	_set_coach_state(CoachState.READY)
+	return true
 
 
 ## El coche ya salió a la vía.

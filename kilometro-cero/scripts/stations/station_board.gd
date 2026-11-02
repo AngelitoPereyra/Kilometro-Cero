@@ -243,6 +243,8 @@ func _coach_hint(mains: Array[Mission]) -> String:
 			var city: String = GameState.missions.station_name(traffic.gift_station)
 			if traffic.coach_state == PassengerTraffic.CoachState.READY:
 				return "Coche de pasajeros listo en el taller de %s" % city
+			if traffic.coach_hint != "":
+				return traffic.coach_hint
 			return "Hace falta un coche de pasajeros: repararlo en el taller de %s" % city
 	return ""
 

@@ -6,6 +6,9 @@ extends Node
 ## toca la partida de GameState.
 ## Red: Azul --(o_a)-- Olavarría --(o_s)-- Sierras Bayas --(s_c, cortado)-- cantera vieja.
 ## o_a y o_s empiezan tapados por los troncos (la vía tapada) y se abren a mano.
+## Tarea 62c.3g (D142): `_probar_cadena_de_inicio` arma otro tablero como el del Hito A (con quien da
+## las principales de cada estación, los pasos de la cadena y `auto_flows`) y prueba que los tres
+## primeros flujos los abre el jugador entregando, sin avisos, y que lo que viene después nace solo.
 
 const STATION_FILES: Array[String] = ["olavarria", "azul", "sierras_bayas"]
 const MISSION_FILES: Array[String] = ["maestra_azul", "cantera_vieja"]
@@ -48,6 +51,7 @@ func _ready() -> void:
 	_probar_cadena()
 	_probar_oficios_del_jugador()
 	_probar_vuelta_atras()
+	_probar_cadena_de_inicio()
 	if _fallos == 0:
 		print("Hito A (cadena): todas las comprobaciones pasaron.")
 	else:
@@ -294,6 +298,60 @@ func _probar_vuelta_atras() -> void:
 	_comprobar(run.advance(1000.0, 1.0) and run.dwelling and not run.is_moving(), "Llega a a como a una parada")
 	_comprobar(run.leg_from() == &"a" and run.leg_to() == &"b" and run.loco_leads and not run.turned_back, "Espera en a y vuelve a probar hacia b con la locomotora adelante")
 	_comprobar(is_equal_approx(run.due, 1.0 + AutoTrainRun.MIN_DWELL_HOURS) and run.state == AutoTrainRun.State.OUTBOUND, "Sale de nuevo en media hora, todavía de ida")
+
+
+# Tarea 62c.3g (D142): la cadena de inicio con quien da las principales y los flujos solos.
+func _probar_cadena_de_inicio() -> void:
+	print("-- Cadena de inicio (62c.3g) --")
+	_cortados = {&"o_a": true, &"o_s": true, &"s_c": true}
+	var abiertos: Dictionary[StringName, bool] = {}
+	_armar()
+	_tablero.flows_start_next_day = true
+	_tablero.opened_check = func(segment_id: StringName) -> bool: return abiertos.has(segment_id)
+	_tablero.register_main_giver(&"olavarria", "Don Ernesto")
+	_tablero.register_main_giver(&"azul", "Doña Clara")
+	_tablero.register_main_giver(&"sierras_bayas", "Ramírez")
+	_tablero.set_chain_step(&"azul", &"settlers", "Llevar los colonos a Azul")
+	_tablero.set_chain_step(&"sierras_bayas", &"log", "Llevar los troncos a Sierras Bayas")
+	_tablero.set_chain_step(&"olavarria", &"limestone", "Bajar la piedra a Olavarría")
+	_tablero.auto_flows = true
+	_tablero.refresh()
+	var colonos: Mission = _principal(&"azul", &"settlers")
+	_comprobar(colonos != null and _tablero.is_chain(colonos) and _tablero.get_stage(colonos) == MissionBoard.Stage.CHAIN, "Los colonos de Azul son el primer paso de la cadena")
+	_comprobar(colonos != null and not _tablero.needs_report(colonos) and _tablero.accepts_deliveries(colonos), "No piden aviso: la carga la lleva el jugador")
+	var pasos: PackedStringArray = _tablero.get_pending_steps(colonos)
+	_comprobar(pasos.size() == 2 and pasos[0].begins_with("Habilitar el tramo o_a") and pasos[1] == "Llevar los colonos a Azul", "Pasos: despejar o_a y lo que dice la cadena (%s)" % [pasos])
+	_cortados[&"o_a"] = false
+	_cortados[&"o_s"] = false
+	abiertos[&"o_a"] = true
+	abiertos[&"o_s"] = true
+	_tablero.refresh()
+	_entregar_en_coche(&"azul", &"settlers", 10)
+	_comprobar(colonos.is_completed() and colonos.flow != null and _tablero.is_chain_done(&"azul", &"settlers") and _tablero.is_christened(&"o_a"), "Bajan los colonos: nace el flujo, el paso queda cumplido y o_a estrenado")
+	_tablero.set_chain_step(&"azul", &"settlers", "otra vez")
+	_comprobar(_tablero.get_chain_hint(_principal(&"azul", &"settlers")) != "otra vez" and _tablero.is_chain_done(&"azul", &"settlers"), "Un paso cumplido no se vuelve a marcar")
+	_modelo.advance_day()
+	var cemento: Mission = _principal(&"azul", &"cement")
+	_comprobar(cemento != null and not _tablero.is_chain(cemento) and not cemento.is_completed(), "Azul pide cemento: no es de la cadena y todavía no hay")
+	var troncos: Mission = _principal(&"sierras_bayas", &"log")
+	_comprobar(troncos != null and _tablero.get_stage(troncos) == MissionBoard.Stage.CHAIN, "Los troncos de Sierras Bayas siguen en la cadena")
+	_tablero.deliver(&"sierras_bayas", &"log", 20)
+	_comprobar(troncos != null and troncos.is_completed() and not troncos.reported, "20 troncos en Sierras Bayas: se cumple sin avisar a Ramírez")
+	_modelo.advance_day()
+	var piedra: Mission = _principal(&"olavarria", &"limestone")
+	_comprobar(piedra != null and _tablero.get_stage(piedra) == MissionBoard.Stage.CHAIN and _tablero.find_source(piedra) == &"sierras_bayas", "La piedra de Olavarría sale de Sierras Bayas, como paso de la cadena")
+	_tablero.deliver(&"olavarria", &"limestone", 40)
+	_comprobar(piedra != null and piedra.is_completed() and _tablero.is_chain_done(&"olavarria", &"limestone"), "40 piedras en Olavarría: la cadena queda cumplida")
+	_modelo.advance_day()
+	_comprobar(_modelo.get_level(&"olavarria") == 2, "Olavarría sube al nivel 2")
+	_comprobar(cemento != null and cemento.is_completed() and cemento.reported and cemento.flow != null and cemento.flow.from_station == &"olavarria", "Con cemento libre y o_a estrenado, el flujo de cemento a Azul nace solo, sin avisar")
+	var piedra2: Mission = _principal(&"olavarria", &"limestone")
+	_comprobar(piedra2 != null and not _tablero.is_chain(piedra2) and _tablero.needs_report(piedra2), "La segunda piedra de Olavarría ya no es de la cadena")
+	_cortados[&"s_c"] = false
+	_tablero.start(&"cantera_vieja")
+	_tablero.refresh()
+	var troncos2: Mission = _principal(&"sierras_bayas", &"log")
+	_comprobar(troncos2 == null or troncos2.is_completed(), "Los canteros nuevos de la cantera vieja reciben sus troncos solos (camino estrenado)")
 
 
 # Entrega pasajeros como al abrir las puertas del coche en la estación.

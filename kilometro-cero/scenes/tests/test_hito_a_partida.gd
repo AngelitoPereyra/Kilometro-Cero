@@ -5,9 +5,9 @@ extends Node
 ## los días como la T. Lo único que no hace es manejar: los trenes se ponen en la estación de
 ## llegada como los pone BorrowedTrains (place_on), y los viajes en el coche propio se hacen con el
 ## intercambio de pasajeros (PassengerTraffic), sin coche en la vía.
-## Orden: la vía tapada (hacha) -> colonos para Azul en el tren prestado -> troncos para Sierras
-## Bayas (nadie toma el prestado: lo trae el Ferrocarril) -> piedra para Olavarría (sin viaje
-## inaugural) -> cemento para Azul, las primeras casas, los Etchegaray, la maestra, Doña Rosa y los
+## Orden (desde la 62c.3g, D142): la vía tapada (hacha) -> cadena de inicio con el tren propio: el
+## coche de regalo con los colonos para Azul, la plataforma de troncos de Azul para Sierras Bayas y
+## al otro día las dos de piedra de Sierras Bayas para Olavarría -> cemento para Azul (nace solo), las primeras casas, los Etchegaray, la maestra, Doña Rosa y los
 ## cueros, la miel -> la cantera vieja y los troncos que piden sus canteros -> piedra para Azul y
 ## Olavarría -> los dos en el nivel 3.
 ## Al final imprime un resumen de la partida (días, plata, niveles, familias, parcelas y flujos) y
@@ -97,49 +97,36 @@ func _jugar_la_via_tapada() -> void:
 	_hablar(jefe)
 	_hablar(jefe)
 	_comprobar(_tablero.get_mission(&"miel_don_ernesto").is_active(), "Después Don Ernesto pide la miel")
-	# El regalo se revisa cada medio segundo.
-	var regalo: WagonGift = _regalo_de(&"o_a")
+	# El taller se revisa cada medio segundo.
+	var taller := _mapa.get_node_or_null(^"Olavarria/Taller") as CoachGift
 	for _i: int in 30:
-		if regalo == null or regalo.get_wagon() != null:
+		if taller == null or taller.get_coach() != null:
 			break
 		await get_tree().create_timer(0.1).timeout
-	_comprobar(regalo != null and regalo.get_wagon() != null, "Con o_a abierto aparece la plataforma de regalo de Azul")
+	var coche: PassengerCoach = taller.get_coach() if taller != null else null
+	_comprobar(coche != null and coche.get_aboard().get(&"settlers", 0) == 10, "Con o_a abierto sale del taller de Olavarría el coche con 10 colonos, sin reparar")
 
 
-# 2. Colonos para Azul: se le avisa a Doña Clara, se toma el tren prestado en Olavarría y se lleva.
+# 2. Colonos para Azul (cadena de inicio, 62c.3g): el coche de regalo va a Azul y abre las puertas.
 func _jugar_colonos() -> void:
-	_paso("Colonos para Azul (tren prestado)")
+	_paso("Colonos para Azul (coche de regalo)")
 	var colonos: Mission = _principal(&"azul", &"settlers")
-	_comprobar(colonos != null and _tablero.get_stage(colonos) == MissionBoard.Stage.REPORT, "Azul pide colonos y hay que avisarle a Doña Clara")
+	_comprobar(colonos != null and _tablero.get_stage(colonos) == MissionBoard.Stage.CHAIN and not _tablero.needs_report(colonos), "Azul pide colonos: paso de la cadena, sin avisar a Doña Clara")
 	if colonos == null:
 		return
-	_avisar(_poblador(^"DonaClara"), colonos)
-	_comprobar(colonos.reported and colonos.offered and colonos.source_id == &"olavarria", "Avisada: o_a está sin estrenar, el tren prestado se ofrece en Olavarría")
-	var tablero_olav := _mapa.get_node_or_null(^"Olavarria/Tablero") as StationBoard
-	_comprobar(tablero_olav != null and tablero_olav.get_offer() == colonos and tablero_olav.take_offer(), "F en el tablero de Olavarría: se toma el tren prestado")
-	var tren: Array[Vehicle] = await _esperar_tren(colonos.id)
-	_comprobar(not tren.is_empty(), "El tren prestado aparece")
-	if tren.is_empty():
-		_entregar_en_coche(&"azul", {&"settlers": 10})
-		return
-	var olavarria := Station.find(get_tree(), &"olavarria")
-	_comprobar(tren[0].global_position.distance_to(olavarria.global_position) < 80.0 and StationGoods.is_borrowed(tren[0]), "Está en Olavarría, marcado como prestado")
-	var coche: PassengerCoach = _coche_de(tren)
-	_comprobar(coche != null and coche.get_aboard().get(&"settlers", 0) == 10, "Lleva un coche con los 10 colonos")
-	await _llevar(tren[0], &"azul", &"olavarria", tren)
-	_comprobar(coche != null and coche.can_open_doors() and coche.set_doors(true), "Detenido en Azul: se abren las puertas")
-	await _cuadros(3)
+	var taller := _mapa.get_node_or_null(^"Olavarria/Taller") as CoachGift
+	var coche: PassengerCoach = taller.get_coach() if taller != null else null
+	if coche != null:
+		await _llevar(coche, &"azul", &"olavarria", [coche] as Array[Vehicle])
+		_comprobar(coche.can_open_doors() and coche.set_doors(true), "El coche en Azul: se abren las puertas")
+		await _cuadros(3)
 	if not colonos.is_completed():
 		_entregar_en_coche(&"azul", {&"settlers": 10})
-	_comprobar(colonos.is_completed() and colonos.flow != null and _tablero.is_christened(&"o_a"), "Bajan los colonos: principal cumplida, nace el flujo y o_a queda estrenado")
-	for _i: int in 20:
-		if not _prestados.has_train(colonos.id):
-			break
-		await get_tree().create_timer(0.1).timeout
-	_comprobar(not _prestados.has_train(colonos.id), "El tren prestado se va con humo")
-	var azul := Station.find(get_tree(), &"azul")
-	var propio: Vehicle = _prestados.player_train.get_head()
-	_comprobar(propio.global_position.distance_to(azul.global_position) < BorrowedTrains.ALREADY_THERE, "Y el tren propio aparece en Azul")
+	_comprobar(colonos.is_completed() and colonos.flow != null and _tablero.is_chain_done(&"azul", &"settlers") and _tablero.is_christened(&"o_a"), "Bajan los colonos: nace el flujo y o_a queda estrenado")
+	var regalo := _mapa.get_node_or_null(^"RegaloAzul") as WagonGift
+	await _esperar_regalo(regalo)
+	var plataforma: Wagon = regalo.get_wagon() if regalo != null else null
+	_comprobar(plataforma != null and plataforma.get_cargo() != null and plataforma.get_cargo().count_of(&"log") == 20, "Azul regala una plataforma con 20 troncos")
 	await _pasar_dia()
 	_comprobar(_modelo.get_level(&"azul") == 2, "Al otro día Azul sube al nivel 2")
 	var familias: Array[StringName] = _modelo.get_families(&"azul")
@@ -147,31 +134,47 @@ func _jugar_colonos() -> void:
 	_comprobar(_ocupados(&"azul").size() == familias.size(), "Cada familia de Azul tiene su parcela (%d)" % _ocupados(&"azul").size())
 
 
-# 3. Troncos para Sierras Bayas: avisado Ramírez, Azul ofrece el prestado y nadie lo toma.
+# 3. Troncos para Sierras Bayas: la plataforma de Azul se entrega en el tablero.
 func _jugar_troncos() -> void:
-	_paso("Troncos para Sierras Bayas (lo trae el Ferrocarril)")
+	_paso("Troncos para Sierras Bayas (plataforma de regalo)")
 	var troncos: Mission = _principal(&"sierras_bayas", &"log")
-	_comprobar(troncos != null and _tablero.can_report(troncos), "Sierras Bayas pide troncos de Azul y hay que avisarle a Ramírez")
+	_comprobar(troncos != null and _tablero.get_stage(troncos) == MissionBoard.Stage.CHAIN, "Sierras Bayas pide troncos de Azul: paso de la cadena")
 	if troncos == null:
 		return
-	_avisar(_poblador(^"Ramirez"), troncos)
-	_comprobar(troncos.offered and _tablero.get_offers_at(&"azul").has(troncos), "o_s sin estrenar: el tablero de Azul ofrece el tren prestado")
+	var plataforma: Wagon = (_mapa.get_node(^"RegaloAzul") as WagonGift).get_wagon()
+	if plataforma != null:
+		await _llevar(plataforma, &"sierras_bayas", &"azul", [plataforma] as Array[Vehicle])
+		var tablero_sb := _mapa.get_node_or_null(^"SierrasBayas/Tablero") as StationBoard
+		if tablero_sb != null:
+			tablero_sb.deliver(_jugador)
+	if not troncos.is_completed():
+		print("    (el tablero no tomó la plataforma suelta: se entrega a mano)")
+		_tablero.deliver(&"sierras_bayas", &"log", 20)
+	_comprobar(troncos.is_completed() and not troncos.reported and _tablero.is_christened(&"o_s"), "20 troncos en Sierras Bayas: se cumple sin avisar a Ramírez y o_s queda estrenado")
+	# Los regalos se revisan cada medio segundo: que anoten hoy antes de pasar el día.
+	for nombre: NodePath in [^"RegaloSierrasBayas", ^"RegaloSierrasBayas2"]:
+		var regalo_sb := _mapa.get_node_or_null(nombre) as WagonGift
+		if regalo_sb != null:
+			regalo_sb.refresh()
 	await _pasar_dia()
-	_comprobar(troncos.is_completed() and _tablero.is_christened(&"o_s") and not _prestados.has_train(troncos.id), "Nadie lo tomó: al terminar el día lo trajo el Ferrocarril y o_s queda estrenado")
-	await _pasar_dia()
-	_comprobar(_modelo.get_production(&"sierras_bayas").get(&"limestone", 0) == 20, "Con los troncos los canteros pican 20 piedras por día")
+	_comprobar(_modelo.get_production(&"sierras_bayas").get(&"limestone", 0) >= 20, "Con los troncos los canteros pican piedra")
 	_comprobar(_modelo.get_level(&"sierras_bayas") == 2, "Sierras Bayas sube al nivel 2")
+	for nombre: NodePath in [^"RegaloSierrasBayas", ^"RegaloSierrasBayas2"]:
+		var regalo := _mapa.get_node_or_null(nombre) as WagonGift
+		await _esperar_regalo(regalo)
+		var vagon: Wagon = regalo.get_wagon() if regalo != null else null
+		_comprobar(vagon != null and vagon.get_cargo().count_of(&"limestone") == 20, "Al otro día Sierras Bayas regala una plataforma con 20 piedras (%s)" % nombre)
 
 
-# 4. Piedra para Olavarría: el camino ya está estrenado y el Ferrocarril la manda solo.
+# 4. Piedra para Olavarría: las dos plataformas de Sierras Bayas.
 func _jugar_piedra_olavarria() -> void:
-	_paso("Piedra para Olavarría (sin viaje inaugural)")
+	_paso("Piedra para Olavarría (plataformas de regalo)")
 	var piedra: Mission = _principal(&"olavarria", &"limestone")
-	_comprobar(piedra != null and _tablero.can_report(piedra), "Hay que avisarle a Don Ernesto de la piedra")
+	_comprobar(piedra != null and _tablero.get_stage(piedra) == MissionBoard.Stage.CHAIN, "Olavarría pide piedra: último paso de la cadena")
 	if piedra == null:
 		return
-	_avisar(_poblador(^"JefeDeEstacion"), piedra)
-	_comprobar(piedra.is_completed() and not piedra.offered and piedra.flow != null and piedra.flow.from_station == &"sierras_bayas", "Avisado: sin tren prestado, nace el flujo de piedra de Sierras Bayas")
+	_tablero.deliver(&"olavarria", &"limestone", piedra.get_remaining().get(&"limestone", 0))
+	_comprobar(piedra.is_completed() and piedra.flow != null and piedra.flow.from_station == &"sierras_bayas" and _tablero.is_chain_done(&"olavarria", &"limestone"), "Entregada: nace el flujo de piedra y la cadena queda cumplida")
 	await _pasar_dia()
 	_comprobar(_modelo.get_level(&"olavarria") == 2, "Olavarría sube al nivel 2")
 	_comprobar(_modelo.count_families(&"olavarria", &"caleros") == 3, "Llega la tercera familia de caleros")
@@ -183,11 +186,7 @@ func _jugar_piedra_olavarria() -> void:
 func _jugar_secundarias_de_azul() -> void:
 	_paso("Azul: cemento, primeras casas, los Etchegaray y la maestra")
 	var clara: MissionGiver = _poblador(^"DonaClara")
-	var cemento: Mission = _principal(&"azul", &"cement")
-	_comprobar(cemento != null and _tablero.can_report(cemento), "Azul pide cemento de Olavarría")
-	if cemento != null:
-		_avisar(clara, cemento)
-		_comprobar(cemento.is_completed(), "Avisada Doña Clara, el Ferrocarril trae el cemento")
+	_comprobar(_principal(&"azul", &"cement") == null and _flujo(&"olavarria", &"azul", &"cement") != null, "El cemento para Azul nació solo (o_a ya estaba estrenado)")
 	# La obra: la da Doña Clara y se entrega en su cartel.
 	_hablar(clara)
 	var casas: Mission = _tablero.get_mission(&"primeras_casas")
@@ -236,11 +235,7 @@ func _jugar_secundarias_de_olavarria() -> void:
 	await _cuadros(3)
 	var piletones: TrackLot = _parcela_de(&"olavarria", &"curtidores")
 	_comprobar(piletones != null and piletones.ring == TrackLot.Ring.INDUSTRY, "Los piletones brotan en la zona industrial de Olavarría")
-	var de_cueros: Mission = _principal(&"olavarria", &"hides")
-	_comprobar(de_cueros != null and _tablero.find_source(de_cueros) == &"azul", "La curtidora pide cueros de los puesteros de Azul")
-	if de_cueros != null:
-		_avisar(_poblador(^"JefeDeEstacion"), de_cueros)
-		_comprobar(de_cueros.is_completed(), "Avisado Don Ernesto, nace el flujo de cueros")
+	_comprobar(_principal(&"olavarria", &"hides") == null and _flujo(&"azul", &"olavarria", &"hides") != null, "Los cueros de los puesteros de Azul llegan solos a la curtidora")
 	# La miel: tres panales del monte de Azul, con las manos.
 	var antes: int = _contar_objetos()
 	for numero: int in range(1, 4):
@@ -269,11 +264,7 @@ func _jugar_cantera_vieja() -> void:
 	_comprobar(cantera != null and cantera.is_completed() and not _red.is_cut(&"s_c"), "Despejado s_c: la cantera vieja se cumple")
 	_comprobar(_modelo.count_families(&"sierras_bayas", &"canteros") == 4, "Sierras Bayas tiene 4 familias de canteros")
 	_comprobar(_ocupados(&"sierras_bayas").size() == 4, "Los 4 lotes de Sierras Bayas tienen su frente de cantera")
-	var troncos: Mission = _principal(&"sierras_bayas", &"log")
-	_comprobar(troncos != null and _tablero.can_report(troncos), "Los canteros nuevos piden más troncos de Azul")
-	if troncos != null:
-		_avisar(_poblador(^"Ramirez"), troncos)
-		_comprobar(troncos.is_completed() and not troncos.offered, "Avisado Ramírez: el camino ya está estrenado, el Ferrocarril los trae")
+	_comprobar(_principal(&"sierras_bayas", &"log") == null and _contar_flujos(&"azul", &"sierras_bayas", &"log") == 2, "Los troncos para los canteros nuevos nacen solos (segundo flujo)")
 	await _pasar_dia()
 	_comprobar(_modelo.get_production(&"sierras_bayas").get(&"limestone", 0) == 40, "Con los dos frentes: 40 piedras por día")
 
@@ -281,15 +272,8 @@ func _jugar_cantera_vieja() -> void:
 # 8. Piedra para Azul y para Olavarría; los dos llegan al nivel 3.
 func _jugar_nivel_3() -> void:
 	_paso("Piedra para Azul y Olavarría: nivel 3")
-	var azul: Mission = _principal(&"azul", &"limestone")
-	var olav: Mission = _principal(&"olavarria", &"limestone")
-	_comprobar(azul != null and _tablero.can_report(azul), "Azul pide piedra y ya hay")
-	_comprobar(olav != null and _tablero.can_report(olav), "Olavarría pide más piedra y ya hay")
-	if azul != null:
-		_avisar(_poblador(^"DonaClara"), azul)
-	if olav != null:
-		_avisar(_poblador(^"JefeDeEstacion"), olav)
-	_comprobar(azul != null and azul.is_completed() and olav != null and olav.is_completed(), "Avisados: nacen los dos flujos de piedra")
+	_comprobar(_principal(&"azul", &"limestone") == null and _flujo(&"sierras_bayas", &"azul", &"limestone") != null, "La piedra para Azul nace sola")
+	_comprobar(_principal(&"olavarria", &"limestone") == null and _contar_flujos(&"sierras_bayas", &"olavarria", &"limestone") == 2, "La segunda piedra para Olavarría nace sola")
 	for _i: int in MAX_DAYS_TO_LEVEL_3:
 		if _modelo.get_level(&"azul") >= 3 and _modelo.get_level(&"olavarria") >= 3:
 			break
@@ -440,12 +424,27 @@ func _principal(station_id: StringName, item_id: StringName) -> Mission:
 	return null
 
 
-func _regalo_de(segment_id: StringName) -> WagonGift:
-	for nodo: Node in get_tree().get_nodes_in_group(WagonGift.GROUP):
-		var regalo := nodo as WagonGift
-		if regalo != null and regalo.open_segment == segment_id:
-			return regalo
+# Espera a que el regalo saque su vagón (se revisa cada medio segundo).
+func _esperar_regalo(regalo: WagonGift) -> void:
+	for _i: int in 30:
+		if regalo == null or regalo.get_wagon() != null:
+			return
+		await get_tree().create_timer(0.1).timeout
+
+
+func _flujo(desde: StringName, hasta: StringName, objeto: StringName) -> ProductionFlow:
+	for flujo: ProductionFlow in _modelo.get_flows():
+		if flujo.from_station == desde and flujo.to_station == hasta and flujo.item_id == objeto:
+			return flujo
 	return null
+
+
+func _contar_flujos(desde: StringName, hasta: StringName, objeto: StringName) -> int:
+	var cantidad: int = 0
+	for flujo: ProductionFlow in _modelo.get_flows():
+		if flujo.from_station == desde and flujo.to_station == hasta and flujo.item_id == objeto:
+			cantidad += 1
+	return cantidad
 
 
 func _coche_de(tren: Array[Vehicle]) -> PassengerCoach:
