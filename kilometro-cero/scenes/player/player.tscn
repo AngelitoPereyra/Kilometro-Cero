@@ -10,6 +10,9 @@
 [ext_resource type="Script" path="res://scripts/player/key_items.gd" id="13_keys"]
 [ext_resource type="Script" path="res://scripts/player/tool_user.gd" id="14_tools"]
 [ext_resource type="Script" path="res://scripts/look/big_head_figure.gd" id="15_figura"]
+[ext_resource type="Script" path="res://scripts/survival/health.gd" id="16_salud"]
+[ext_resource type="Script" path="res://scripts/player/eater.gd" id="17_comer"]
+[ext_resource type="Script" path="res://scripts/player/sleeper.gd" id="18_dormir"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_k6d34"]
 radius = 0.35
@@ -69,3 +72,12 @@ script = ExtResource("13_keys")
 
 [node name="ToolUser" type="Node" parent="."]
 script = ExtResource("14_tools")
+
+[node name="Salud" type="Node" parent="."]
+script = ExtResource("16_salud")
+
+[node name="Comer" type="Node" parent="."]
+script = ExtResource("17_comer")
+
+[node name="Dormir" type="Node" parent="."]
+script = ExtResource("18_dormir")

@@ -44,6 +44,9 @@ func _ready() -> void:
 	for nodo: Node in get_tree().get_nodes_in_group(WagonGift.GROUP):
 		(nodo as WagonGift).refresh()
 	_jugador = _mapa.get_node_or_null(^"Player") as Player
+	# La partida pasa muchos días de golpe: sin hambre, así no se desmaya (tarea 62c.3h, D143).
+	if _jugador != null and _jugador.get_health() != null:
+		_jugador.get_health().decays = false
 	_red = RailNetwork.find_in(get_tree())
 	_prestados = BorrowedTrains.find_in(get_tree())
 	_lotes = TrackLots.find_in(get_tree())

@@ -41,8 +41,12 @@ extends Node3D
 ## una plataforma con 20 troncos para Sierras Bayas (RegaloAzul); entregados, al día siguiente Sierras
 ## Bayas regala dos con 20 piedras cada una para Olavarría (RegaloSierrasBayas y 2). Las principales que vienen
 ## después se cumplen solas si su camino ya está estrenado (MissionBoard.auto_flows).
+## Tarea 62c.3h (D143): supervivencia mínima. El jugador arranca con el machete y el vagón cocina
+## (horno, baúl y cama) enganchado detrás de la locomotora; la salud va arriba a la izquierda; R come,
+## N acampa de noche; hay tabernas (cama y pan) en las tres estaciones y grupos de jabalíes
+## (Jabalies/*) en el monte y la sierra.
 
-const CONTROLES: String = "WASD: caminar\nE: agarrar (va a la mochila)\nClic: golpear (hacha, pico) o juntar miel\nQ con la mano vacía junto al vagón: pasarle la mochila\nF: cabina, tablero, mercado, taller o hablar\nO: puertas del coche (en la cabina)\nT: hasta la próxima salida de un tren\nTAB: inventario\nH: esconder las teclas"
+const CONTROLES: String = "WASD: caminar\nE: agarrar (va a la mochila)\nClic: golpear (hacha, pico, machete) o juntar miel\nR: comer\nN: acampar (de noche)\nQ con la mano vacía junto al vagón: pasarle la mochila\nF: cabina, tablero, mercado, taller o hablar\nO: puertas del coche (en la cabina)\nT: hasta la próxima salida de un tren\nTAB: inventario\nH: esconder las teclas"
 const AYUDA: String = "TAB: Inventario\nH: Teclas"
 const HUD_FONT_SIZE: int = 16
 ## Letra del cartel de la misión y cuántas letras entran por renglón: queda angosto y alto.
@@ -71,6 +75,9 @@ const MAX_MISSION_LINES: int = 4
 ## Cada cuánto (s) se rearman los carteles de la pantalla.
 const HUD_REFRESH: float = 0.15
 const SIN_MISIONES: String = "Sin misiones pendientes\nTAB: Agenda"
+## Machete con que arranca el jugador y vagón cocina que va detrás de la locomotora (tarea 62c.3h).
+const MACHETE: String = "res://data/items/machete.tres"
+const VAGON_COCINA: String = "res://scenes/vehicles/kitchen_wagon.tscn"
 
 @onready var _player: Player = $Player
 @onready var _loco: Vehicle = $OlavarriaSierrasBayas/Locomotive
@@ -112,6 +119,7 @@ func _ready() -> void:
 		if hijo is InventoryUI:
 			(hijo as InventoryUI).agenda_extra = _renglones_de_agenda
 	_armar_hud()
+	_preparar_supervivencia()
 	# F3: medidor de rendimiento (tarea 62c.3f).
 	add_child(PerfOverlay.new())
 	# Las vías de estación y el acople de los vagones se arman diferidos.
@@ -132,7 +140,48 @@ func _poner_tren_en_la_ciudad() -> void:
 	var avance: float = camino.curve.get_closest_offset(punto)
 	var hacia_el_final: Vector3 = camino.to_global(camino.curve.sample_baked(camino.curve.get_baked_length()))
 	var hacia_el_principio: Vector3 = camino.to_global(camino.curve.sample_baked(0.0))
-	_loco.place_on(camino, avance, hacia_el_final.z < hacia_el_principio.z)
+	var mira_atras: bool = hacia_el_final.z < hacia_el_principio.z
+	_loco.place_on(camino, avance, mira_atras)
+	_enganchar_cocina(camino, avance, mira_atras)
+
+
+# El vagón cocina (tarea 62c.3h) va detrás de la locomotora, del lado de Sierras Bayas.
+func _enganchar_cocina(camino: Path3D, avance: float, mira_atras: bool) -> void:
+	var escena := load(VAGON_COCINA) as PackedScene
+	var cocina: Wagon = escena.instantiate() as Wagon if escena != null else null
+	if cocina == null:
+		push_warning("HitoA: no se pudo armar el vagón cocina.")
+		return
+	cocina.name = "VagonCocina"
+	camino.add_child(cocina)
+	var hueco: float = Vehicle.coupling_distance(_loco.data.length, cocina.data.length)
+	var detras: float = avance + hueco if mira_atras else avance - hueco
+	cocina.place_on(camino, clampf(detras, 0.0, camino.curve.get_baked_length()), mira_atras)
+	await get_tree().physics_frame
+	if not _loco.couple(cocina):
+		push_warning("HitoA: el vagón cocina no se enganchó a la locomotora.")
+
+
+# Machete y avisos de comer, dormir y las cornadas (tarea 62c.3h, D143).
+func _preparar_supervivencia() -> void:
+	var llaves: KeyItems = _player.get_key_items()
+	var machete := load(MACHETE) as KeyItemData
+	if llaves != null and machete != null:
+		llaves.add(machete)
+	for hijo: Node in _player.get_children():
+		if hijo is Eater:
+			(hijo as Eater).eaten.connect(func(comida: FoodData, subio: float) -> void: _avisar("Comiste %s (+%d de salud)" % [comida.display_name, roundi(subio)]))
+			(hijo as Eater).eat_failed.connect(func(motivo: StringName) -> void: _avisar(Eater.failure_text(motivo)))
+		elif hijo is Sleeper:
+			(hijo as Sleeper).sleep_failed.connect(func(motivo: StringName) -> void: _avisar(Sleeper.failure_text(motivo)))
+			(hijo as Sleeper).slept.connect(func(_horas: float, donde: String) -> void: _avisar("Dormiste en %s" % donde))
+			(hijo as Sleeper).fainted.connect(func() -> void: _avisar("Te desmayaste de hambre. Comé algo (R)."))
+	EventBus.player_hurt.connect(func(cuanto: float, _fuente: StringName) -> void: _avisar("¡Un jabalí te embistió! (-%d de salud)" % roundi(cuanto)))
+	for nodo: Node in get_tree().get_nodes_in_group(Interactable.GROUP):
+		var vendedor := nodo as FoodSeller
+		if vendedor != null:
+			vendedor.sold.connect(func(cosa: ItemData) -> void: _avisar("Compraste %s" % cosa.display_name))
+			vendedor.sale_failed.connect(func(motivo: StringName) -> void: _avisar("No te alcanza la plata." if motivo == &"money" else "No hay lugar en la mochila."))
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -175,6 +224,9 @@ func _process(delta: float) -> void:
 	if _marca_pico.visible and not is_instance_valid(_pico):
 		_marca_pico.visible = false
 	_hud.text = "Día %d / %s\n$%d" % [GameState.clock.current_day, GameClock.format_time(GameState.clock.time_of_day), GameState.money]
+	var salud: Health = _player.get_health()
+	if salud != null:
+		_hud.text += "\nSalud %s %d" % [Health.bar_text(salud.value, salud.max_health), roundi(salud.value)]
 	_hud.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT, Control.PRESET_MODE_MINSIZE, HUD_MARGIN)
 	_hud_teclas.text = CONTROLES if _mostrar_teclas else AYUDA
 	_hud_teclas.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT, Control.PRESET_MODE_MINSIZE, HUD_MARGIN)

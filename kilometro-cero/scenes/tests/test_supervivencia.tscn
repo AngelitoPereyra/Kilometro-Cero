@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://ccys1kur15ca0"]
+
+[ext_resource type="Script" uid="uid://bh8irx1ay8xhv" path="res://scenes/tests/test_supervivencia.gd" id="1_super"]
+
+[node name="TestSupervivencia" type="Node3D" unique_id=1509568403]
+script = ExtResource("1_super")

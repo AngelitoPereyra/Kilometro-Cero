@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/items/word_item.gd" id="1_item"]
+[ext_resource type="Script" path="res://scripts/components/holdable.gd" id="2_hold"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_mango"]
+albedo_color = Color(0.3, 0.2, 0.12, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_mango"]
+size = Vector3(0.04, 0.16, 0.03)
+
+[sub_resource type="StandardMaterial3D" id="Mat_hoja"]
+albedo_color = Color(0.66, 0.68, 0.7, 1)
+metallic = 0.8
+
+[sub_resource type="BoxMesh" id="Mesh_hoja"]
+size = Vector3(0.06, 0.5, 0.01)
+
+[sub_resource type="BoxShape3D" id="Shape_machete"]
+size = Vector3(0.08, 0.68, 0.04)
+
+[node name="Machete" type="RigidBody3D"]
+script = ExtResource("1_item")
+
+[node name="Mango" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.26, 0)
+material_override = SubResource("Mat_mango")
+mesh = SubResource("Mesh_mango")
+
+[node name="Hoja" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+material_override = SubResource("Mat_hoja")
+mesh = SubResource("Mesh_hoja")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_machete")
+
+[node name="Holdable" type="Node" parent="."]
+script = ExtResource("2_hold")

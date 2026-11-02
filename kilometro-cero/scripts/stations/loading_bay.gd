@@ -89,6 +89,9 @@ func get_wagons() -> Array[Wagon]:
 		var wagon := child as Wagon
 		if wagon == null or wagon.automatic or wagon.get_cargo() == null:
 			continue
+		# El baúl del vagón cocina es del jugador: la bahía no lo vende ni lo carga (tarea 62c.3h).
+		if wagon.get_wagon_data() != null and wagon.get_wagon_data().personal:
+			continue
 		var head: Vehicle = wagon.get_head()
 		if head != null and absf(head.speed) >= Station.STOP_SPEED:
 			continue

@@ -72,6 +72,8 @@ func _definir_acciones() -> Dictionary:
 		&"use_tool": [_boton_mouse(MOUSE_BUTTON_LEFT)],  # golpear con la herramienta clave (D91, tarea 55)
 		&"fullscreen": [_tecla(KEY_F11)],    # pantalla completa o ventana (tarea 62c.3f)
 		&"debug_stats": [_tecla(KEY_F3)],    # medidor de rendimiento (tarea 62c.3f)
+		&"eat": [_tecla(KEY_R)],             # comer (tarea 62c.3h, D143)
+		&"camp": [_tecla(KEY_N)],            # acampar de noche (tarea 62c.3h, D143)
 	}
 
 

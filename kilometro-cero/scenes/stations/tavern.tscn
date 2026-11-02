@@ -1,0 +1,52 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/stations/tavern.gd" id="1_taberna"]
+[ext_resource type="Script" path="res://scripts/survival/bed.gd" id="2_cama"]
+[ext_resource type="Script" path="res://scripts/stations/food_seller.gd" id="3_mostrador"]
+[ext_resource type="Resource" path="res://data/items/bread.tres" id="4_pan"]
+
+[sub_resource type="StandardMaterial3D" id="Mat_cama"]
+albedo_color = Color(0.93, 0.88, 0.74, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_madera"]
+albedo_color = Color(0.45, 0.3, 0.18, 1)
+
+[sub_resource type="BoxMesh" id="Mesh_cama"]
+size = Vector3(1.0, 0.45, 2.0)
+
+[sub_resource type="BoxMesh" id="Mesh_mostrador"]
+size = Vector3(2.4, 1.0, 0.6)
+
+[node name="Taberna" type="Node3D"]
+script = ExtResource("1_taberna")
+
+[node name="Cama" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.6, 0.1, -0.8)
+script = ExtResource("2_cama")
+reach = 2.2
+place_name = "la taberna"
+
+[node name="Colchon" type="MeshInstance3D" parent="Cama"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.22, 0)
+material_override = SubResource("Mat_cama")
+mesh = SubResource("Mesh_cama")
+
+[node name="Mostrador" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.4, 0.1, -1.4)
+script = ExtResource("3_mostrador")
+reach = 2.5
+item = ExtResource("4_pan")
+price = 5
+
+[node name="Mueble" type="MeshInstance3D" parent="Mostrador"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+material_override = SubResource("Mat_madera")
+mesh = SubResource("Mesh_mostrador")
+
+[node name="Cartel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.6, 2.7)
+modulate = Color(0.93, 0.88, 0.74, 1)
+outline_modulate = Color(0.1, 0.25, 0.17, 1)
+font_size = 64
+outline_size = 14
+text = "TABERNA"

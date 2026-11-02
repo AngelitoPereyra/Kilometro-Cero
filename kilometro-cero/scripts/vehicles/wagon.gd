@@ -33,7 +33,7 @@ func _ready() -> void:
 		_cargo.container_id = wagon_data.id
 	_cargo.item_stored.connect(_on_cargo_changed)
 	_cargo.item_taken.connect(_on_cargo_changed)
-	_cargo_visual = get_node_or_null(CARGO_VISUAL_PATH) as Node3D
+	_cargo_visual = get_node_or_null(CARGO_VISUAL_PATH) as Node3D if not wagon_data.personal else null
 	_update_cargo_visual()
 
 

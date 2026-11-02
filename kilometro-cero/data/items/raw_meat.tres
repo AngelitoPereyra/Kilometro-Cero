@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="FoodData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/food_data.gd" id="1_food"]
+[ext_resource type="PackedScene" path="res://scenes/items/raw_meat.tscn" id="2_scene"]
+[ext_resource type="Resource" path="res://data/items/roast_meat.tres" id="3_cooked"]
+
+[resource]
+script = ExtResource("1_food")
+heal = 10.0
+cooked = ExtResource("3_cooked")
+id = &"raw_meat"
+display_name = "carne de jabalí"
+size_class = 0
+unit_weight = 0.5
+tags = Array[StringName]([&"food", &"meat", &"wild"])
+base_value = 8.0
+cargo_name = "carne de jabalí"
+scene = ExtResource("2_scene")

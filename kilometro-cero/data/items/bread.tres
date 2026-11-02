@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="FoodData" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/food_data.gd" id="1_food"]
+[ext_resource type="PackedScene" path="res://scenes/items/bread.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_food")
+heal = 20.0
+
+id = &"bread"
+display_name = "pan"
+size_class = 0
+unit_weight = 0.5
+tags = Array[StringName]([&"food"])
+base_value = 5.0
+cargo_name = "pan"
+scene = ExtResource("2_scene")

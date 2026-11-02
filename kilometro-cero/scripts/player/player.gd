@@ -9,7 +9,9 @@ extends CharacterBody3D
 ## vehículo (ver _ready). En el aire sigue enganchado, así un salto cae en el mismo lugar
 ## del vagón; se desengancha al pisar algo que no es ese vehículo.
 ## Tiene una mochila (el nodo Backpack, un Inventory de ranuras armado con `backpack_data`).
-## Sin supervivencia ni peso (D75, D86): no hay desmayo y la carga no cambia la velocidad.
+## Sin peso (D86): la carga no cambia la velocidad. Supervivencia mínima (tarea 62c.3h, D143): nodos
+## hijos opcionales Health ("Salud", baja con las horas y solo sube comiendo), Eater (R come) y
+## Sleeper (dormir en una cama o acampar con N; en 0 de salud se desmaya y despierta en la última cama).
 ## Movimiento (tarea 50, D91): Shift corre (sin costo), Espacio salta y Ctrl agacha
 ## mientras se mantiene. Al caminar hacia atrás el cuerpo no se da vuelta: retrocede
 ## mirando hacia adelante.
@@ -20,6 +22,9 @@ extends CharacterBody3D
 ## tiene; las usa el ToolUser con el clic izquierdo.
 ## Interactuables (tarea 58): si F no entra a una cabina, usa el Interactable más cercano
 ## (tablero de una estación, poblador).
+
+## Grupo del jugador (lo buscan los jabalíes, el horno y las camas).
+const GROUP: StringName = &"player"
 
 @export_range(0.5, 10.0, 0.1, "suffix:m/s") var walk_speed: float = 4.0
 @export_range(0.5, 15.0, 0.1, "suffix:m/s") var sprint_speed: float = 7.0
@@ -57,6 +62,8 @@ var _camera: ThirdPersonCamera
 var _backpack: Inventory
 var _hands: Hands
 var _key_items: KeyItems
+var _health: Health
+var _sleeper: Sleeper
 # Lo que pide el jugador. Si quiere pararse y hay un techo encima, sigue agachado
 # y se vuelve a intentar en cada paso hasta que haya lugar.
 var _wants_crouch: bool = false
@@ -110,6 +117,10 @@ static func nearest_index(origin: Vector3, positions: Array[Vector3], max_distan
 ## Se mide con el frente (-Z), así que inclinaciones y cabeceos no cuentan.
 static func yaw_delta(from: Basis, to: Basis) -> float:
 	return angle_difference(facing_yaw(-from.z), facing_yaw(-to.z))
+
+
+func _enter_tree() -> void:
+	add_to_group(GROUP)
 
 
 func _ready() -> void:
@@ -277,6 +288,36 @@ func get_hands() -> Hands:
 func get_key_items() -> KeyItems:
 	return _key_items
 	
+## La salud (tarea 62c.3h), o null si el jugador no tiene el nodo Health. Se busca al pedirla: los
+## hijos la piden en su _ready, antes que el _ready del jugador.
+func get_health() -> Health:
+	if _health == null:
+		for child: Node in get_children():
+			if child is Health:
+				_health = child as Health
+	return _health
+
+
+## Dormir y desmayarse (tarea 62c.3h), o null si no tiene el nodo Sleeper.
+func get_sleeper() -> Sleeper:
+	if _sleeper == null:
+		for child: Node in get_children():
+			if child is Sleeper:
+				_sleeper = child as Sleeper
+	return _sleeper
+
+
+## Lo lleva a `point` sin velocidad y suelto de cualquier tren (despertar del desmayo, tarea 62c.3h).
+## Si pisa un tren ahí, se vuelve a enganchar solo en el próximo paso.
+func teleport_to(point: Vector3) -> void:
+	if _cab != null:
+		exit_cab()
+	_platform = null
+	_platform_body = null
+	velocity = Vector3.ZERO
+	global_position = point
+
+
 ## Velocidad de caminata normal. La carga no la cambia (D86).
 func get_walk_speed() -> float:
 	return walk_speed

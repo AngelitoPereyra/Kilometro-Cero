@@ -79,4 +79,13 @@ signal item_released(stack: ItemStack)
 ## Se confirma una colocación precisa (clic derecho mantenido). `position` es dónde quedó.
 signal item_placed(stack: ItemStack, position: Vector3)
 
+## Supervivencia mínima (tarea 62c.3h, D143). Cambió la salud del jugador (0 a 100). La emite Health.
+signal health_changed(value: float)
+## Algo le sacó salud al jugador (`source`: &"boar"). La emite Boar.
+signal player_hurt(amount: float, source: StringName)
+## El jugador durmió `hours` horas (cama, taberna o campamento). La emite Sleeper.
+signal player_slept(hours: float)
+## La salud llegó a 0: despertó en la última cama. La emite Sleeper (D75 la había quitado).
+signal player_fainted()
+
 @warning_ignore_restore("unused_signal")

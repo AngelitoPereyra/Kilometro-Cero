@@ -69,6 +69,8 @@
 [ext_resource type="Script" path="res://scripts/look/vitality_field.gd" id="67_vida"]
 [ext_resource type="Script" path="res://scripts/world/level_crossing.gd" id="68_paso"]
 [ext_resource type="Resource" path="res://data/items/settlers.tres" id="69_colonos"]
+[ext_resource type="PackedScene" path="res://scenes/stations/tavern.tscn" id="80_taberna"]
+[ext_resource type="Script" path="res://scripts/world/boar_herd.gd" id="81_jabalies"]
 
 [sub_resource type="ShaderMaterial" id="Cielo_mat"]
 shader = ExtResource("64_cielo")
@@ -1502,3 +1504,35 @@ text = "Línea del Sud: clausurada"
 [editable path="Azul"]
 
 [editable path="SierrasBayas"]
+
+[node name="Tabernas" type="Node3D" parent="."]
+
+[node name="TabernaOlavarria" parent="Tabernas" instance=ExtResource("80_taberna")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -34, 0, 50)
+town_name = "Olavarría"
+
+[node name="TabernaAzul" parent="Tabernas" instance=ExtResource("80_taberna")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -30, 0, 2506)
+town_name = "Azul"
+
+[node name="TabernaSierrasBayas" parent="Tabernas" instance=ExtResource("80_taberna")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -194, 0, -1846)
+town_name = "Sierras Bayas"
+
+[node name="Jabalies" type="Node3D" parent="."]
+
+[node name="MonteOeste" type="Node3D" parent="Jabalies"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -170, 0, 1100)
+script = ExtResource("81_jabalies")
+
+[node name="MonteAzul" type="Node3D" parent="Jabalies"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -180, 0, 2000)
+script = ExtResource("81_jabalies")
+
+[node name="LomasEste" type="Node3D" parent="Jabalies"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 130, 0, -900)
+script = ExtResource("81_jabalies")
+
+[node name="SierraOeste" type="Node3D" parent="Jabalies"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -215, 0, -1450)
+script = ExtResource("81_jabalies")
