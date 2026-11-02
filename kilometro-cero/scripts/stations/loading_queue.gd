@@ -6,11 +6,14 @@ extends RefCounted
 ## HOURS_PER_WAGON / capacidad del vagón (una plataforma de 20: 1,5 minutos por tronco).
 ## Primero descarga (deja lugar) y después carga, de a una unidad, en el orden en que se pidió.
 ## Lo que falta cargar espera aunque no haya vagones (ya está pago); lo que falta descargar y ya
-## no está en ningún vagón (el tren se fue) se anula.
+## no está en ningún vagón (el tren se fue) se anula, pero recién después de LOST_GRACE_HOURS sin
+## encontrarlo (tarea 62c.3f): un vagón que por un momento no se ve en la bahía ya no corta la venta.
 
 const HOURS_PER_WAGON: float = 0.5
 # Margen para que media hora justa cargue el vagón entero (la suma de flotantes no da exacta).
 const EPSILON: float = 0.000001
+## Horas de juego que espera una descarga cuyo objeto no está en ningún vagón antes de anularse.
+const LOST_GRACE_HOURS: float = 0.25
 
 # id de objeto -> unidades que faltan cargar (en el orden en que se pidieron).
 var _loads: Dictionary[StringName, int] = {}
@@ -19,6 +22,8 @@ var _items: Dictionary[StringName, ItemData] = {}
 var _unloads: Dictionary[StringName, int] = {}
 # Horas acumuladas que todavía no alcanzaron para mover una unidad.
 var _hours: float = 0.0
+# Horas seguidas en que alguna descarga no encontró su objeto en los vagones.
+var _lost_hours: float = 0.0
 
 
 func add_load(item: ItemData, amount: int) -> void:
@@ -87,6 +92,7 @@ func work(cargos: Array[StorageContainer], hours: float) -> Dictionary:
 		_hours = 0.0
 		return result
 	_hours += maxf(0.0, hours)
+	_drop_lost(cargos, hours)
 	while true:
 		var step: Array = _next_step(cargos)
 		if step.is_empty():
@@ -119,14 +125,37 @@ func to_dict() -> Dictionary:
 	return {"loads": _loads.duplicate(), "unloads": _unloads.duplicate()}
 
 
-# [descarga (bool), id de objeto, vagón] de la próxima unidad, o [] si no se puede mover nada.
-func _next_step(cargos: Array[StorageContainer]) -> Array:
-	for item_id: StringName in _unloads.keys():
-		for cargo: StorageContainer in cargos:
-			if cargo.count_of(item_id) > 0:
-				return [true, item_id, cargo]
-		# Ya no está en ningún vagón: esa venta se anula.
+# Las descargas cuyo objeto no está en ningún vagón se anulan si pasaron LOST_GRACE_HOURS así.
+func _drop_lost(cargos: Array[StorageContainer], hours: float) -> void:
+	var lost: Array[StringName] = []
+	for item_id: StringName in _unloads:
+		if _cargo_with(cargos, item_id) == null:
+			lost.append(item_id)
+	if lost.is_empty():
+		_lost_hours = 0.0
+		return
+	_lost_hours += maxf(0.0, hours)
+	if _lost_hours + EPSILON < LOST_GRACE_HOURS:
+		return
+	for item_id: StringName in lost:
 		_unloads.erase(item_id)
+	_lost_hours = 0.0
+
+
+static func _cargo_with(cargos: Array[StorageContainer], item_id: StringName) -> StorageContainer:
+	for cargo: StorageContainer in cargos:
+		if cargo.count_of(item_id) > 0:
+			return cargo
+	return null
+
+
+# [descarga (bool), id de objeto, vagón] de la próxima unidad, o [] si no se puede mover nada.
+# Una descarga que no encuentra su objeto se saltea (la anula _drop_lost si sigue así).
+func _next_step(cargos: Array[StorageContainer]) -> Array:
+	for item_id: StringName in _unloads:
+		var cargo: StorageContainer = _cargo_with(cargos, item_id)
+		if cargo != null:
+			return [true, item_id, cargo]
 	for item_id: StringName in _loads:
 		var probe := ItemStack.new(_items[item_id], 1)
 		for cargo: StorageContainer in cargos:

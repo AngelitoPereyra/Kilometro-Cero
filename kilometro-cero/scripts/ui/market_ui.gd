@@ -201,6 +201,11 @@ func _refresh() -> void:
 	if not _open or _market == null:
 		return
 	_title.text = "Mercado de %s · tenés $%d" % [_market.get_station().get_display_name(), GameState.money]
+	# Lo que sigue pendiente en el punto de carga se ve siempre (tarea 62c.3f): otra venta no lo corta.
+	var bay: LoadingBay = _market.get_bay()
+	var pending: PackedStringArray = bay.queue_lines() if bay != null else PackedStringArray()
+	if not pending.is_empty():
+		_title.text += "\nEn la bahía: %s (sigue al cerrar el mercado)" % ", ".join(pending)
 	for child: Node in _rows.get_children():
 		_rows.remove_child(child)
 		child.queue_free()

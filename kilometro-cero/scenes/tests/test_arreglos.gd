@@ -3,7 +3,8 @@ extends Node3D
 ## tiene borde (no se cae al vacío desde la sierra); las barreras del paso a nivel bajan con el tren;
 ## los rieles cubren cada tramo hasta la punta (sin salto en las uniones); los que dan misiones
 ## están apoyados en el suelo; la locomotora es azul, blanca y amarilla; F11 y F3; las parcelas
-## juntan sus mallas y lo lejano no se dibuja. Toca la partida de GameState.
+## juntan sus mallas y lo lejano no se dibuja; en Sierras Bayas la bahía de carga es la vía del andén;
+## una venta que espera en la bahía no se corta. Toca la partida de GameState.
 
 const HITO_A: String = "res://scenes/hito_a/hito_a.tscn"
 const CORRAL: String = "res://scenes/parcels/corral.tscn"
@@ -23,6 +24,7 @@ func _ready() -> void:
 	_probar_borde()
 	_probar_dadores()
 	_probar_colores()
+	_probar_bahia_sierras()
 	_probar_distancias()
 	await _probar_paso_a_nivel()
 	await _probar_pausa()
@@ -45,6 +47,23 @@ func _probar_logica() -> void:
 	var caja: Array = BoxMesh.new().get_mesh_arrays()
 	_comprobar((MeshBatcher.surface_format(caja) & Mesh.ARRAY_FORMAT_NORMAL) != 0, "MeshBatcher ve que una caja trae normales")
 	_comprobar(PerfOverlay.format_stats({"fps": 60}).begins_with("60 cuadros/s"), "El medidor de rendimiento arma su texto")
+	var tronco := load("res://data/items/log.tres") as ItemData
+	var vagon := StorageContainer.new()
+	vagon.configure(20, [] as Array[StringName])
+	add_child(vagon)
+	vagon.try_store(ItemStack.new(tronco, 20))
+	var cola := LoadingQueue.new()
+	cola.add_unload(&"log", 20)
+	var ninguno: Array[StorageContainer] = []
+	cola.work(ninguno, 0.1)
+	_comprobar(cola.get_unloads().get(&"log", 0) == 20, "Si por un momento no se ve el vagón, la venta sigue pedida")
+	var cargas: Array[StorageContainer] = [vagon]
+	var hecho: Dictionary = cola.work(cargas, 0.5)
+	_comprobar((hecho["unloaded"] as Dictionary).get(&"log", 0) == 20, "Y después se descargan los 20 troncos")
+	cola.add_unload(&"log", 5)
+	cola.work(ninguno, 0.3)
+	_comprobar(cola.get_unloads().is_empty(), "Si el vagón ya no vuelve, la descarga se anula pasado el cuarto de hora")
+	vagon.queue_free()
 	_comprobar(InputMap.has_action(&"fullscreen") and InputMap.has_action(&"debug_stats"), "Están las acciones F11 (pantalla completa) y F3 (medidor); si falla, correr tools/setup_project.gd")
 
 
@@ -103,6 +122,30 @@ func _probar_colores() -> void:
 	_comprobar(_color_de(loco, ^"Visual/Caldera") == &"blanco", "La caldera (la máquina a vapor) es blanca")
 	_comprobar(_color_de(loco, ^"Visual/Chimenea") == &"amarillo_senal", "La chimenea es amarilla")
 	_comprobar(_color_de(loco, ^"Visual/CabinaFrenteCentro") == &"azul_noche" and _color_de(loco, ^"Visual/BarandaDerecha") == &"azul_noche", "El contorno (cabina y barandas) es azul")
+
+
+func _probar_bahia_sierras() -> void:
+	var sierras := Station.find(get_tree(), &"sierras_bayas")
+	var vias := sierras.get_node_or_null(^"Vias") as StationTracks if sierras != null else null
+	var bahia: StationTrack = null
+	if vias != null:
+		for via: StationTrack in vias.get_tracks():
+			if via.role == StationTrack.Role.BAY:
+				bahia = via
+	_comprobar(bahia != null, "Sierras Bayas tiene bahía de carga")
+	if bahia == null:
+		return
+	var camino: Path3D = bahia.get_track_path()
+	var medio: Vector3 = camino.to_global(camino.curve.sample_baked(camino.curve.get_baked_length() * 0.5))
+	var anden := sierras.get_node_or_null(^"Anden") as Node3D
+	_comprobar(anden != null and absf(sierras.to_local(medio).x - sierras.to_local(anden.global_position).x) < 6.0, "La bahía es la vía junto al andén (andén y bahía son lo mismo)")
+	var zona := sierras.get_node_or_null(Station.ZONE_PATH) as Area3D
+	var forma := zona.get_node_or_null(^"Forma") as CollisionShape3D if zona != null else null
+	var caja := forma.shape as BoxShape3D if forma != null else null
+	var adentro: bool = caja != null and AABB(-caja.size * 0.5, caja.size).has_point(forma.to_local(medio + Vector3.UP))
+	_comprobar(adentro, "Un tren en la bahía está en la estación (en su zona)")
+	var punto := sierras.get_node_or_null(^"PuntoDeCarga") as Node3D
+	_comprobar(punto != null and punto.global_position.distance_to(camino.to_global(camino.curve.get_closest_point(camino.to_local(punto.global_position)))) < 6.0, "El punto de carga está sobre el andén, junto a la bahía")
 
 
 func _probar_distancias() -> void:

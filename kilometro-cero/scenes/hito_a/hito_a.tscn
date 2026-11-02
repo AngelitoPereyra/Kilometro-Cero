@@ -471,7 +471,8 @@ turntable = true
 bay_offsets = PackedFloat32Array(42)
 
 [node name="Vias" parent="SierrasBayas"]
-bay_offsets = PackedFloat32Array(40)
+freight_offsets = PackedFloat32Array(21)
+bay_offsets = PackedFloat32Array(0)
 
 [node name="PuntoDeCarga" type="Node3D" parent="Olavarria"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.5, 0, 0)
@@ -490,7 +491,7 @@ outline_size = 10
 text = "Punto de carga"
 
 [node name="PuntoDeCarga" type="Node3D" parent="SierrasBayas"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 43.5, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.5, 0, -23)
 script = ExtResource("39_bah")
 
 [node name="Plataforma" type="MeshInstance3D" parent="SierrasBayas/PuntoDeCarga"]

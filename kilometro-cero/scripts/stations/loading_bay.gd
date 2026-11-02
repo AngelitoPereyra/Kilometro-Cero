@@ -197,15 +197,24 @@ func build_text() -> String:
 			total += cargo.get_total()
 			capacity += cargo.capacity
 		lines.append("%d %s en la bahía · %d de %d" % [cargos.size(), "vagón" if cargos.size() == 1 else "vagones", total, capacity])
+	lines.append_array(queue_lines())
+	if queue.has_work() and not cargos.is_empty():
+		lines.append("Faltan unos %d min" % ceili(queue.hours_left(cargos) * 60.0))
+	return "\n".join(lines)
+
+
+## Lo que espera la cola, un renglón por objeto: "Descargando 20 Troncos", "Cargando 10 Cemento" (o
+## "Espera" sin vagones). Lo muestra también la ventana del mercado (tarea 62c.3f).
+func queue_lines() -> PackedStringArray:
+	var lines: PackedStringArray = []
+	var has_cargos: bool = not get_cargos().is_empty()
 	var unloads: Dictionary[StringName, int] = queue.get_unloads()
 	for item_id: StringName in unloads:
 		lines.append("Descargando %d %s" % [unloads[item_id], _name_of(item_id)])
 	var loads: Dictionary[StringName, int] = queue.get_loads()
 	for item_id: StringName in loads:
-		lines.append("%s %d %s" % ["Cargando" if not cargos.is_empty() else "Espera", loads[item_id], _name_of(item_id)])
-	if queue.has_work() and not cargos.is_empty():
-		lines.append("Faltan unos %d min" % ceili(queue.hours_left(cargos) * 60.0))
-	return "\n".join(lines)
+		lines.append("%s %d %s" % ["Cargando" if has_cargos else "Espera", loads[item_id], _name_of(item_id)])
+	return lines
 
 
 func _name_of(item_id: StringName) -> String:
